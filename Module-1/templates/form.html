@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Employee Form</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+    form { max-width: 480px; display: grid; gap: 1rem; }
+    label { display: grid; gap: 0.3rem; }
+    input, select { padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0.6rem 1rem; font-size: 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Add Employee</h1>
+  <form action="{{ url_for('submit') }}" method="post">  <!-- FIXED -->
+    <label>
+      First Name *
+      <input type="text" name="firstName" required>
+    </label>
+
+    <label>
+      Last Name *
+      <input type="text" name="lastName" required>
+    </label>
+
+    <label>
+      Email
+      <input type="email" name="email">
+    </label>
+
+    <label>
+      Department
+      <input type="text" name="department">
+    </label>
+
+    <label>
+      Experience
+      <select name="experience">
+        <option value="">Select</option>
+        <option>Intern</option>
+        <option>Junior</option>
+        <option>Mid</option>
+        <option>Senior</option>
+        <option>Lead</option>
+      </select>
+    </label>
+
+    <label>
+      Monthly Salary (₹)
+      <input type="number" name="monthlySalary" min="0" step="0.01">
+    </label>
+
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>
