@@ -44,7 +44,6 @@ Files in `Module-1/`:
 - `employee_financials.ipynb` — Analysis and queries for employee financial data.
 - `employee_web_form.ipynb` — Simple web form example for employee data (uses `templates/form.html`).
 - `functions_oops.ipynb` — Functions and OOP examples, including `SqlConnection` and `GrowthSalary` demos.
-- `lesson_3_guided_project_1.ipynb` — Guided project from lesson 3.
 - `templates/form.html` — HTML form template used by the web form notebook.
 ## Resources
 
