@@ -4,10 +4,7 @@ Welcome to the **python-learnings** repository! This repo contains code samples,
 
 ## Contents
 
-- `basics/` — Python fundamentals and syntax
-- `projects/` — Mini-projects and exercises
-- `notebooks/` — Jupyter notebooks for interactive learning
-- `resources.md` — Useful links and references
+- `module/` — Mini-projects and exercises
 
 ## Getting Started
 

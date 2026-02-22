@@ -29,12 +29,23 @@ This module introduces the basics of Python programming, including:
       ```
 
 3. **Run the examples:**
-    - Explore the `.py` files in this directory.
+    - Explore the `.ipynb` files in this directory.
     - Run scripts using:
       ```bash
-      python filename.py
+      jupyter nbconvert --to notebook --execute --inplace your_notebook.ipynb
       ```
 
+## Module-1
+
+Files in `Module-1/`:
+
+- `data_structures.ipynb` — Notes and examples on lists, tuples, sets, and dictionaries.
+- `employee_create_db.ipynb` — Example notebook showing how to create and populate an employee SQLite database.
+- `employee_financials.ipynb` — Analysis and queries for employee financial data.
+- `employee_web_form.ipynb` — Simple web form example for employee data (uses `templates/form.html`).
+- `functions_oops.ipynb` — Functions and OOP examples, including `SqlConnection` and `GrowthSalary` demos.
+- `lesson_3_guided_project_1.ipynb` — Guided project from lesson 3.
+- `templates/form.html` — HTML form template used by the web form notebook.
 ## Resources
 
 - [Official Python Documentation](https://docs.python.org/3/)
