@@ -1,1 +1,7 @@
 *.db
+./**/__pycache__/
+./**/*.pyc
+./**/instance/
+./**/*.ipynb_checkpoints/
+.vscode/
+./**/*.db
