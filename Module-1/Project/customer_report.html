@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Customer Insights Report</title>
+
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; color: #222; }
+  h1 { margin: 0 0 4px 0; }
+  h2 { margin: 24px 0 8px 0; }
+  .muted { color: #666; }
+  .section { margin-bottom: 28px; }
+  .scroll { max-height: 420px; overflow: auto; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; background: #fafafa; }
+  table { border-collapse: collapse; width: 100%; }
+  table.grid th, table.grid td, table.kv th, table.kv td { border: 1px solid #e5e7eb; padding: 8px; }
+  table.grid th { background: #f3f4f6; text-align: left; }
+  table.kv th { background: #f9fafb; text-align: left; }
+  code.kv { background: #f6f8fa; padding: 2px 6px; border-radius: 4px; }
+  .pill { display: inline-block; padding: 2px 8px; background: #eef2ff; color: #3730a3; border-radius: 999px; font-size: 12px; }
+  .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 900px) { .row { grid-template-columns: 1fr 1fr; } }
+</style>
+
+</head>
+<body>
+  <h1>Customer Insights Report</h1>
+  <div class="muted">Generated at: 2026-02-27 14:17:14</div>
+
+  <div class="section">
+    <h2>1) Customer Tuples <span class="pill">Detailed rows</span></h2>
+    <div class="scroll">
+      
+<table class="grid">
+  <thead><tr><th>Customer Name</th><th>Product</th><th>Category</th><th>Price</th></tr></thead>
+  <tbody>
+    <tr><td>Abhinav Singh</td><td>Smartphone</td><td>Electronics</td><td>110.0</td></tr><tr><td>Ankita Singh</td><td>Laptop</td><td>Electronics</td><td>200.0</td></tr><tr><td>Sharanjit Singh</td><td>Smartwatch</td><td>Electronics</td><td>90.0</td></tr><tr><td>Shobhit Varshney</td><td>T-Shirt</td><td>Clothing</td><td>30.0</td></tr><tr><td>Shobhit Varshney</td><td>Sneakers</td><td>Clothing</td><td>60.0</td></tr><tr><td>Shobhit Varshney</td><td>Air Purifier</td><td>Home Essentials</td><td>70.0</td></tr><tr><td>Shobhit Varshney</td><td>Bluetooth Speaker</td><td>Electronics</td><td>30.0</td></tr><tr><td>Sharanjit Singh</td><td>Jacket</td><td>Clothing</td><td>70.0</td></tr><tr><td>Sharanjit Singh</td><td>Cookware Set</td><td>Home Essentials</td><td>40.0</td></tr><tr><td>Abhinav Singh</td><td>T-Shirt</td><td>Clothing</td><td>20.0</td></tr><tr><td>Abhinav Singh</td><td>LED Bulb (Pack of 4)</td><td>Home Essentials</td><td>15.0</td></tr><tr><td>Ankita Singh</td><td>Smartphone</td><td>Electronics</td><td>130.0</td></tr><tr><td>Ankita Singh</td><td>Dress</td><td>Clothing</td><td>50.0</td></tr><tr><td>Ankita Singh</td><td>Cookware Set</td><td>Home Essentials</td><td>80.0</td></tr>
+  </tbody>
+</table>
+
+    </div>
+    <div class="muted">Showing 14 rows.</div>
+  </div>
+
+  <div class="row">
+    <div class="section">
+      <h2>2) Customer List <span class="pill">Duplicates allowed</span></h2>
+      <div class="scroll">
+        <ul>
+  <li>Abhinav Singh</li>
+  <li>Ankita Singh</li>
+  <li>Sharanjit Singh</li>
+  <li>Shobhit Varshney</li>
+  <li>Shobhit Varshney</li>
+  <li>Shobhit Varshney</li>
+  <li>Shobhit Varshney</li>
+  <li>Sharanjit Singh</li>
+  <li>Sharanjit Singh</li>
+  <li>Abhinav Singh</li>
+  <li>Abhinav Singh</li>
+  <li>Ankita Singh</li>
+  <li>Ankita Singh</li>
+  <li>Ankita Singh</li>
+</ul>
+      </div>
+      <div class="muted">List length: <code class="kv">14</code></div>
+    </div>
+
+    <div class="section">
+      <h2>3) Customer Set <span class="pill">Unique names</span></h2>
+      <div class="scroll">
+        <ul>
+  <li>Abhinav Singh</li>
+  <li>Ankita Singh</li>
+  <li>Sharanjit Singh</li>
+  <li>Shobhit Varshney</li>
+</ul>
+      </div>
+      <div class="muted">Unique names: <code class="kv">4</code></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>4) Customer Dictionary <span class="pill">Name → Product</span></h2>
+    <div class="scroll">
+      
+<table class="kv">
+  <thead><tr><th>Customer Name</th><th>Product</th></tr></thead>
+  <tbody>
+    <tr><td>Abhinav Singh</td><td>Smartphone, T-Shirt, LED Bulb (Pack of 4)</td></tr><tr><td>Ankita Singh</td><td>Laptop, Smartphone, Dress, Cookware Set</td></tr><tr><td>Sharanjit Singh</td><td>Smartwatch, Jacket, Cookware Set</td></tr><tr><td>Shobhit Varshney</td><td>T-Shirt, Sneakers, Air Purifier, Bluetooth Speaker</td></tr>
+  </tbody>
+</table>
+
+    </div>
+    <div class="muted">Pairs: <code class="kv">4</code></div>
+  </div>
+
+ <div class="section">
+    <h2>Raw Data From Customers Database</h2>
+    <div class="scroll"><pre class="prewrap">customer tuples : List of tuples with all customer details
+[]
+[(&#x27;Ankita Singh&#x27;,
+  14,
+  &#x27;Cookware Set&#x27;,
+  &#x27;Home Essentials&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988888&#x27;,
+  80.0),
+ (&#x27;Ankita Singh&#x27;,
+  13,
+  &#x27;Dress&#x27;,
+  &#x27;Clothing&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988888&#x27;,
+  50.0),
+ (&#x27;Ankita Singh&#x27;,
+  12,
+  &#x27;Smartphone&#x27;,
+  &#x27;Electronics&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988888&#x27;,
+  130.0),
+ (&#x27;Abhinav Singh&#x27;,
+  11,
+  &#x27;LED Bulb (Pack of 4)&#x27;,
+  &#x27;Home Essentials&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988888&#x27;,
+  15.0),
+ (&#x27;Abhinav Singh&#x27;,
+  10,
+  &#x27;T-Shirt&#x27;,
+  &#x27;Clothing&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988888&#x27;,
+  20.0),
+ (&#x27;Sharanjit Singh&#x27;,
+  9,
+  &#x27;Cookware Set&#x27;,
+  &#x27;Home Essentials&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988866&#x27;,
+  40.0),
+ (&#x27;Sharanjit Singh&#x27;,
+  8,
+  &#x27;Jacket&#x27;,
+  &#x27;Clothing&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988866&#x27;,
+  70.0),
+ (&#x27;Shobhit Varshney&#x27;,
+  7,
+  &#x27;Bluetooth Speaker&#x27;,
+  &#x27;Electronics&#x27;,
+  &#x27;test2@gmail.com&#x27;,
+  &#x27;9999981177&#x27;,
+  30.0),
+ (&#x27;Shobhit Varshney&#x27;,
+  6,
+  &#x27;Air Purifier&#x27;,
+  &#x27;Home Essentials&#x27;,
+  &#x27;test2@gmail.com&#x27;,
+  &#x27;9999981177&#x27;,
+  70.0),
+ (&#x27;Shobhit Varshney&#x27;,
+  5,
+  &#x27;Sneakers&#x27;,
+  &#x27;Clothing&#x27;,
+  &#x27;test2@gmail.com&#x27;,
+  &#x27;9999981177&#x27;,
+  60.0),
+ (&#x27;Shobhit Varshney&#x27;,
+  4,
+  &#x27;T-Shirt&#x27;,
+  &#x27;Clothing&#x27;,
+  &#x27;test2@gmail.com&#x27;,
+  &#x27;9999981177&#x27;,
+  30.0),
+ (&#x27;Sharanjit Singh&#x27;,
+  3,
+  &#x27;Smartwatch&#x27;,
+  &#x27;Electronics&#x27;,
+  &#x27;test1@gmail.com&#x27;,
+  &#x27;9999988877&#x27;,
+  90.0),
+ (&#x27;Ankita Singh&#x27;,
+  2,
+  &#x27;Laptop&#x27;,
+  &#x27;Electronics&#x27;,
+  &#x27;test@gmail.com&#x27;,
+  &#x27;9999988866&#x27;,
+  200.0),
+ (&#x27;Abhinav Singh&#x27;,
+  1,
+  &#x27;Smartphone&#x27;,
+  &#x27;Electronics&#x27;,
+  &#x27;test@&#x27;,
+  &#x27;9999988888&#x27;,
+  110.0)]
+set()
+{}
+HTML report written to: customer_report.html
+</pre></div>
+  </div>
+
+
+</body>
+</html>
