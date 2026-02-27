@@ -1,7 +1,24 @@
-*.db
-./**/__pycache__/
-./**/*.pyc
-./**/instance/
-./**/*.ipynb_checkpoints/
+# VS Code settings (any depth)
 .vscode/
-./**/*.db
+**/.vscode/
+
+# Python bytecode caches (any depth)
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Instance folder (e.g., Flask) at any depth
+instance/
+**/instance/
+
+# Database files anywhere
+*.db
+
+# Virtual environments and environment files
+venv/
+.env/
+.venv/
+**/venv/
+**/.venv/
