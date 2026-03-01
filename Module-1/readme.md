@@ -39,6 +39,7 @@ This module introduces the basics of Python programming, including:
 
 Files in `Module-1/`:
 
+- `python_fundamentals.ipynb` - fundamentals with examples
 - `data_structures.ipynb` — Notes and examples on lists, tuples, sets, and dictionaries.
 - `employee_create_db.ipynb` — Example notebook showing how to create and populate an employee SQLite database.
 - `employee_financials.ipynb` — Analysis and queries for employee financial data.
