@@ -1,0 +1,127 @@
+
+    ===============================
+      ADVENTURE: The Hidden Relic
+    ===============================
+    
+What is your name, explorer? > 
+Welcome, abhinav! Your quest is to find the legendary treasure hidden in these lands.
+
+Choose your path:
+> Explore the dark forest  (key: forest)
+  Enter the mysterious cave  (key: cave)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+🌲 The forest is dense and quiet, abhinav. You hear water nearby.
+
+Do you follow the sound of the river or climb a tall tree to scout?
+> Follow the river  (key: river)
+  Climb the tree  (key: tree)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+You follow the river and find a rickety wooden bridge with symbols carved into it.
+
+Cross the bridge or search the riverbank?
+> Cross the bridge  (key: bridge)
+  Search the riverbank  (key: bank)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+You cross carefully. The symbols mark the path to a hidden glade—inside lies the TREASURE! 🏆
+
+🎉 Congratulations! You found the treasure and completed your quest.
+
+Would you like to play again?
+> Yes, restart  (key: yes)
+  No, quit  (key: no)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Restarting your adventure...
+
+
+Choose your path:
+> Explore the dark forest  (key: forest)
+  Enter the mysterious cave  (key: cave)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Choose your path:
+  Explore the dark forest  (key: forest)
+> Enter the mysterious cave  (key: cave)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+🕳️  The cave yawns before you, abhinav. A chill wind carries faint echoes.
+
+Do you light a torch or proceed in the dark?
+> Light a torch  (key: torch)
+  Proceed in the dark  (key: dark)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Do you light a torch or proceed in the dark?
+  Light a torch  (key: torch)
+> Proceed in the dark  (key: dark)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+In the darkness you misstep into a pit. You're unharmed but trapped with no way forward.
+
+☠️  Alas! Your choices led to failure this time.
+
+Would you like to play again?
+> Yes, restart  (key: yes)
+  No, quit  (key: no)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Restarting your adventure...
+
+
+Choose your path:
+> Explore the dark forest  (key: forest)
+  Enter the mysterious cave  (key: cave)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Choose your path:
+  Explore the dark forest  (key: forest)
+> Enter the mysterious cave  (key: cave)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+🕳️  The cave yawns before you, abhinav. A chill wind carries faint echoes.
+
+Do you light a torch or proceed in the dark?
+> Light a torch  (key: torch)
+  Proceed in the dark  (key: dark)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+With the torch lit, you notice markings on the wall guiding you past hidden pits.
+
+Follow the markings deeper or inspect a glittering crevice?
+> Follow the markings  (key: markings)
+  Inspect the crevice  (key: crevice)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+The markings lead to a sealed chamber. A simple mechanism opens it, revealing the TREASURE! 🏆
+
+🎉 Congratulations! You found the treasure and completed your quest.
+
+Would you like to play again?
+> Yes, restart  (key: yes)
+  No, quit  (key: no)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Would you like to play again?
+  Yes, restart  (key: yes)
+> No, quit  (key: no)
+
+Use UP/DOWN and Enter. Press letter/number keys to jump.
+[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K
+Thanks for playing. Farewell!
