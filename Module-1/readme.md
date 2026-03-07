@@ -40,11 +40,12 @@ This module introduces the basics of Python programming, including:
 Files in `Module-1/`:
 
 - `python_fundamentals.ipynb` - fundamentals with examples
+- `python_functions_fundamentals.ipynb` - functions with examples
+- `python_oops_fundamentals.ipynb` — Functions and OOP examples, including `SqlConnection` and `GrowthSalary` demos.
 - `data_structures.ipynb` — Notes and examples on lists, tuples, sets, and dictionaries.
 - `employee_create_db.ipynb` — Example notebook showing how to create and populate an employee SQLite database.
 - `employee_financials.ipynb` — Analysis and queries for employee financial data.
 - `employee_web_form.ipynb` — Simple web form example for employee data (uses `templates/form.html`).
-- `functions_oops.ipynb` — Functions and OOP examples, including `SqlConnection` and `GrowthSalary` demos.
 - `templates/form.html` — HTML form template used by the web form notebook.
 ## Resources
 
