@@ -12,12 +12,8 @@ This project focuses on analyzing customer orders for an e‑commerce company us
 - Generate business insights
 
 ### 3. Dependencies
-- Install Flask using `pip`
-- Install SQLAlchemy using `pip`
-- Install flask_sqlalchemy uisng `pip`
-- Install pandas uisng `pip`
-- Install nbstripout uisng `pip`
-- Insall plotly using `pip`
+
+`pip install -r requirements.txt`
 
 ### 4. Functional Requirements
 
