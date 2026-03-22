@@ -1,6 +1,6 @@
 import numpy as np
-import webbrowser, os
 from lib.arrays_html import arrays_table_html, arrays_index_report_html
+from lib.report_utils import save_html_report
 
 array_1d = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 array_2d = np.array(
@@ -54,11 +54,14 @@ pairs = [
 fragment = arrays_table_html(pairs)
 
 # 2) Full standalone page
-doc = arrays_index_report_html(pairs, page_title="Arrays Indexing and Slicing Report")
-with open("arrays_indexing_slicing_report.html", "w", encoding="utf-8") as f:
-    f.write(doc)
+html_doc = arrays_index_report_html(pairs, page_title="Arrays Indexing and Slicing Report")
 
-print("Wrote arrays_indexing_slicing_report.html")
-
-
-webbrowser.open('file://' + os.path.abspath('arrays_indexing_slicing_report.html'))
+# html_doc is the string you already have
+output_path = save_html_report(
+    __file__,
+    "arrays_indexing_slicing_report.html",   
+    html_doc,
+    subfolder="reports",
+    open_in_browser=True
+)
+print(f"Wrote report to: {output_path}")

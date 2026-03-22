@@ -1,6 +1,6 @@
 import numpy as np
 from lib.arrays_html import arrays_report_html
-import webbrowser, os
+from lib.report_utils import save_html_report
 
 # Your arrays
 # 0D array
@@ -98,11 +98,12 @@ html_doc = arrays_report_html([
     ("Index 1,0,2,3 based Transpose array 3D (int)",   a4_t_1023),
 ], page_title="Array Details (Column-wise)")
 
-# Save
-with open("arrays_transpose_report.html", "w", encoding="utf-8") as f:
-    f.write(html_doc)
-
-print("Wrote arrays_transpose_report.html")
-
-
-webbrowser.open('file://' + os.path.abspath('arrays_transpose_report.html'))
+# html_doc is the string you already have
+output_path = save_html_report(
+    __file__,
+    "arrays_transpose_report.html",   
+    html_doc,
+    subfolder="reports",
+    open_in_browser=True
+)
+print(f"Wrote report to: {output_path}")

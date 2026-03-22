@@ -1,13 +1,6 @@
-
-from pathlib import Path
-import sys
-
-# Add the parent of the current folder (…\Module-2) to sys.path
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 import numpy as np
 from lib.arrays_html import arrays_report_html
-import webbrowser, os
+from lib.report_utils import save_html_report
 
 # Your arrays
 arr1 = np.array(
@@ -106,11 +99,12 @@ html_doc = arrays_report_html([
     ("90 Percentile of 1st 3D array (int)",   arr3d_per_90),
 ], page_title="Array Details (Column-wise)")
 
-# Save
-with open("arrays_maths_report.html", "w", encoding="utf-8") as f:
-    f.write(html_doc)
-
-print("Wrote arrays_maths_report.html")
-
-
-webbrowser.open('file://' + os.path.abspath('arrays_maths_report.html'))
+# html_doc is the string you already have
+output_path = save_html_report(
+    __file__,
+    "arrays_maths_report.html",   
+    html_doc,
+    subfolder="reports",
+    open_in_browser=True
+)
+print(f"Wrote report to: {output_path}")
