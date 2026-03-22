@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+             margin: 0; padding: 24px; background: var(--bg); color: var(--fg); }
+      .title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px; background: #0b1020; color: #e5e7eb;
+        border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+      }
+      .block { white-space: pre; margin-bottom: 12px; }
+      .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .kv th, .kv td { text-align: left; padding: 6px 8px; vertical-align: top; }
+      .kv th { width: 28%; color: var(--muted); font-weight: 500; }
+      .kv tr:nth-child(odd) td, .kv tr:nth-child(odd) th { background: #fafafa; }
+      .footer { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    </style>
+    
+<title>Arrays Indexing and Slicing Report</title></head>
+<body>
+  <div class="title">Arrays Indexing and Slicing Report</div>
+  
+    <table class="kv" style="margin-top:8px;">
+      <tbody>
+        <tr><th>Original 1D array</th><td><div class="mono block">[ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12]</div></td></tr>
+<tr><th>value at index 3 of the 1D NumPy array</th><td><div class="mono block">4</div></td></tr>
+<tr><th>sum of the values at indexes 0 and 1 in the 1D NumPy array</th><td><div class="mono block">3</div></td></tr>
+<tr><th>fourth element from the end of the 1D array using negative indexing</th><td><div class="mono block">9</div></td></tr>
+<tr><th>Slicing on 1D array based on negative pattern [-2:-8:-3]</th><td><div class="mono block">[11,  8]</div></td></tr>
+<tr><th>Slicing on 1D array based on pattern [2:10:2]</th><td><div class="mono block">[3, 5, 7, 9]</div></td></tr>
+<tr><th>Negative slicing for 1D array based on pattern [:-1]</th><td><div class="mono block">[ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]</div></td></tr>
+<tr><th>Original 2D array</th><td><div class="mono block">[[ 1,  2,  3,  4,  5,  6],
+ [ 7,  8,  9, 10, 11, 12],
+ [13, 14, 15, 16, 17, 18]]</div></td></tr>
+<tr><th>Third element in the first row of the 2D array: </th><td><div class="mono block">3</div></td></tr>
+<tr><th>Second element in the second row of the 2D array: </th><td><div class="mono block">8</div></td></tr>
+<tr><th>Slicing on 2D array based on pattern [1, 1:4]: </th><td><div class="mono block">[ 8,  9, 10]</div></td></tr>
+<tr><th>Slicing on 2D array based on pattern [0, 1:5:2]: </th><td><div class="mono block">[2, 4]</div></td></tr>
+<tr><th>Negative Slicing on 2D array based on pattern [2, -1:-5:-2]: </th><td><div class="mono block">[18, 16]</div></td></tr>
+<tr><th>last element in the second row of the 2D array using negative indexing</th><td><div class="mono block">12</div></td></tr>
+<tr><th>Slicing on 2D array based on pattern [0, 2:3] </th><td><div class="mono block">[3]</div></td></tr>
+<tr><th>Original 3D array</th><td><div class="mono block">[[[ 1,  2,  3],
+  [ 4,  5,  6]],
+
+ [[ 7,  8,  9],
+  [10, 11, 12]]]</div></td></tr>
+<tr><th>first element of the first row of the second 2D array within the 3D array</th><td><div class="mono block">7</div></td></tr>
+<tr><th>last element in the last row of the last 2D array within the 3D array using negative indexing [1, 1, -1]</th><td><div class="mono block">12</div></td></tr>
+<tr><th>Middle element in the first row of the last 2D array within the 3D array using negative indexing [1, 0, -2]</th><td><div class="mono block">8</div></td></tr>
+<tr><th>Middle element in the second row of the last 2D array within the 3D array using negative indexing [1, 1, -2]</th><td><div class="mono block">11</div></td></tr>
+<tr><th>Slicing on 3D array based on pattern [0,1:,1:]</th><td><div class="mono block">[[5, 6]]</div></td></tr>
+<tr><th>Negative Slicing on 3D array based on pattern [0,0:,-1:]</th><td><div class="mono block">[[3],
+ [6]]</div></td></tr>
+<tr><th>Negative Slicing on 3D array based on pattern [0,0:,-1::]</th><td><div class="mono block">[[3],
+ [6]]</div></td></tr>
+<tr><th>Negative Slicing on 3D array based on pattern [1,1:,-2:]</th><td><div class="mono block">[[11, 12]]</div></td></tr>
+      </tbody>
+    </table>
+    
+  <div class="footer">Rendered 24 pairs.</div>
+</body></html>
