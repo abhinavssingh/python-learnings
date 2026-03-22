@@ -33,6 +33,13 @@ from typing import Iterable, List, Sequence, Tuple
 
 import numpy as np
 
+try:
+    import pandas as pd
+    _HAS_PANDAS = True
+except Exception:  # pandas not installed or not needed
+    _HAS_PANDAS = False
+
+
 __all__ = [
     "array_info_html",
     "arrays_report_html",
@@ -43,14 +50,27 @@ __all__ = [
 
 ]
 
+def _array_preview_any(obj: Any, max_items: int = 24) -> str:
+    """
+    Return a safe, short string preview for ndarray/Series/DataFrame/array-like.
+    """
+    # Convert to an ndarray for a compact preview
+    if _HAS_PANDAS:
+        if isinstance(obj, pd.Series):
+            arr = obj.to_numpy()
+        elif isinstance(obj, pd.DataFrame):
+            arr = obj.to_numpy()
+        else:
+            arr = np.asarray(obj)
+    else:
+        arr = np.asarray(obj)
 
-def _array_preview(arr: np.ndarray, max_items: int = 24) -> str:
-    """Return a safe, short string preview of the array for HTML display."""
     # For string/object arrays, avoid quotes in preview for readability
     if arr.dtype.kind in {"U", "S", "O"}:
         formatter = {"all": lambda x: str(x)}
     else:
         formatter = None
+
     s = np.array2string(
         arr,
         max_line_width=80,
@@ -60,20 +80,186 @@ def _array_preview(arr: np.ndarray, max_items: int = 24) -> str:
     )
     return html.escape(s)
 
+def _obj_info(obj: Any) -> dict:
+    """
+    Normalize ndarray/Series/DataFrame/array-like into a common info dict.
+    Keys: size, shape, ndim, type_str, dtype_str, itemsize, nbytes, preview_html
+    """
+    # NumPy array
+    if isinstance(obj, np.ndarray):
+        arr = obj
+        size = arr.size
+        shape = tuple(arr.shape)
+        ndim = arr.ndim
+        type_str = str(type(obj))
+        dtype_str = str(arr.dtype)
+        itemsize = arr.itemsize
+        nbytes = getattr(arr, "nbytes", size * itemsize)
+        preview_html = f'<div class="mono block">{_array_preview_any(arr)}</div>'
+        return locals()
 
-def array_info_html(arr: np.ndarray, title: str = "Array Info") -> str:
-    """Return a standalone HTML string with key NumPy array properties."""
+    # pandas Series
+    if _HAS_PANDAS and isinstance(obj, pd.Series):
+        arr = obj.to_numpy()
+        size = obj.size
+        shape = (obj.size,)
+        ndim = 1
+        type_str = "pandas.Series"
+        dtype_str = str(obj.dtype)
+        itemsize = arr.itemsize
+        nbytes = arr.nbytes  # data only; excludes index
+        preview_html = f'<div class="mono block">{_array_preview_any(arr)}</div>'
+        return locals()
+
+    # pandas DataFrame
+    if _HAS_PANDAS and isinstance(obj, pd.DataFrame):
+        arr = obj.to_numpy()
+        size = arr.size
+        shape = tuple(obj.shape)
+        ndim = obj.ndim  # should be 2
+        type_str = "pandas.DataFrame"
+        # Concise dtypes summary: col1:dt1, col2:dt2 ...
+        dtype_str = ", ".join(f"{c}:{dt}" for c, dt in obj.dtypes.items())
+        itemsize = arr.itemsize if arr.size else 0
+        nbytes = arr.nbytes  # data only; excludes index
+        preview_html = f'<div class="mono block">{_array_preview_any(arr)}</div>'
+        return locals()
+
+    # Fallback: try to coerce anything else to ndarray
+    arr = np.asarray(obj)
+    size = arr.size
+    shape = tuple(arr.shape)
+    ndim = arr.ndim
+    type_str = str(type(obj))
+    dtype_str = str(arr.dtype)
+    itemsize = arr.itemsize
+    nbytes = arr.nbytes
+    preview_html = f'<div class="mono block">{_array_preview_any(arr)}</div>'
+    return locals()
+
+def _series_to_html_table(s, max_rows: int = 50) -> str:
+    """
+    Render a pandas Series in native format:
+    a compact HTML table with two columns: Index | Value.
+
+    - Caps rows at `max_rows` to keep cards small; tell the user if truncated.
+    - Uses your monospace style for values (same look as arrays).
+    """
+    # Safety: ensure pandas is available and obj is Series
+    if not _HAS_PANDAS:
+        raise RuntimeError("pandas is not available but a Series was passed.")
+    if not isinstance(s, pd.Series):
+        raise TypeError("Expected a pandas Series.")
+
+    n = len(s)
+    rows_to_show = min(n, max_rows)
+    truncated_note = (
+        f"<div style='color:#6b7280;font-size:12px;margin-top:6px'>"
+        f"Showing first {rows_to_show} of {n} rows.</div>"
+        if n > rows_to_show else ""
+    )
+
+    # Build rows: show index and value
+    body_rows = []
+    for i, (idx, val) in enumerate(s.iloc[:rows_to_show].items()):
+        body_rows.append(
+            f"<tr>"
+            f"<th>{html.escape(str(idx))}</th>"
+            f"<td class='mono'>{html.escape(str(val))}</td>"
+            f"</tr>"
+        )
+
+    body_html = "\n".join(body_rows)
+
+    
+    return f"""
+    <style>
+      :root {{
+        /* tweak these brand colors */
+        --series-head-fg: #1e3a8a;  /* header text color */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* value color */
+      }}
+      table.series2col {{ border-collapse: collapse; width: 100%; }}
+      .series2col th, .series2col td {{
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }}
+      .series2col thead th {{
+          background: var(--series-head-bg);
+          color: var(--series-head-fg);
+      }}
+      .series2col tbody td {{
+          color: var(--series-cell-fg);
+      }}
+      .series2col tbody tr:nth-child(odd) {{ background: #fafafa; }}
+      .mono {{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }}
+    </style>
+    <table class="series2col">
+      <thead><tr><th>Index</th><th>Value</th></tr></thead>
+      <tbody>{body_html}</tbody>
+    </table>
+    {truncated_note}
+    """
+
+def array_info_html(obj, title: str = "Array Info") -> str:
+    """
+    Return a standalone HTML string with key properties and a preview.
+
+    - pandas.Series → native table: Index | Value, plus size/dtype/name info
+    - np.ndarray / other → your existing array preview card
+    """
+    # --- Special case: pandas Series (native 2-column view) ---
+    if _HAS_PANDAS:
+        import pandas as pd  # local to keep dependency optional
+        if isinstance(obj, pd.Series):
+            s = obj
+            # Compute summary safely
+            size = s.size
+            dtype_str = str(s.dtype)
+            name_str = "" if s.name is None else f" (name: {html.escape(str(s.name))})"
+            # Memory (data buffer only)
+            try:
+                nbytes = s.memory_usage(deep=False) - s.index.nbytes
+                # If deep memory is preferred, swap to deep=True (costlier):
+                # nbytes = s.memory_usage(deep=True) - s.index.nbytes
+            except Exception:
+                nbytes = s.to_numpy().nbytes
+
+            # Native preview table
+            table_html = _series_to_html_table(s)
+
+            return f"""
+            <div class="col">
+              <div class="card">
+                <div class="card-title">{html.escape(title)}</div>
+                {table_html}
+                <table class="kv" style="margin-top:10px">
+                  <tr><th>Size (elements)</th><td>{size}</td></tr>
+                  <tr><th>Type</th><td>pandas.Series{name_str}</td></tr>
+                  <tr><th>Data Type (dtype)</th><td>{html.escape(dtype_str)}</td></tr>
+                  <tr><th>Total Memory (data)</th><td>{int(nbytes)} bytes</td></tr>
+                </table>
+              </div>
+            </div>
+            """
+
+    # --- Default: keep your existing ndarray/array-like card ---
+    arr = np.asarray(obj)
     nbytes = getattr(arr, "nbytes", arr.size * arr.itemsize)
     return f"""
     <div class="col">
       <div class="card">
         <div class="card-title">{html.escape(title)}</div>
-        <div class="mono block">{_array_preview(arr)}</div>
+        <div class="mono block">{_array_preview_any(arr)}</div>
         <table class="kv">
           <tr><th>Size (elements)</th><td>{arr.size}</td></tr>
           <tr><th>Shape</th><td>{html.escape(str(tuple(arr.shape)))}</td></tr>
           <tr><th>Dimensions (ndim)</th><td>{arr.ndim}</td></tr>
-          <tr><th>Type</th><td>{html.escape(str(type(arr)))}</td></tr>
+          <tr><th>Type</th><td>{html.escape(str(type(obj)))}</td></tr>
           <tr><th>Data Type (dtype)</th><td>{html.escape(str(arr.dtype))}</td></tr>
           <tr><th>Item Size (bytes)</th><td>{arr.itemsize}</td></tr>
           <tr><th>Total Memory</th><td>{nbytes} bytes</td></tr>
@@ -136,7 +322,7 @@ def arrays_report_html(items, page_title="Array Report"):
     """
 
     # Build all cards first (safe regular string join)
-    cards = "\n".join(array_info_html(arr, title) for title, arr in items)
+    cards = "\n".join(array_info_html(obj, title) for title, obj in items)
 
     # Now assemble the full page (only this is an f-string)
     return f"""<!doctype html>
@@ -163,19 +349,41 @@ def display_array_info(arr: np.ndarray, title: str = "Array Info") -> None:
     display(HTML(html_fragment))
 
 
-def array_to_html_table(arr: np.ndarray, max_rows: int = 20, max_cols: int = 20) -> str:
-    """Render a 2D NumPy array as an HTML table (with optional clipping)."""
-    if arr.ndim != 2:
-        raise ValueError("array_to_html_table only supports 2D arrays.")
+def array_to_html_table(obj: Any, max_rows: int = 20, max_cols: int = 20) -> str:
+    """
+    Render values as an HTML table.
+    - DataFrame: values shown as-is (2D)
+    - Series: shown as a single-column table
+    - ndarray/array-like: must be 2D; otherwise raise
+    """
+    if _HAS_PANDAS and isinstance(obj, pd.DataFrame):
+        df = obj
+        arr = df.to_numpy()
+        col_labels = list(map(str, df.columns))
+        row_labels = [str(i) for i in df.index]
+    elif _HAS_PANDAS and isinstance(obj, pd.Series):
+        s = obj
+        # Convert to a 2D shape (n, 1) for display
+        df = s.to_frame(name=s.name if s.name is not None else "value")
+        arr = df.to_numpy()
+        col_labels = list(map(str, df.columns))
+        row_labels = [str(i) for i in df.index]
+    else:
+        arr = np.asarray(obj)
+        if arr.ndim != 2:
+            raise ValueError("array_to_html_table only supports 2D arrays (or Series/DataFrame).")
+        # generic labels
+        col_labels = [f"Col {j}" for j in range(arr.shape[1])]
+        row_labels = [f"Row {i}" for i in range(arr.shape[0])]
 
     rows = min(arr.shape[0], max_rows)
     cols = min(arr.shape[1], max_cols)
 
-    header = "".join(f"<th>Col {j}</th>" for j in range(cols))
+    header = "".join(f"<th>{html.escape(str(col_labels[j]))}</th>" for j in range(cols))
     body_rows: List[str] = []
     for i in range(rows):
         cells = "".join(f"<td>{html.escape(str(arr[i, j]))}</td>" for j in range(cols))
-        body_rows.append(f"<tr><th>Row {i}</th>{cells}</tr>")
+        body_rows.append(f"<tr><th>{html.escape(str(row_labels[i]))}</th>{cells}</tr>")
     body = "".join(body_rows)
 
     clipped = (arr.shape[0] > rows) or (arr.shape[1] > cols)
@@ -195,22 +403,21 @@ def array_to_html_table(arr: np.ndarray, max_rows: int = 20, max_cols: int = 20)
     {note}
     """
 
-def _format_value_html(value: np.ndarray) -> str:
-    """
-    Internal: reuse the same preview style for arrays.
-    """
-    return f'<div class="mono block">{_array_preview(value)}</div>'
+def _format_value_html(value) -> str:
+    if _HAS_PANDAS:
+        import pandas as pd
+        if isinstance(value, pd.Series):
+            return _series_to_html_table(value, max_rows=30)
+    # fallback: monospace preview (ndarray/others)
+    return f'<div class="mono block">{_array_preview_any(value)}</div>'
 
 
-def arrays_table_html(pairs: Sequence[Tuple[str, np.ndarray]]) -> str:
-    """
-    Render a two-column HTML table from (label: str, array: np.ndarray) pairs.
-    Returns an HTML fragment (no <html> wrapper), matching your style.
-    """
+
+def arrays_table_html(pairs: Sequence[Tuple[str, Any]]) -> str:
     rows = []
-    for label, arr in pairs:
+    for label, obj in pairs:
         rows.append(
-            f'<tr><th>{html.escape(str(label))}</th><td>{_format_value_html(arr)}</td></tr>'
+            f'<tr><th>{html.escape(str(label))}</th><td>{_format_value_html(obj)}</td></tr>'
         )
     rows_html = "\n".join(rows)
     return f"""
@@ -222,12 +429,7 @@ def arrays_table_html(pairs: Sequence[Tuple[str, np.ndarray]]) -> str:
     """
 
 
-def arrays_index_report_html(pairs: Sequence[Tuple[str, np.ndarray]], page_title: str = "Pairs Report") -> str:
-    """
-    Build a full, standalone HTML page showing the (str, array) pairs in a table.
-    Uses the same CSS+look as arrays_report_html for consistency.
-    """
-    # Keep CSS as a plain triple-quoted string (not an f-string)
+def arrays_index_report_html(pairs: Sequence[Tuple[str, Any]], page_title: str = "Pairs Report") -> str:
     style = """
     <style>
       :root {
