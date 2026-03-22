@@ -1,7 +1,3 @@
-# VS Code settings (any depth)
-.vscode/
-**/.vscode/
-
 # Python bytecode caches (any depth)
 __pycache__/
 **/__pycache__/

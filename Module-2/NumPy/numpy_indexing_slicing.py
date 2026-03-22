@@ -1,6 +1,6 @@
 import numpy as np
 import webbrowser, os
-from arrays_html import arrays_table_html, arrays_index_report_html
+from lib.arrays_html import arrays_table_html, arrays_index_report_html
 
 array_1d = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 array_2d = np.array(

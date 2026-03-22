@@ -1,5 +1,12 @@
+
+from pathlib import Path
+import sys
+
+# Add the parent of the current folder (…\Module-2) to sys.path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 import numpy as np
-from arrays_html import arrays_report_html
+from lib.arrays_html import arrays_report_html
 import webbrowser, os
 
 # Your arrays

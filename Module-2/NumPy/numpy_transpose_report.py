@@ -1,5 +1,5 @@
 import numpy as np
-from arrays_html import arrays_report_html
+from lib.arrays_html import arrays_report_html
 import webbrowser, os
 
 # Your arrays
