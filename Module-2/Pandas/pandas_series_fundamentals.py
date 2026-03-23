@@ -15,6 +15,15 @@ series_with_defined_index = pd.Series(data_1, index=index)
 data_dict = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}
 dict_series = pd.Series(data_dict)
 
+# select elements from series based on index position and name
+s_position_values = dict_series.iloc[1:4]
+s_index_name_values = dict_series.loc[['a', 'c', 'e']]
+
+# Select elements using string methods (if applicable)
+string_series = pd.Series(['apple', 'banana', 'cherry', 'date', 'elderberry'])
+string_series_char_pattern = string_series[string_series.str.startswith('b')]
+string_series_char_contains = string_series[string_series.str.contains("er")]
+
 pairs = [
     ("Original series is:", series),
     ("Type of the Series is:", type(series)),
@@ -30,6 +39,12 @@ pairs = [
     ("Dictionary Series is:", dict_series),
     ("Type of the Dictionary Series is:", type(dict_series)),
     ("Description of the Dictionary Series are:", dict_series.describe().to_dict()),
+    (" Elemnents from the Dictionary Series based on index position [1:4]", s_position_values),
+    (" Elemnents from the Dictionary Series based on index name ['a', 'c', 'e']", s_index_name_values),
+    (" String Series is:", string_series),
+    (" Data type of the string series is:", string_series.dtype),
+    (" Elements from the String Series starts with b", string_series_char_pattern),
+    (" Elements from the String Series contains er", string_series_char_contains),
 ]
 
 # 1) Just the fragment (embed in an existing page or notebook cell)

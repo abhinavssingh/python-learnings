@@ -1,0 +1,1431 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+             margin: 0; padding: 24px; background: var(--bg); color: var(--fg); }
+      .title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px; background: #0b1020; color: #e5e7eb;
+        border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+      }
+      .block { white-space: pre; margin-bottom: 12px; }
+      .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .kv th, .kv td { text-align: left; padding: 6px 8px; vertical-align: top; }
+      .kv th { width: 28%; color: var(--muted); font-weight: 500; }
+      .kv tr:nth-child(odd) td, .kv tr:nth-child(odd) th { background: #fafafa; }
+      .footer { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    </style>
+    
+<title>Pandas Series Maths Operation Report</title></head>
+<body>
+  <div class="title">Pandas Series Maths Operation Report</div>
+  
+    <table class="kv" style="margin-top:8px;">
+      <tbody>
+        <tr><th> First series S1 for math operation is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-ec99d8d815264f72921f708f1a2986d1.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-ec99d8d815264f72921f708f1a2986d1 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-ec99d8d815264f72921f708f1a2986d1 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-ec99d8d815264f72921f708f1a2986d1" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>4.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>5.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>6.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>10.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-ec99d8d815264f72921f708f1a2986d1");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Second series S2 for math operation is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-1b7f8a9f3d744336a56289ae7d29b846.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-1b7f8a9f3d744336a56289ae7d29b846 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-1b7f8a9f3d744336a56289ae7d29b846 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-1b7f8a9f3d744336a56289ae7d29b846" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>11</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>12</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>13</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>14</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>15</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>16</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>17</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-1b7f8a9f3d744336a56289ae7d29b846");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Data Type of the Series S1:</th><td><div class="mono block">float64</div></td></tr>
+<tr><th> Sum of the two series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-087e2e099e6f423a83a093e2b0dbdf0f.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-087e2e099e6f423a83a093e2b0dbdf0f .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-087e2e099e6f423a83a093e2b0dbdf0f .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-087e2e099e6f423a83a093e2b0dbdf0f" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>15.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>17.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>19.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>21.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>23.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>25.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>27.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-087e2e099e6f423a83a093e2b0dbdf0f");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Subtract of the two series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-6d87db1c358e4fc2b1e51af2da43e468.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-6d87db1c358e4fc2b1e51af2da43e468 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-6d87db1c358e4fc2b1e51af2da43e468 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-6d87db1c358e4fc2b1e51af2da43e468" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>7.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>7.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-6d87db1c358e4fc2b1e51af2da43e468");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Multplication of the two series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-02e20e68bdcb45ccb930d5c2d130e3da.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-02e20e68bdcb45ccb930d5c2d130e3da .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-02e20e68bdcb45ccb930d5c2d130e3da .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-02e20e68bdcb45ccb930d5c2d130e3da" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>44.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>60.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>78.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>98.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>120.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>144.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>170.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-02e20e68bdcb45ccb930d5c2d130e3da");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Division of the two series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-83262a530815400fb3e55030c69dad7b.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-83262a530815400fb3e55030c69dad7b .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-83262a530815400fb3e55030c69dad7b .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-83262a530815400fb3e55030c69dad7b" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>2.75</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>2.4</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>2.167</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>2.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>1.875</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>1.778</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>1.7</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-83262a530815400fb3e55030c69dad7b");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Square of the S1 series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-d7330b742b5a4e25b521b707c0c6332e.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-d7330b742b5a4e25b521b707c0c6332e .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-d7330b742b5a4e25b521b707c0c6332e .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-d7330b742b5a4e25b521b707c0c6332e" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>16.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>25.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>36.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>49.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>64.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>81.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>100.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-d7330b742b5a4e25b521b707c0c6332e");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Default Sort order in series S1 is ascending:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-59a9e7dc8d264cb6911a96112fb88a5a.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-59a9e7dc8d264cb6911a96112fb88a5a .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-59a9e7dc8d264cb6911a96112fb88a5a .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-59a9e7dc8d264cb6911a96112fb88a5a" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>4.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>5.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>6.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>10.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-59a9e7dc8d264cb6911a96112fb88a5a");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Reverse Sort order S1 series is:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-c9c241195d174e4993760f4161dea870.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-c9c241195d174e4993760f4161dea870 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-c9c241195d174e4993760f4161dea870 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-c9c241195d174e4993760f4161dea870" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>6</th><td class='mono'>10.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>6.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>5.0</td></tr>
+<tr class='series-row extra'><th>0</th><td class='mono'>4.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-c9c241195d174e4993760f4161dea870");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Has S1 any null:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-578661b2626a4ef69c761a73766b4bef.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-578661b2626a4ef69c761a73766b4bef .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-578661b2626a4ef69c761a73766b4bef .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-578661b2626a4ef69c761a73766b4bef" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>False</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>False</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>False</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>False</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>False</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>False</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>False</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>True</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-578661b2626a4ef69c761a73766b4bef");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> After filling S1 series if null exists:</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-cf16a87888514d3c900c8061a4f2e71a.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-cf16a87888514d3c900c8061a4f2e71a .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-cf16a87888514d3c900c8061a4f2e71a .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-cf16a87888514d3c900c8061a4f2e71a" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>4.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>5.0</td></tr>
+<tr class='series-row'><th>2</th><td class='mono'>6.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row extra'><th>6</th><td class='mono'>10.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>0.0</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='8' aria-expanded='false'>Show all 2</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-cf16a87888514d3c900c8061a4f2e71a");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Data Type of the Series S1 after filling value</th><td><div class="mono block">float64</div></td></tr>
+<tr><th> Elemets from S1 series &gt; 6</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-5f6f32c45e5f47ef8660e33dbea29030.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-5f6f32c45e5f47ef8660e33dbea29030 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-5f6f32c45e5f47ef8660e33dbea29030 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-5f6f32c45e5f47ef8660e33dbea29030" class="series2col-container series-expanded">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row'><th>6</th><td class='mono'>10.0</td></tr>
+        </tbody>
+      </table>
+      
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-5f6f32c45e5f47ef8660e33dbea29030");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Elemets from S1 series ==8</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-9424bfeefcda4b759deee4651536d0da.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-9424bfeefcda4b759deee4651536d0da .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-9424bfeefcda4b759deee4651536d0da .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-9424bfeefcda4b759deee4651536d0da" class="series2col-container series-expanded">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+        </tbody>
+      </table>
+      
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-9424bfeefcda4b759deee4651536d0da");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Elemets from S1 series !=6</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-63c5bec2c740431e9521b9aa784443f6.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-63c5bec2c740431e9521b9aa784443f6 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-63c5bec2c740431e9521b9aa784443f6 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-63c5bec2c740431e9521b9aa784443f6" class="series2col-container series-collapsed">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>0</th><td class='mono'>4.0</td></tr>
+<tr class='series-row'><th>1</th><td class='mono'>5.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+<tr class='series-row'><th>5</th><td class='mono'>9.0</td></tr>
+<tr class='series-row'><th>6</th><td class='mono'>10.0</td></tr>
+<tr class='series-row extra'><th>7</th><td class='mono'>nan</td></tr>
+        </tbody>
+      </table>
+      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-63c5bec2c740431e9521b9aa784443f6");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+<tr><th> Elemets from S1 series values equal to 6, 7, 8</th><td>
+    <style>
+      /* Color theme (tweak these) */
+      :root {
+        --series-head-fg: #1e3a8a;  /* header text */
+        --series-head-bg: #eef2ff;  /* header background */
+        --series-cell-fg: #334155;  /* cell text */
+      }
+
+      /* Table look */
+      table.series2col { border-collapse: collapse; width: 100%; }
+      .series2col th, .series2col td {
+          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
+      }
+      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
+      .series2col tbody td { color: var(--series-cell-fg); }
+      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #series-cc95e8b8735743fcb8d6c7c786608325.series-collapsed .series-row.extra { display: none; }
+
+      /* Optional: style the toggle button */
+      #series-cc95e8b8735743fcb8d6c7c786608325 .series-toggle {
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }
+      #series-cc95e8b8735743fcb8d6c7c786608325 .series-toggle:hover { filter: brightness(1.1); }
+    </style>
+
+    <div id="series-cc95e8b8735743fcb8d6c7c786608325" class="series2col-container series-expanded">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr class='series-row'><th>2</th><td class='mono'>6.0</td></tr>
+<tr class='series-row'><th>3</th><td class='mono'>7.0</td></tr>
+<tr class='series-row'><th>4</th><td class='mono'>8.0</td></tr>
+        </tbody>
+      </table>
+      
+    </div>
+
+    <script>
+    (function() {
+      var root = document.getElementById("series-cc95e8b8735743fcb8d6c7c786608325");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        } else {
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = 6;
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }
+      });
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }
+    })();
+    </script>
+    </td></tr>
+      </tbody>
+    </table>
+    
+  <div class="footer">Rendered 17 pairs.</div>
+</body></html>

@@ -30,7 +30,7 @@ with open("report.html", "w", encoding="utf-8") as f:
 from __future__ import annotations
 import html
 from typing import Iterable, List, Sequence, Tuple
-
+import uuid
 import numpy as np
 
 try:
@@ -137,33 +137,26 @@ def _obj_info(obj: Any) -> dict:
     preview_html = f'<div class="mono block">{_array_preview_any(arr)}</div>'
     return locals()
 
-def _series_to_html_table(s, max_rows: int = 50) -> str:
+def _series_to_html_table(s, max_rows: int = 50, collapse_threshold: int = 6) -> str:
     """
-    Render a pandas Series in native format:
-    a compact HTML table with two columns: Index | Value.
-
-    - Caps rows at `max_rows` to keep cards small; tell the user if truncated.
-    - Uses your monospace style for values (same look as arrays).
+    Render a pandas Series in native table format (Index | Value),
+    with a 'Show all / Show less' toggle when length > collapse_threshold.
     """
-    # Safety: ensure pandas is available and obj is Series
     if not _HAS_PANDAS:
         raise RuntimeError("pandas is not available but a Series was passed.")
+    import pandas as pd
     if not isinstance(s, pd.Series):
         raise TypeError("Expected a pandas Series.")
 
     n = len(s)
     rows_to_show = min(n, max_rows)
-    truncated_note = (
-        f"<div style='color:#6b7280;font-size:12px;margin-top:6px'>"
-        f"Showing first {rows_to_show} of {n} rows.</div>"
-        if n > rows_to_show else ""
-    )
 
-    # Build rows: show index and value
+    # Build table rows (mark those beyond collapse_threshold as 'extra')
     body_rows = []
     for i, (idx, val) in enumerate(s.iloc[:rows_to_show].items()):
+        extra_cls = " extra" if i >= collapse_threshold else ""
         body_rows.append(
-            f"<tr>"
+            f"<tr class='series-row{extra_cls}'>"
             f"<th>{html.escape(str(idx))}</th>"
             f"<td class='mono'>{html.escape(str(val))}</td>"
             f"</tr>"
@@ -171,38 +164,111 @@ def _series_to_html_table(s, max_rows: int = 50) -> str:
 
     body_html = "\n".join(body_rows)
 
-    
+    # Unique container id so multiple Series on the same page don’t conflict
+    uid = f"series-{uuid.uuid4().hex}"
+    needs_collapse = n > collapse_threshold
+
+    # Button only if we need collapsing
+    if needs_collapse:
+        hidden_count = n - collapse_threshold
+        toggle_btn = (
+            f"<button type='button' class='series-toggle' "
+            f"data-total='{n}' aria-expanded='false'>"
+            f"Show all {hidden_count}</button>"
+        )
+        collapsed_class = "series-collapsed"
+    else:
+        toggle_btn = ""
+        collapsed_class = "series-expanded"
+
+    # Styles + script kept inside fragment so each card is self-contained
+    # (If you prefer, you can move these to the page-level style/script once.)
     return f"""
     <style>
+      /* Color theme (tweak these) */
       :root {{
-        /* tweak these brand colors */
-        --series-head-fg: #1e3a8a;  /* header text color */
+        --series-head-fg: #1e3a8a;  /* header text */
         --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* value color */
+        --series-cell-fg: #334155;  /* cell text */
       }}
+
+      /* Table look */
       table.series2col {{ border-collapse: collapse; width: 100%; }}
       .series2col th, .series2col td {{
           border: 1px solid #ddd; padding: 6px 8px; text-align: left;
       }}
-      .series2col thead th {{
-          background: var(--series-head-bg);
-          color: var(--series-head-fg);
-      }}
-      .series2col tbody td {{
-          color: var(--series-cell-fg);
-      }}
+      .series2col thead th {{ background: var(--series-head-bg); color: var(--series-head-fg); }}
+      .series2col tbody td {{ color: var(--series-cell-fg); }}
       .series2col tbody tr:nth-child(odd) {{ background: #fafafa; }}
-      .mono {{
+
+      /* The global .mono style is dark; override in cells so they aren't black */
+      .series2col td.mono {{
+        background: transparent !important;
+        color: var(--series-cell-fg) !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
+        overflow: visible !important;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
                      "Liberation Mono", "Courier New", monospace;
         font-size: 12px;
       }}
+
+      /* Collapse behavior: hide rows > threshold when collapsed */
+      #{uid}.series-collapsed .series-row.extra {{ display: none; }}
+
+      /* Optional: style the toggle button */
+      #{uid} .series-toggle {{
+        margin-top: 8px;
+        background: #1f2937; color: #fff; border: none;
+        border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      }}
+      #{uid} .series-toggle:hover {{ filter: brightness(1.1); }}
     </style>
-    <table class="series2col">
-      <thead><tr><th>Index</th><th>Value</th></tr></thead>
-      <tbody>{body_html}</tbody>
-    </table>
-    {truncated_note}
+
+    <div id="{uid}" class="series2col-container {collapsed_class}">
+      <table class="series2col">
+        <thead>
+          <tr><th>Index</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          {body_html}
+        </tbody>
+      </table>
+      {toggle_btn}
+    </div>
+
+    <script>
+    (function() {{
+      var root = document.getElementById("{uid}");
+      if (!root) return;
+      var btn = root.querySelector(".series-toggle");
+      if (!btn) return;
+
+      btn.addEventListener("click", function() {{
+        var expanded = root.classList.toggle("series-expanded");
+        if (expanded) {{
+          root.classList.remove("series-collapsed");
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "Show less";
+        }} else {{
+          root.classList.add("series-collapsed");
+          btn.setAttribute("aria-expanded", "false");
+          var total = btn.getAttribute("data-total") || "";
+          var threshold = {collapse_threshold};
+          var hidden = Math.max(0, total - threshold);
+          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
+        }}
+      }});
+
+      // Ensure initial state consistent
+      if (root.classList.contains("series-collapsed")) {{
+        btn.setAttribute("aria-expanded", "false");
+      }} else {{
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Show less";
+      }}
+    }})();
+    </script>
     """
 
 def array_info_html(obj, title: str = "Array Info") -> str:
