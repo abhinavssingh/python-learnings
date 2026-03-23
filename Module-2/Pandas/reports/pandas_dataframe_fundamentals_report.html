@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+             margin: 0; padding: 24px; background: var(--bg); color: var(--fg); }
+      .title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px; background: #0b1020; color: #e5e7eb;
+        border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+      }
+      .block { white-space: pre; margin-bottom: 12px; }
+      .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .kv th, .kv td { text-align: left; padding: 6px 8px; vertical-align: top; }
+      .kv th { width: 28%; color: var(--muted); font-weight: 500; }
+      .kv tr:nth-child(odd) td, .kv tr:nth-child(odd) th { background: #fafafa; }
+      .footer { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    </style>
+    
+<title>Pandas Dataframe Fundamentals Report</title></head>
+<body>
+  <div class="title">Pandas Dataframe Fundamentals Report</div>
+  
+    <table class="kv" style="margin-top:8px;">
+      <tbody>
+        <tr><th>Dataframe created by Dictionary is:</th><td>
+    <style>
+      table.arr2d { border-collapse: collapse; }
+      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
+      .arr2d thead th { background: #f3f4f6; }
+      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
+    </style>
+    <table class="arr2d">
+      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
+    </table>
+    
+    </td></tr>
+<tr><th>Type of the Dataframe created by Dictionary is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
+<tr><th>Dataframe description are:</th><td>
+    <style>
+      table.dictgrid { border-collapse: collapse; width: 100%; }
+      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+      .dictgrid thead th { background: #f3f4f6; color: #374151; }
+      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
+      .dictgrid td.mono {
+        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
+        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
+      }
+    </style>
+    <table class="dictgrid">
+      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
+      <thead><tr><th></th><th>Age</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>count</th><td class='mono'>3.0</td><td class='mono'>3.0</td></tr>
+<tr><th>mean</th><td class='mono'>25.666666666666668</td><td class='mono'>51666.666666666664</td></tr>
+<tr><th>std</th><td class='mono'>4.041451884327381</td><td class='mono'>7637.626158259733</td></tr>
+<tr><th>min</th><td class='mono'>22.0</td><td class='mono'>45000.0</td></tr>
+<tr><th>25%</th><td class='mono'>23.5</td><td class='mono'>47500.0</td></tr>
+<tr><th>50%</th><td class='mono'>25.0</td><td class='mono'>50000.0</td></tr>
+<tr><th>75%</th><td class='mono'>27.5</td><td class='mono'>55000.0</td></tr>
+<tr><th>max</th><td class='mono'>30.0</td><td class='mono'>60000.0</td></tr></tbody>
+    </table>
+    </td></tr>
+<tr><th>Shape of the Dataframe is:</th><td><div class="mono block">[3, 3]</div></td></tr>
+<tr><th>Dataframe created by Lists is:</th><td>
+    <style>
+      table.arr2d { border-collapse: collapse; }
+      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
+      .arr2d thead th { background: #f3f4f6; }
+      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
+    </style>
+    <table class="arr2d">
+      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
+    </table>
+    
+    </td></tr>
+<tr><th>Type of the Dataframe created by Lists is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
+<tr><th>Dataframe description are:</th><td>
+    <style>
+      table.dictgrid { border-collapse: collapse; width: 100%; }
+      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+      .dictgrid thead th { background: #f3f4f6; color: #374151; }
+      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
+      .dictgrid td.mono {
+        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
+        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
+      }
+    </style>
+    <table class="dictgrid">
+      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
+      <thead><tr><th></th><th>Age</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>count</th><td class='mono'>3.0</td><td class='mono'>3.0</td></tr>
+<tr><th>mean</th><td class='mono'>25.666666666666668</td><td class='mono'>51666.666666666664</td></tr>
+<tr><th>std</th><td class='mono'>4.041451884327381</td><td class='mono'>7637.626158259733</td></tr>
+<tr><th>min</th><td class='mono'>22.0</td><td class='mono'>45000.0</td></tr>
+<tr><th>25%</th><td class='mono'>23.5</td><td class='mono'>47500.0</td></tr>
+<tr><th>50%</th><td class='mono'>25.0</td><td class='mono'>50000.0</td></tr>
+<tr><th>75%</th><td class='mono'>27.5</td><td class='mono'>55000.0</td></tr>
+<tr><th>max</th><td class='mono'>30.0</td><td class='mono'>60000.0</td></tr></tbody>
+    </table>
+    </td></tr>
+<tr><th>Shape of the Dataframe created by Lists is:</th><td><div class="mono block">[3, 3]</div></td></tr>
+<tr><th>Dataframe created by Numpy Array is:</th><td>
+    <style>
+      table.arr2d { border-collapse: collapse; }
+      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
+      .arr2d thead th { background: #f3f4f6; }
+      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
+    </style>
+    <table class="arr2d">
+      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
+    </table>
+    
+    </td></tr>
+<tr><th>Type of the Dataframe created by Numpy Array is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
+<tr><th>Dataframe description are:</th><td>
+    <style>
+      table.dictgrid { border-collapse: collapse; width: 100%; }
+      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+      .dictgrid thead th { background: #f3f4f6; color: #374151; }
+      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
+      .dictgrid td.mono {
+        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
+        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
+      }
+    </style>
+    <table class="dictgrid">
+      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
+      <thead><tr><th></th><th>Age</th><th>Name</th><th>Salary</th></tr></thead>
+      <tbody><tr><th>count</th><td class='mono'>3</td><td class='mono'>3</td><td class='mono'>3</td></tr>
+<tr><th>freq</th><td class='mono'>1</td><td class='mono'>1</td><td class='mono'>1</td></tr>
+<tr><th>top</th><td class='mono'>25</td><td class='mono'>Alice</td><td class='mono'>50000</td></tr>
+<tr><th>unique</th><td class='mono'>3</td><td class='mono'>3</td><td class='mono'>3</td></tr></tbody>
+    </table>
+    </td></tr>
+<tr><th>Shape of the Dataframe created by Numpy Array is:</th><td><div class="mono block">[3, 3]</div></td></tr>
+      </tbody>
+    </table>
+    
+  <div class="footer">Rendered 12 pairs.</div>
+</body></html>

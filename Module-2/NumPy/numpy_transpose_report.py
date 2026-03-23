@@ -2,6 +2,13 @@ import numpy as np
 from lib.arrays_html import arrays_report_html
 from lib.report_utils import save_html_report
 
+
+def main():
+    # your current script code goes here
+    print("Running NumPy basics report...")
+    # ...
+
+
 # Your arrays
 # 0D array
 a0 = np.array(42)
@@ -18,7 +25,7 @@ a2_t = a2.transpose()
 
 # Index-based transpose
 # For 2D, a.T, np.transpose(a), and np.transpose(a, (1,0)) are equivalent.
-a2_t_idx = a2.transpose(1,0)
+a2_t_idx = a2.transpose(1, 0)
 
 # 3D array
 a3 = np.array([
@@ -34,9 +41,9 @@ a3 = np.array([
 a3_t = a3.transpose()
 
 # index based transpose
-a3_t_021 = a3.transpose(0,2,1)
-a3_t_120 = a3.transpose(1,2,0)
-a3_t_102 = a3.transpose(1,0,2)
+a3_t_021 = a3.transpose(0, 2, 1)
+a3_t_120 = a3.transpose(1, 2, 0)
+a3_t_102 = a3.transpose(1, 0, 2)
 
 # 4D array
 # Let’s define a small (N, C, H, W) = (2, 2, 2, 2) sample.
@@ -73,37 +80,41 @@ a4 = np.array([
 a4_t = a4.transpose()
 
 # index based transpose
-a4_t_0231 = a4.transpose(0,2,3,1)
-a4_t_0312 = a4.transpose(0,3,1,2)
-a4_t_0132 = a4.transpose(0,1,3,2)
-a4_t_1023 = a4.transpose(1,0,2,3)
+a4_t_0231 = a4.transpose(0, 2, 3, 1)
+a4_t_0312 = a4.transpose(0, 3, 1, 2)
+a4_t_0132 = a4.transpose(0, 1, 3, 2)
+a4_t_1023 = a4.transpose(1, 0, 2, 3)
 
 # Build full column-wise page
 html_doc = arrays_report_html([
-    ("Original array 0D (int)",   a0),
+    ("Original array 0D (int)", a0),
     ("Original array 1D (int)", a1),
-    ("Original array 2D (int)",   a2),
-    ("Transpose array 2D (int)",   a2_t),
-    ("Index Based Transpose array 2D (int)",   a2_t_idx),
-    ("Original array 3D (int)",   a3),
-    ("Transpose array 3D (int)",   a3_t),
-    ("Index 0,2,1 based Transpose array 3D (int)",   a3_t_021),
-    ("Index 1,0,2 based Transpose array 3D (int)",   a3_t_102),
-    ("Index 1,2,0 based Transpose array 3D (int)",   a3_t_120),
-    ("Original array 4D (int)",   a4),
-    ("Transpose array 4D (int)",   a4_t),
-    ("Index 0,1,3,2 based Transpose array 3D (int)",   a4_t_0132),
-    ("Index 0,2,3,1 based Transpose array 3D (int)",   a4_t_0231),
-    ("Index 0,3,1,2 based Transpose array 3D (int)",   a4_t_0312),
-    ("Index 1,0,2,3 based Transpose array 3D (int)",   a4_t_1023),
+    ("Original array 2D (int)", a2),
+    ("Transpose array 2D (int)", a2_t),
+    ("Index Based Transpose array 2D (int)", a2_t_idx),
+    ("Original array 3D (int)", a3),
+    ("Transpose array 3D (int)", a3_t),
+    ("Index 0,2,1 based Transpose array 3D (int)", a3_t_021),
+    ("Index 1,0,2 based Transpose array 3D (int)", a3_t_102),
+    ("Index 1,2,0 based Transpose array 3D (int)", a3_t_120),
+    ("Original array 4D (int)", a4),
+    ("Transpose array 4D (int)", a4_t),
+    ("Index 0,1,3,2 based Transpose array 3D (int)", a4_t_0132),
+    ("Index 0,2,3,1 based Transpose array 3D (int)", a4_t_0231),
+    ("Index 0,3,1,2 based Transpose array 3D (int)", a4_t_0312),
+    ("Index 1,0,2,3 based Transpose array 3D (int)", a4_t_1023),
 ], page_title="Array Details (Column-wise)")
 
 # html_doc is the string you already have
 output_path = save_html_report(
     __file__,
-    "arrays_transpose_report.html",   
+    "arrays_transpose_report.html",
     html_doc,
     subfolder="reports",
     open_in_browser=True
 )
 print(f"Wrote report to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()

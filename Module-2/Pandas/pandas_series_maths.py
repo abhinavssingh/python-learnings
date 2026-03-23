@@ -3,6 +3,13 @@ import numpy as np
 from lib.arrays_html import arrays_table_html, arrays_index_report_html
 from lib.report_utils import save_html_report
 
+
+def main():
+    # your current script code goes here
+    print("Running NumPy basics report...")
+    # ...
+
+
 # mathematical operation on series
 d1 = [4, 5, 6, 7, 8, 9, 10, np.nan]
 d2 = [11, 12, 13, 14, 15, 16, 17]
@@ -10,8 +17,8 @@ s1 = pd.Series(d1)
 s2 = pd.Series(d2)
 sum = s1 + s2
 sub = s2 - s1
-division = (s2/s1).round(3)
-mulitiplication = s1*s2
+division = (s2 / s1).round(3)
+mulitiplication = s1 * s2
 
 # Apply a function to each element
 squared_series = s1.apply(lambda x: x**2)
@@ -76,3 +83,7 @@ output_path = save_html_report(
     open_in_browser=True
 )
 print(f"Wrote report to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()

@@ -29,7 +29,7 @@ with open("report.html", "w", encoding="utf-8") as f:
 
 from __future__ import annotations
 import html
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Sequence, Tuple, Mapping, Any
 import uuid
 import numpy as np
 
@@ -312,7 +312,7 @@ def array_info_html(obj, title: str = "Array Info") -> str:
               </div>
             </div>
             """
-
+            
     # --- Default: keep your existing ndarray/array-like card ---
     arr = np.asarray(obj)
     nbytes = getattr(arr, "nbytes", arr.size * arr.itemsize)
@@ -333,7 +333,6 @@ def array_info_html(obj, title: str = "Array Info") -> str:
       </div>
     </div>
     """
-
 
 def arrays_report_html(items, page_title="Array Report"):
     """
@@ -403,8 +402,6 @@ def arrays_report_html(items, page_title="Array Report"):
 </body></html>
 """
 
-
-
 def display_array_info(arr: np.ndarray, title: str = "Array Info") -> None:
     """Display the array info card inline in Jupyter/Colab notebooks."""
     try:
@@ -469,15 +466,181 @@ def array_to_html_table(obj: Any, max_rows: int = 20, max_cols: int = 20) -> str
     {note}
     """
 
+def _html_kv_table(pairs: List[Tuple[str, Any]], caption: str | None = None) -> str:
+    rows = "\n".join(
+        f"<tr><th>{html.escape(str(k))}</th><td class='mono'>{html.escape(str(v))}</td></tr>"
+        for k, v in pairs
+    )
+    cap = f"<caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>{html.escape(caption)}</caption>" if caption else ""
+    return f"""
+    <style>
+      table.kv2 {{ border-collapse: collapse; width: 100%; }}
+      .kv2 th, .kv2 td {{ border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }}
+      .kv2 th {{ width: 28%; background: #f3f4f6; color: #374151; font-weight: 600; }}
+      .kv2 tbody tr:nth-child(odd) td {{ background: #fafafa; }}
+      .kv2 td.mono {{
+        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
+        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
+      }}
+    </style>
+    <table class="kv2">{cap}<tbody>
+      {rows}
+    </tbody></table>
+    """
+
+
+def _nested_dict_to_matrix(d: Mapping[str, Any]) -> tuple[list[str], list[str], list[list[Any]]]:
+    """
+    Accepts nested dict in either orientation:
+      {col: {stat: value}}  OR  {stat: {col: value}}
+    Returns (row_labels, col_labels, matrix).
+    Heuristic: choose the orientation whose inner dict keys look like 'stats' set.
+    """
+    if not d:
+        return [], [], []
+
+    # Normalize keys to str for labels
+    def str_keys(x): return {str(k): v for k, v in x.items()}
+
+    outer = str_keys(d)
+
+    # Heuristic: if most inner keys are typical stats, treat inner=stats
+    # Typical stats keys from pandas.describe
+    stats_like = {"count", "mean", "std", "min", "25%", "50%", "75%", "max"}
+    def inner_keys_set(m): 
+        try:
+            return set(next(iter(m.values())).keys())
+        except Exception:
+            return set()
+
+    inner = inner_keys_set(outer)
+
+    # Try orientation A: {col: {stat: value}}
+    a_inner_stats_ratio = len(inner & stats_like) / (len(inner) or 1)
+
+    # Try orientation B by transposing the interpretation.
+    # Build a candidate reversed mapping {stat: {col: value}} if possible.
+    # Only compute scores; actual matrix build comes later.
+    # To get inner keys for B, look at keys of each inner dict and union them.
+    inner_for_b = set()
+    for v in outer.values():
+        if isinstance(v, Mapping):
+            inner_for_b |= set(map(str, v.keys()))
+    b_inner_stats_ratio = len(inner_for_b & stats_like) / (len(inner_for_b) or 1)
+
+    orientation = "col_to_stat" if a_inner_stats_ratio >= b_inner_stats_ratio else "stat_to_col"
+
+    if orientation == "col_to_stat":
+        col_labels = sorted(outer.keys())
+        # Collect all stats to ensure full rectangular matrix
+        stats = set()
+        for v in outer.values():
+            if isinstance(v, Mapping):
+                stats |= set(map(str, v.keys()))
+        row_labels = [s for s in ["count","mean","std","min","25%","50%","75%","max"] if s in stats] + \
+                     sorted(stats - stats_like)
+        matrix: list[list[Any]] = []
+        for r in row_labels:
+            row = []
+            for c in col_labels:
+                inner = outer.get(c, {})
+                val = None
+                if isinstance(inner, Mapping):
+                    val = inner.get(r, None)
+                row.append(val)
+            matrix.append(row)
+        return row_labels, col_labels, matrix
+    else:
+        # orientation 'stat_to_col' — swap roles
+        row_labels = sorted(outer.keys())
+        cols = set()
+        for v in outer.values():
+            if isinstance(v, Mapping):
+                cols |= set(map(str, v.keys()))
+        col_labels = sorted(cols)
+        matrix: list[list[Any]] = []
+        for r in row_labels:
+            inner = outer.get(r, {})
+            row = []
+            for c in col_labels:
+                val = None
+                if isinstance(inner, Mapping):
+                    val = inner.get(c, None)
+                row.append(val)
+            matrix.append(row)
+        return row_labels, col_labels, matrix
+
+
+def _dict_to_html_table(d: Mapping[str, Any], caption: str | None = None) -> str:
+    """
+    Render dicts:
+      - Flat dict -> 2-column key/value table
+      - Nested dict -> grid with row/column headers
+    """
+    # Detect nested dict: any value is a Mapping
+    is_nested = any(isinstance(v, Mapping) for v in d.values())
+
+    if not is_nested:
+        pairs = [(str(k), d[k]) for k in d.keys()]
+        return _html_kv_table(pairs, caption=caption)
+
+    # Nested: turn into matrix grid
+    row_labels, col_labels, matrix = _nested_dict_to_matrix(d)
+
+    # Build header and body
+    header = "".join(f"<th>{html.escape(str(c))}</th>" for c in col_labels)
+    body_rows = []
+    for i, r in enumerate(row_labels):
+        cells = "".join(
+            f"<td class='mono'>{html.escape(str(matrix[i][j]))}</td>"
+            for j in range(len(col_labels))
+        )
+        body_rows.append(f"<tr><th>{html.escape(str(r))}</th>{cells}</tr>")
+    body = "\n".join(body_rows)
+
+    cap = f"<caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>{html.escape(caption)}</caption>" if caption else ""
+
+    return f"""
+    <style>
+      table.dictgrid {{ border-collapse: collapse; width: 100%; }}
+      .dictgrid th, .dictgrid td {{ border: 1px solid #ddd; padding: 6px 8px; text-align: left; }}
+      .dictgrid thead th {{ background: #f3f4f6; color: #374151; }}
+      .dictgrid tbody tr:nth-child(odd) {{ background: #fafafa; }}
+      .dictgrid td.mono {{
+        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
+        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
+      }}
+    </style>
+    <table class="dictgrid">
+      {cap}
+      <thead><tr><th></th>{header}</tr></thead>
+      <tbody>{body}</tbody>
+    </table>
+    """
+
 def _format_value_html(value) -> str:
+    # pandas-specific rich rendering
     if _HAS_PANDAS:
         import pandas as pd
         if isinstance(value, pd.Series):
             return _series_to_html_table(value, max_rows=30)
-    # fallback: monospace preview (ndarray/others)
+        if isinstance(value, pd.DataFrame):
+            # Use your existing 2D array renderer for compactness
+            return array_to_html_table(value, max_rows=20, max_cols=20)
+
+    # Mapping (dict, OrderedDict, etc.) — special handling
+    try:
+        from collections.abc import Mapping as _MappingABC
+    except Exception:
+        _MappingABC = Mapping  # fallback
+
+    if isinstance(value, _MappingABC):
+        return _dict_to_html_table(value, caption="mapping")
+
+    # Fallback: generic compact preview
     return f'<div class="mono block">{_array_preview_any(value)}</div>'
-
-
 
 def arrays_table_html(pairs: Sequence[Tuple[str, Any]]) -> str:
     rows = []
@@ -493,7 +656,6 @@ def arrays_table_html(pairs: Sequence[Tuple[str, Any]]) -> str:
       </tbody>
     </table>
     """
-
 
 def arrays_index_report_html(pairs: Sequence[Tuple[str, Any]], page_title: str = "Pairs Report") -> str:
     style = """

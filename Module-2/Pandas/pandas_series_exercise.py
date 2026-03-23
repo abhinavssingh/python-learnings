@@ -3,12 +3,19 @@ import numpy as np
 from lib.arrays_html import arrays_table_html, arrays_index_report_html
 from lib.report_utils import save_html_report
 
+
+def main():
+    # your current script code goes here
+    print("Running NumPy basics report...")
+    # ...
+
+
 sales_data = [120, 150, 130, 170, 160, 180, 140]
 days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-sales_series = pd.Series(sales_data,index=days_of_week)
+sales_series = pd.Series(sales_data, index=days_of_week)
 sales_series["Sunday"] = 300
 sales_series_preferred_days = sales_series.loc[['Monday', 'Wednesday', 'Friday', 'Sunday']]
-sales_series_on_contains = sales_series[sales_series.index.str.contains("ur") | sales_series.index.str.contains("ed")  ]
+sales_series_on_contains = sales_series[sales_series.index.str.contains("ur") | sales_series.index.str.contains("ed")]
 sales_series_total = sales_series.sum()
 sales_series_average = sales_series.mean()
 sales_serries_max = sales_series.max()
@@ -22,8 +29,8 @@ sales_series_std = sales_series.std()
 q1 = sales_series.quantile(0.25)
 q3 = sales_series.quantile(0.75)
 iqr = q3 - q1
-lower_fence = q1 - 1.5*iqr
-upper_fence = q3 + 1.5*iqr
+lower_fence = q1 - 1.5 * iqr
+upper_fence = q3 + 1.5 * iqr
 
 # IQR outliers
 outliers_iqr = sales_series[(sales_series.astype(float) < lower_fence) | (sales_series.astype(float) > upper_fence)]
@@ -56,13 +63,13 @@ pairs = [
     (" Sales Series based on label contains ur or ed:", sales_series_on_contains),
     (" Total Sales:", sales_series_total),
     (" Average Sales:", sales_series_average),
-    (" Maximum Sales is occured on:", sales_serries_max_label ),
-    (" Maximum Sale value is:", sales_serries_max ),
-    (" Minimum Sales is occured on:", sales_series_min_label ),
+    (" Maximum Sales is occured on:", sales_serries_max_label),
+    (" Maximum Sale value is:", sales_serries_max),
+    (" Minimum Sales is occured on:", sales_series_min_label),
     (" Minimum Sale value is:", sales_series_min),
     (" Standard Deviation is:", sales_series_std),
-    (" Q1 is:", q1 ),
-    ( "Q3 is:", q3),
+    (" Q1 is:", q1),
+    ("Q3 is:", q3),
     (" IQR is:", iqr),
     (" Lower value as per IQR is:", lower_fence),
     (" Maximum value as per IQR is:", upper_fence),
@@ -90,3 +97,7 @@ output_path = save_html_report(
     open_in_browser=True
 )
 print(f"Wrote report to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()

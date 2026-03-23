@@ -32,6 +32,20 @@ Welcome to the **python-learnings** repository! This repo contains code samples,
         pip install nbstripout
         nbstripout --install
         ```
+
+## How to Execute scripts at once
+ - List everything the runner found
+`python run.py --list`
+
+- Run the two specific scripts in order (from runlist)
+`python run.py --config runlist.json`
+
+- Run all NumPy scripts inside Module-2
+`python run.py --only "Module-2.NumPy.*"`
+
+- Run a pattern from anywhere (root-level or nested)
+`python run.py --only "NumPy.numpy_*" --only "Module-2.Pandas.pandas_*"`
+
 ## Tech Stack Used
 
 - **Python 3.x** — Core programming language

@@ -3,6 +3,13 @@ import numpy as np
 from lib.arrays_html import arrays_table_html, arrays_index_report_html
 from lib.report_utils import save_html_report
 
+
+def main():
+    # your current script code goes here
+    print("Running NumPy basics report...")
+    # ...
+
+
 data = np.array([1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 8, 1])
 series = pd.Series(data)
 
@@ -62,3 +69,7 @@ output_path = save_html_report(
     open_in_browser=True
 )
 print(f"Wrote report to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
