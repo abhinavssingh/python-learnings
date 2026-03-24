@@ -1,153 +1,813 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <style>
-      :root {
-        --bg: #ffffff;
-        --fg: #111827;
-        --muted: #6b7280;
-        --border: #e5e7eb;
-      }
-      * { box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
-             margin: 0; padding: 24px; background: var(--bg); color: var(--fg); }
-      .title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
-      .mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 12px; background: #0b1020; color: #e5e7eb;
-        border-radius: 8px; padding: 10px 12px; overflow-x: auto;
-      }
-      .block { white-space: pre; margin-bottom: 12px; }
-      .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .kv th, .kv td { text-align: left; padding: 6px 8px; vertical-align: top; }
-      .kv th { width: 28%; color: var(--muted); font-weight: 500; }
-      .kv tr:nth-child(odd) td, .kv tr:nth-child(odd) th { background: #fafafa; }
-      .footer { margin-top: 12px; color: var(--muted); font-size: 12px; }
-    </style>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pandas Dataframe Fundamentals Report</title>
+<style>
+/*! tailwindcss v4.2.2 | MIT License | https://tailwindcss.com */
+@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-border-style:solid;--tw-leading:initial;--tw-font-weight:initial;--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-blur:initial;--tw-brightness:initial;--tw-contrast:initial;--tw-grayscale:initial;--tw-hue-rotate:initial;--tw-invert:initial;--tw-opacity:initial;--tw-saturate:initial;--tw-sepia:initial;--tw-drop-shadow:initial;--tw-drop-shadow-color:initial;--tw-drop-shadow-alpha:100%;--tw-drop-shadow-size:initial}}}@layer theme{:root,:host{--font-sans:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";--font-mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;--color-red-600:oklch(57.7% .245 27.325);--color-slate-100:oklch(96.8% .007 247.896);--color-slate-300:oklch(86.9% .022 252.894);--color-slate-500:oklch(55.4% .046 257.417);--color-slate-600:oklch(44.6% .043 257.281);--color-slate-700:oklch(37.2% .044 257.287);--color-slate-900:oklch(20.8% .042 265.755);--color-gray-50:oklch(98.5% .002 247.839);--color-gray-200:oklch(92.8% .006 264.531);--color-white:#fff;--spacing:.25rem;--breakpoint-2xl:96rem;--text-xs:.75rem;--text-xs--line-height:calc(1 / .75);--text-sm:.875rem;--text-sm--line-height:calc(1.25 / .875);--text-lg:1.125rem;--text-lg--line-height:calc(1.75 / 1.125);--text-2xl:1.5rem;--text-2xl--line-height:calc(2 / 1.5);--font-weight-medium:500;--font-weight-semibold:600;--font-weight-bold:700;--leading-tight:1.25;--radius-lg:.5rem;--radius-xl:.75rem;--default-transition-duration:.15s;--default-transition-timing-function:cubic-bezier(.4, 0, .2, 1);--default-font-family:var(--font-sans);--default-mono-font-family:var(--font-mono)}}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;line-height:1.5;font-family:var(--default-font-family,ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");font-feature-settings:var(--default-font-feature-settings,normal);font-variation-settings:var(--default-font-variation-settings,normal);-webkit-tap-highlight-color:transparent}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:var(--default-mono-font-family,ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);font-feature-settings:var(--default-mono-font-feature-settings,normal);font-variation-settings:var(--default-mono-font-variation-settings,normal);font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring{outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab, red, red)){::placeholder{color:color-mix(in oklab, currentcolor 50%, transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}::-webkit-calendar-picker-indicator{line-height:1}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}:root{color-scheme:light}}@layer components;@layer utilities{.visible{visibility:visible}.absolute{position:absolute}.fixed{position:fixed}.relative{position:relative}.start{inset-inline-start:var(--spacing)}.end{inset-inline-end:var(--spacing)}.mx-auto{margin-inline:auto}.mt-2{margin-top:calc(var(--spacing) * 2)}.mb-3{margin-bottom:calc(var(--spacing) * 3)}.mb-6{margin-bottom:calc(var(--spacing) * 6)}.block{display:block}.contents{display:contents}.grid{display:grid}.hidden{display:none}.inline{display:inline}.table{display:table}.w-full{width:100%}.max-w-screen-2xl{max-width:var(--breakpoint-2xl)}.table-auto{table-layout:auto}.border-collapse{border-collapse:collapse}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.gap-6{gap:calc(var(--spacing) * 6)}.overflow-x-auto{overflow-x:auto}.rounded-lg{border-radius:var(--radius-lg)}.rounded-xl{border-radius:var(--radius-xl)}.border{border-style:var(--tw-border-style);border-width:1px}.border-gray-200{border-color:var(--color-gray-200)}.bg-gray-50{background-color:var(--color-gray-50)}.bg-slate-100{background-color:var(--color-slate-100)}.bg-slate-900{background-color:var(--color-slate-900)}.bg-white{background-color:var(--color-white)}.p-1{padding:calc(var(--spacing) * 1)}.p-3{padding:calc(var(--spacing) * 3)}.p-4{padding:calc(var(--spacing) * 4)}.p-6{padding:calc(var(--spacing) * 6)}.px-2{padding-inline:calc(var(--spacing) * 2)}.px-3{padding-inline:calc(var(--spacing) * 3)}.py-1{padding-block:calc(var(--spacing) * 1)}.pr-3{padding-right:calc(var(--spacing) * 3)}.pr-4{padding-right:calc(var(--spacing) * 4)}.text-left{text-align:left}.align-top{vertical-align:top}.text-2xl{font-size:var(--text-2xl);line-height:var(--tw-leading,var(--text-2xl--line-height))}.text-lg{font-size:var(--text-lg);line-height:var(--tw-leading,var(--text-lg--line-height))}.text-sm{font-size:var(--text-sm);line-height:var(--tw-leading,var(--text-sm--line-height))}.text-xs{font-size:var(--text-xs);line-height:var(--tw-leading,var(--text-xs--line-height))}.leading-tight{--tw-leading:var(--leading-tight);line-height:var(--leading-tight)}.font-bold{--tw-font-weight:var(--font-weight-bold);font-weight:var(--font-weight-bold)}.font-medium{--tw-font-weight:var(--font-weight-medium);font-weight:var(--font-weight-medium)}.font-semibold{--tw-font-weight:var(--font-weight-semibold);font-weight:var(--font-weight-semibold)}.text-red-600{color:var(--color-red-600)}.text-slate-500{color:var(--color-slate-500)}.text-slate-600{color:var(--color-slate-600)}.text-slate-700{color:var(--color-slate-700)}.text-slate-900{color:var(--color-slate-900)}.text-white{color:var(--color-white)}.lowercase{text-transform:lowercase}.uppercase{text-transform:uppercase}.shadow-md{--tw-shadow:0 4px 6px -1px var(--tw-shadow-color,#0000001a), 0 2px 4px -2px var(--tw-shadow-color,#0000001a);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.filter{filter:var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,)}.transition{transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to,opacity,box-shadow,transform,translate,scale,rotate,filter,-webkit-backdrop-filter,backdrop-filter,display,content-visibility,overlay,pointer-events;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.odd\:bg-gray-50:nth-child(odd){background-color:var(--color-gray-50)}@media (min-width:48rem){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (min-width:80rem){.xl\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (prefers-color-scheme:dark){.dark\:bg-slate-700{background-color:var(--color-slate-700)}.dark\:text-slate-300{color:var(--color-slate-300)}}}@property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-leading{syntax:"*";inherits:false}@property --tw-font-weight{syntax:"*";inherits:false}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-blur{syntax:"*";inherits:false}@property --tw-brightness{syntax:"*";inherits:false}@property --tw-contrast{syntax:"*";inherits:false}@property --tw-grayscale{syntax:"*";inherits:false}@property --tw-hue-rotate{syntax:"*";inherits:false}@property --tw-invert{syntax:"*";inherits:false}@property --tw-opacity{syntax:"*";inherits:false}@property --tw-saturate{syntax:"*";inherits:false}@property --tw-sepia{syntax:"*";inherits:false}@property --tw-drop-shadow{syntax:"*";inherits:false}@property --tw-drop-shadow-color{syntax:"*";inherits:false}@property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-drop-shadow-size{syntax:"*";inherits:false}
+
+/* --- FORCE LIGHT THEME (NO DARK MODE) --- */
+:root {
+  color-scheme: light;
+}
+</style>
+</head>
+
+<body class="bg-gray-50 text-slate-900 p-6">
+  <div class="max-w-screen-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Pandas Dataframe Fundamentals Report</h1>
     
-<title>Pandas Dataframe Fundamentals Report</title></head>
-<body>
-  <div class="title">Pandas Dataframe Fundamentals Report</div>
+<div class="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
   
-    <table class="kv" style="margin-top:8px;">
-      <tbody>
-        <tr><th>Dataframe created by Dictionary is:</th><td>
-    <style>
-      table.arr2d { border-collapse: collapse; }
-      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
-      .arr2d thead th { background: #f3f4f6; }
-      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
-    </style>
-    <table class="arr2d">
-      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
-    </table>
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe created by Dictionary is:</h2>
     
-    </td></tr>
-<tr><th>Type of the Dataframe created by Dictionary is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
-<tr><th>Dataframe description are:</th><td>
-    <style>
-      table.dictgrid { border-collapse: collapse; width: 100%; }
-      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-      .dictgrid thead th { background: #f3f4f6; color: #374151; }
-      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
-      .dictgrid td.mono {
-        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
-        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
-      }
-    </style>
-    <table class="dictgrid">
-      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
-      <thead><tr><th></th><th>Age</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>count</th><td class='mono'>3.0</td><td class='mono'>3.0</td></tr>
-<tr><th>mean</th><td class='mono'>25.666666666666668</td><td class='mono'>51666.666666666664</td></tr>
-<tr><th>std</th><td class='mono'>4.041451884327381</td><td class='mono'>7637.626158259733</td></tr>
-<tr><th>min</th><td class='mono'>22.0</td><td class='mono'>45000.0</td></tr>
-<tr><th>25%</th><td class='mono'>23.5</td><td class='mono'>47500.0</td></tr>
-<tr><th>50%</th><td class='mono'>25.0</td><td class='mono'>50000.0</td></tr>
-<tr><th>75%</th><td class='mono'>27.5</td><td class='mono'>55000.0</td></tr>
-<tr><th>max</th><td class='mono'>30.0</td><td class='mono'>60000.0</td></tr></tbody>
-    </table>
-    </td></tr>
-<tr><th>Shape of the Dataframe is:</th><td><div class="mono block">[3, 3]</div></td></tr>
-<tr><th>Dataframe created by Lists is:</th><td>
-    <style>
-      table.arr2d { border-collapse: collapse; }
-      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
-      .arr2d thead th { background: #f3f4f6; }
-      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
-    </style>
-    <table class="arr2d">
-      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
-    </table>
+<div class="overflow-x-auto">
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr>
+      <th class="border px-3 py-1 bg-slate-200 text-left">Index</th>
+      <th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Name</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Age</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Salary</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class='border px-3 py-1 font-medium bg-slate-50'>0</td><td class='border px-3 py-1'>Alice</td><td class='border px-3 py-1'>25</td><td class='border px-3 py-1'>50000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>1</td><td class='border px-3 py-1'>Bob</td><td class='border px-3 py-1'>30</td><td class='border px-3 py-1'>60000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>2</td><td class='border px-3 py-1'>Charlie</td><td class='border px-3 py-1'>22</td><td class='border px-3 py-1'>45000</td></tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Type of the Dataframe created by Dictionary is:</h2>
     
-    </td></tr>
-<tr><th>Type of the Dataframe created by Lists is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
-<tr><th>Dataframe description are:</th><td>
-    <style>
-      table.dictgrid { border-collapse: collapse; width: 100%; }
-      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-      .dictgrid thead th { background: #f3f4f6; color: #374151; }
-      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
-      .dictgrid td.mono {
-        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
-        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
-      }
-    </style>
-    <table class="dictgrid">
-      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
-      <thead><tr><th></th><th>Age</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>count</th><td class='mono'>3.0</td><td class='mono'>3.0</td></tr>
-<tr><th>mean</th><td class='mono'>25.666666666666668</td><td class='mono'>51666.666666666664</td></tr>
-<tr><th>std</th><td class='mono'>4.041451884327381</td><td class='mono'>7637.626158259733</td></tr>
-<tr><th>min</th><td class='mono'>22.0</td><td class='mono'>45000.0</td></tr>
-<tr><th>25%</th><td class='mono'>23.5</td><td class='mono'>47500.0</td></tr>
-<tr><th>50%</th><td class='mono'>25.0</td><td class='mono'>50000.0</td></tr>
-<tr><th>75%</th><td class='mono'>27.5</td><td class='mono'>55000.0</td></tr>
-<tr><th>max</th><td class='mono'>30.0</td><td class='mono'>60000.0</td></tr></tbody>
-    </table>
-    </td></tr>
-<tr><th>Shape of the Dataframe created by Lists is:</th><td><div class="mono block">[3, 3]</div></td></tr>
-<tr><th>Dataframe created by Numpy Array is:</th><td>
-    <style>
-      table.arr2d { border-collapse: collapse; }
-      .arr2d th, .arr2d td { border: 1px solid #ddd; padding: 6px 8px; font-family: monospace; }
-      .arr2d thead th { background: #f3f4f6; }
-      .arr2d tbody tr:nth-child(odd) { background: #fafafa; }
-    </style>
-    <table class="arr2d">
-      <thead><tr><th></th><th>Name</th><th>Age</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>0</th><td>Alice</td><td>25</td><td>50000</td></tr><tr><th>1</th><td>Bob</td><td>30</td><td>60000</td></tr><tr><th>2</th><td>Charlie</td><td>22</td><td>45000</td></tr></tbody>
-    </table>
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Type
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                DataFrame
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe description are:</h2>
     
-    </td></tr>
-<tr><th>Type of the Dataframe created by Numpy Array is:</th><td><div class="mono block">&lt;class &#x27;pandas.DataFrame&#x27;&gt;</div></td></tr>
-<tr><th>Dataframe description are:</th><td>
-    <style>
-      table.dictgrid { border-collapse: collapse; width: 100%; }
-      .dictgrid th, .dictgrid td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-      .dictgrid thead th { background: #f3f4f6; color: #374151; }
-      .dictgrid tbody tr:nth-child(odd) { background: #fafafa; }
-      .dictgrid td.mono {
-        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
-        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
-      }
-    </style>
-    <table class="dictgrid">
-      <caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption>
-      <thead><tr><th></th><th>Age</th><th>Name</th><th>Salary</th></tr></thead>
-      <tbody><tr><th>count</th><td class='mono'>3</td><td class='mono'>3</td><td class='mono'>3</td></tr>
-<tr><th>freq</th><td class='mono'>1</td><td class='mono'>1</td><td class='mono'>1</td></tr>
-<tr><th>top</th><td class='mono'>25</td><td class='mono'>Alice</td><td class='mono'>50000</td></tr>
-<tr><th>unique</th><td class='mono'>3</td><td class='mono'>3</td><td class='mono'>3</td></tr></tbody>
-    </table>
-    </td></tr>
-<tr><th>Shape of the Dataframe created by Numpy Array is:</th><td><div class="mono block">[3, 3]</div></td></tr>
-      </tbody>
-    </table>
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Age
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                mean
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                25.666666666666668
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                std
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                4.041451884327381
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                min
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                22.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                25%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                23.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                50%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                25.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                75%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                27.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                max
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                30.0
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Salary
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                mean
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                51666.666666666664
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                std
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                7637.626158259733
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                min
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                45000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                25%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                47500.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                50%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                50000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                75%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                55000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                max
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                60000.0
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Shape of the Dataframe is:</h2>
     
-  <div class="footer">Rendered 12 pairs.</div>
-</body></html>
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Shape
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3, 3
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe created by Lists is:</h2>
+    
+<div class="overflow-x-auto">
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr>
+      <th class="border px-3 py-1 bg-slate-200 text-left">Index</th>
+      <th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Name</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Age</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Salary</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class='border px-3 py-1 font-medium bg-slate-50'>0</td><td class='border px-3 py-1'>Alice</td><td class='border px-3 py-1'>25</td><td class='border px-3 py-1'>50000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>1</td><td class='border px-3 py-1'>Bob</td><td class='border px-3 py-1'>30</td><td class='border px-3 py-1'>60000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>2</td><td class='border px-3 py-1'>Charlie</td><td class='border px-3 py-1'>22</td><td class='border px-3 py-1'>45000</td></tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Type of the Dataframe created by Lists is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Type
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                DataFrame
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe description are:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Age
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                mean
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                25.666666666666668
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                std
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                4.041451884327381
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                min
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                22.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                25%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                23.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                50%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                25.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                75%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                27.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                max
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                30.0
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Salary
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                mean
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                51666.666666666664
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                std
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                7637.626158259733
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                min
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                45000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                25%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                47500.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                50%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                50000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                75%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                55000.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                max
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                60000.0
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Shape of the Dataframe created by Lists is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Shape
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3, 3
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe created by Numpy Array is:</h2>
+    
+<div class="overflow-x-auto">
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr>
+      <th class="border px-3 py-1 bg-slate-200 text-left">Index</th>
+      <th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Name</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Age</th><th class='border px-3 py-1 font-medium bg-slate-100 text-left'>Salary</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class='border px-3 py-1 font-medium bg-slate-50'>0</td><td class='border px-3 py-1'>Alice</td><td class='border px-3 py-1'>25</td><td class='border px-3 py-1'>50000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>1</td><td class='border px-3 py-1'>Bob</td><td class='border px-3 py-1'>30</td><td class='border px-3 py-1'>60000</td></tr>
+<tr><td class='border px-3 py-1 font-medium bg-slate-50'>2</td><td class='border px-3 py-1'>Charlie</td><td class='border px-3 py-1'>22</td><td class='border px-3 py-1'>45000</td></tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Type of the Dataframe created by Numpy Array is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Type
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                DataFrame
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Dataframe description are:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Name
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                unique
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                top
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                Alice
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                freq
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                1
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Age
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                unique
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                top
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                25
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                freq
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                1
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Salary
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                unique
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                top
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                50000
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                freq
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                1
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3">Shape of the Dataframe created by Numpy Array is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Shape
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                3, 3
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+</div>
+
+  </div>
+</body>
+</html>

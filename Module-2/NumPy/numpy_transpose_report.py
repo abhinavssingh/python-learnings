@@ -1,5 +1,8 @@
 import numpy as np
-from lib.arrays_html import arrays_report_html
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_array
 from lib.report_utils import save_html_report
 
 
@@ -86,24 +89,27 @@ a4_t_0132 = a4.transpose(0, 1, 3, 2)
 a4_t_1023 = a4.transpose(1, 0, 2, 3)
 
 # Build full column-wise page
-html_doc = arrays_report_html([
-    ("Original array 0D (int)", a0),
-    ("Original array 1D (int)", a1),
-    ("Original array 2D (int)", a2),
-    ("Transpose array 2D (int)", a2_t),
-    ("Index Based Transpose array 2D (int)", a2_t_idx),
-    ("Original array 3D (int)", a3),
-    ("Transpose array 3D (int)", a3_t),
-    ("Index 0,2,1 based Transpose array 3D (int)", a3_t_021),
-    ("Index 1,0,2 based Transpose array 3D (int)", a3_t_102),
-    ("Index 1,2,0 based Transpose array 3D (int)", a3_t_120),
-    ("Original array 4D (int)", a4),
-    ("Transpose array 4D (int)", a4_t),
-    ("Index 0,1,3,2 based Transpose array 3D (int)", a4_t_0132),
-    ("Index 0,2,3,1 based Transpose array 3D (int)", a4_t_0231),
-    ("Index 0,3,1,2 based Transpose array 3D (int)", a4_t_0312),
-    ("Index 1,0,2,3 based Transpose array 3D (int)", a4_t_1023),
-], page_title="Array Details (Column-wise)")
+html_doc = build_html_page(
+    "NumPy Transpose Operations Report",
+    grid([
+        card("Original array 0D (int)", render_array(a0)),
+        card("Original array 1D (int)", render_array(a1)),
+        card("Original array 2D (int)", render_array(a2)),
+        card("Transpose array 2D (int)", render_array(a2_t)),
+        card("Index Based Transpose array 2D (int)", render_array(a2_t_idx)),
+        card("Original array 3D (int)", render_array(a3)),
+        card("Transpose array 3D (int)", render_array(a3_t)),
+        card("Index 0,2,1 based Transpose array 3D (int)", render_array(a3_t_021)),
+        card("Index 1,0,2 based Transpose array 3D (int)", render_array(a3_t_102)),
+        card("Index 1,2,0 based Transpose array 3D (int)", render_array(a3_t_120)),
+        card("Original array 4D (int)", render_array(a4)),
+        card("Transpose array 4D (int)", render_array(a4_t)),
+        card("Index 0,1,3,2 based Transpose array 4D (int)", render_array(a4_t_0132)),
+        card("Index 0,2,3,1 based Transpose array 4D (int)", render_array(a4_t_0231)),
+        card("Index 0,3,1,2 based Transpose array 4D (int)", render_array(a4_t_0312)),
+        card("Index 1,0,2,3 based Transpose array 4D (int)", render_array(a4_t_1023)),
+    ])
+)
 
 # html_doc is the string you already have
 output_path = save_html_report(

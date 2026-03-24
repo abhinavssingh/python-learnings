@@ -2,7 +2,9 @@
 # It includes the Customer model which represents a customer order.
 # please edit customer_model.ipynb instead of models.py directly.
 from datetime import datetime
+
 from app import db  # import the shared SQLAlchemy() instance
+
 
 class Customer(db.Model):
     __tablename__ = "customers"

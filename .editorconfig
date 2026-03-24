@@ -1,6 +1,12 @@
 root = true
 
 [*.py]
+# Define line length for imports (default is 79)
+line_length = 79
+# Sort alphabetically
+order_by_type = true
+# Combine 'from X import Y' statements
+combine_as_imports = true
 indent_style = space
 indent_size = 4
 end_of_line = lf

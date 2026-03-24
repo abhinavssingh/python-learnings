@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Force light mode */
+  :root {
+    color-scheme: light;
+  }
+}
+
+@layer components {
+  /* Component styling overrides if needed */
+}
+
+@layer utilities {
+  /* Your custom utilities */
+}

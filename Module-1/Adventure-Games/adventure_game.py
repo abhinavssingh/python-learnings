@@ -9,13 +9,12 @@ to pick options (falls back to text input if the environment doesn't
 support raw key reads).
 """
 
-from typing import Dict
+import argparse
+import io
 import os
 import sys
-
-import io
 from contextlib import redirect_stdout
-import argparse
+from typing import Dict
 
 #=========logging============================
 
@@ -96,7 +95,8 @@ def _read_key() -> str:
         except Exception:
             return ''
     else:
-        import termios, tty
+        import termios
+        import tty
         fd = sys.stdin.fileno()
         old = termios.tcgetattr(fd) # type: ignore[attr-defined, reportAttributeAccessIssue]
         try:
@@ -128,7 +128,8 @@ def _supports_raw_keys() -> bool:
             return False
     else:
         try:
-            import termios, tty  # noqa: F401
+            import termios  # noqa: F401
+            import tty
             return True
         except Exception:
             return False

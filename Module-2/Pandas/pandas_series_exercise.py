@@ -1,6 +1,9 @@
-import pandas as pd
 import numpy as np
-from lib.arrays_html import arrays_table_html, arrays_index_report_html
+import pandas as pd
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_series, render_dict
 from lib.report_utils import save_html_report
 
 
@@ -54,39 +57,43 @@ abs_change = sales_series.diff()
 # Ranks
 rank_desc = sales_series.rank(ascending=False, method='min')
 
-pairs = [
-    (" Sales Series is:", sales_series),
-    (" Sales Serris Describe bare:", sales_series.describe().to_dict()),
-    (" Type of the Sales Series is:", sales_series.dtype),
-    (" Sales Series based on labels:", sales_series_preferred_days),
-    (" Sales Series based on contains:", sales_series_on_contains),
-    (" Sales Series based on label contains ur or ed:", sales_series_on_contains),
-    (" Total Sales:", sales_series_total),
-    (" Average Sales:", sales_series_average),
-    (" Maximum Sales is occured on:", sales_serries_max_label),
-    (" Maximum Sale value is:", sales_serries_max),
-    (" Minimum Sales is occured on:", sales_series_min_label),
-    (" Minimum Sale value is:", sales_series_min),
-    (" Standard Deviation is:", sales_series_std),
-    (" Q1 is:", q1),
-    ("Q3 is:", q3),
-    (" IQR is:", iqr),
-    (" Lower value as per IQR is:", lower_fence),
-    (" Maximum value as per IQR is:", upper_fence),
-    (" Outlier or the element which is far from average is:", outliers_iqr),
-    (" Recommendation is to drop the outlier element for better decision", outliers_iqr.values),
-    (" Z score is:", z),
-    (" Acatual values in outliers based on Z score:", outliers_z_actual_values),
-    (" As per sigma 2 rule outlier is:", outliers_z),
-    (" Robust Z score is:", robust_z),
-    (" Rank is:", rank_desc)
-]
+results = {
+    "Total Sales": sales_series_total,
+    "Average Sales": sales_series_average,
+    "Maximum Sales": sales_serries_max,
+    "Day of Maximum Sales": sales_serries_max_label,
+    "Minimum Sales": sales_series_min,
+    "Day of Minimum Sales": sales_series_min_label,
+    "Standard Deviation": sales_series_std,
+    "Q1": q1,
+    "Q3": q3,
+    "IQR": iqr,
+    "Lower Fence": lower_fence,
+    "Upper Fence": upper_fence,
+    "Outliers (IQR)": outliers_iqr.tolist(),
+    "Z Scores": z.round(3).tolist(),
+    "Outliers (Z-Score)": outliers_z.round(3).tolist(),
+    "Outliers (Z-Score) - Actual Values": outliers_z_actual_values.tolist(),
+    "Robust Z Scores": robust_z.round(3).tolist(),
+    "Rank (Descending)": rank_desc.astype(int).tolist()
+}
 
-# 1) Just the fragment (embed in an existing page or notebook cell)
-fragment = arrays_table_html(pairs)
+html_doc = build_html_page("Pandas Series Exercise Report", grid(
+    [
+        card(" Sales Series is:", render_series(sales_series)),
+        card(" Sales Series Describe bare:", render_dict({"Description": sales_series.describe().to_dict()})),
+        card(" Type of the Sales Series is:", render_dict({"Type": type(sales_series).__name__})),
+        card(" Sales Series based on labels:", render_series(sales_series_preferred_days)),
+        card(" Sales Series based on contains:", render_series(sales_series_on_contains)),
+        card(" Sales Series based on label contains ur or ed:", render_series(sales_series_on_contains)),
+        card(" Summary of the Sales Series is:", render_dict({"Summary": results})),
+        card(" Outlier or the element which is far from average is:", render_series(outliers_iqr)),
+        card(" Recommendation is to drop the outlier element for better decision", render_series(outliers_iqr.values)),
+        card(" Z score is:", render_series(z)),
+        card(" Acatual values in outliers based on Z score:", render_series(outliers_z_actual_values)),
+        card(" As per sigma 2 rule outlier is:", render_series(outliers_z)),
+    ]))
 
-# 2) Full standalone page
-html_doc = arrays_index_report_html(pairs, page_title="Pandas Series Exercise Report")
 
 # html_doc is the string you already have
 output_path = save_html_report(

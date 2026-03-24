@@ -1,6 +1,9 @@
-import pandas as pd
 import numpy as np
-from lib.arrays_html import arrays_table_html, arrays_index_report_html
+import pandas as pd
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_series, render_dict
 from lib.report_utils import save_html_report
 
 
@@ -31,34 +34,29 @@ string_series = pd.Series(['apple', 'banana', 'cherry', 'date', 'elderberry'])
 string_series_char_pattern = string_series[string_series.str.startswith('b')]
 string_series_char_contains = string_series[string_series.str.contains("er")]
 
-pairs = [
-    ("Original series is:", series),
-    ("Type of the Series is:", type(series)),
-    ("Series description are:", series.describe().to_dict()),
-    ("Shape of the Series is:", series.shape),
-    ("Unique values in the series are:", series.unique()),
-    ("No of unique values in the Series are:", series.nunique()),
-    ("First 5 value of the Series are:", series.head(5)),
-    ("Last 4 values of the Series are:", series.tail(4)),
-    ("Series with pre defined index is:", series_with_defined_index),
-    ("Type of the pre defined index is:", type(series_with_defined_index)),
-    ("Description of the pre defined index are:", series_with_defined_index.describe().to_dict()),
-    ("Dictionary Series is:", dict_series),
-    ("Type of the Dictionary Series is:", type(dict_series)),
-    ("Description of the Dictionary Series are:", dict_series.describe().to_dict()),
-    (" Elemnents from the Dictionary Series based on index position [1:4]", s_position_values),
-    (" Elemnents from the Dictionary Series based on index name ['a', 'c', 'e']", s_index_name_values),
-    (" String Series is:", string_series),
-    (" Data type of the string series is:", string_series.dtype),
-    (" Elements from the String Series starts with b", string_series_char_pattern),
-    (" Elements from the String Series contains er", string_series_char_contains),
-]
+html_doc = build_html_page("Pandas Series Fundamentals Report", grid([
+    card("Original series is:", render_series(series)),
+    card("Type of the Series is:", render_dict({"dtype": str(series.dtype)})),
+    card("Series description are:", render_dict(series.describe().to_dict())),
+    card("Shape of the Series is:", render_dict({"shape": series.shape})),
+    card("Unique values in the series are:", render_series(series.unique())),
+    card("No of unique values in the Series are:", render_series([series.nunique()])),
+    card("First 5 value of the Series are:", render_series(series.head(5))),
+    card("Last 4 values of the Series are:", render_series(series.tail(4))),
+    card("Series with pre defined index is:", render_series(series_with_defined_index)),
+    card("Type of the pre defined index is:", render_dict({"type": type(series_with_defined_index).__name__})),
+    card("Description of the pre defined index are:", render_dict(series_with_defined_index.describe().to_dict())),
+    card("Dictionary Series is:", render_series(dict_series)),
+    card("Type of the Dictionary Series is:", render_dict({"type": type(dict_series).__name__})),
+    card("Description of the Dictionary Series are:", render_dict(dict_series.describe().to_dict())),
+    card("Elements from the Dictionary Series based on index position [1:4]:", render_series(s_position_values)),
+    card("Elements from the Dictionary Series based on index name ['a', 'c', 'e']:", render_series(s_index_name_values)),
+    card("String Series is:", render_series(string_series)),
+    card("Data type of the string series is:", render_dict({"dtype": string_series.dtype})),
+    card("Elements from the String Series starts with b:", render_series(string_series_char_pattern)),
+    card("Elements from the String Series contains er:", render_series(string_series_char_contains)),
+]))
 
-# 1) Just the fragment (embed in an existing page or notebook cell)
-fragment = arrays_table_html(pairs)
-
-# 2) Full standalone page
-html_doc = arrays_index_report_html(pairs, page_title="Pandas Series Operation Report")
 
 # html_doc is the string you already have
 output_path = save_html_report(

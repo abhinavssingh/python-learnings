@@ -1,975 +1,528 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <style>
-      :root {
-        --bg: #ffffff;
-        --fg: #111827;
-        --muted: #6b7280;
-        --border: #e5e7eb;
-      }
-      * { box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
-             margin: 0; padding: 24px; background: var(--bg); color: var(--fg); }
-      .title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
-      .mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 12px; background: #0b1020; color: #e5e7eb;
-        border-radius: 8px; padding: 10px 12px; overflow-x: auto;
-      }
-      .block { white-space: pre; margin-bottom: 12px; }
-      .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .kv th, .kv td { text-align: left; padding: 6px 8px; vertical-align: top; }
-      .kv th { width: 28%; color: var(--muted); font-weight: 500; }
-      .kv tr:nth-child(odd) td, .kv tr:nth-child(odd) th { background: #fafafa; }
-      .footer { margin-top: 12px; color: var(--muted); font-size: 12px; }
-    </style>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pandas Series Exercise Report</title>
+<style>
+/*! tailwindcss v4.2.2 | MIT License | https://tailwindcss.com */
+@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-border-style:solid;--tw-leading:initial;--tw-font-weight:initial;--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-blur:initial;--tw-brightness:initial;--tw-contrast:initial;--tw-grayscale:initial;--tw-hue-rotate:initial;--tw-invert:initial;--tw-opacity:initial;--tw-saturate:initial;--tw-sepia:initial;--tw-drop-shadow:initial;--tw-drop-shadow-color:initial;--tw-drop-shadow-alpha:100%;--tw-drop-shadow-size:initial}}}@layer theme{:root,:host{--font-sans:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";--font-mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;--color-red-600:oklch(57.7% .245 27.325);--color-slate-100:oklch(96.8% .007 247.896);--color-slate-300:oklch(86.9% .022 252.894);--color-slate-500:oklch(55.4% .046 257.417);--color-slate-600:oklch(44.6% .043 257.281);--color-slate-700:oklch(37.2% .044 257.287);--color-slate-900:oklch(20.8% .042 265.755);--color-gray-50:oklch(98.5% .002 247.839);--color-gray-200:oklch(92.8% .006 264.531);--color-white:#fff;--spacing:.25rem;--breakpoint-2xl:96rem;--text-xs:.75rem;--text-xs--line-height:calc(1 / .75);--text-sm:.875rem;--text-sm--line-height:calc(1.25 / .875);--text-lg:1.125rem;--text-lg--line-height:calc(1.75 / 1.125);--text-2xl:1.5rem;--text-2xl--line-height:calc(2 / 1.5);--font-weight-medium:500;--font-weight-semibold:600;--font-weight-bold:700;--leading-tight:1.25;--radius-lg:.5rem;--radius-xl:.75rem;--default-transition-duration:.15s;--default-transition-timing-function:cubic-bezier(.4, 0, .2, 1);--default-font-family:var(--font-sans);--default-mono-font-family:var(--font-mono)}}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;line-height:1.5;font-family:var(--default-font-family,ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");font-feature-settings:var(--default-font-feature-settings,normal);font-variation-settings:var(--default-font-variation-settings,normal);-webkit-tap-highlight-color:transparent}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:var(--default-mono-font-family,ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);font-feature-settings:var(--default-mono-font-feature-settings,normal);font-variation-settings:var(--default-mono-font-variation-settings,normal);font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring{outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab, red, red)){::placeholder{color:color-mix(in oklab, currentcolor 50%, transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}::-webkit-calendar-picker-indicator{line-height:1}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}:root{color-scheme:light}}@layer components;@layer utilities{.visible{visibility:visible}.absolute{position:absolute}.fixed{position:fixed}.relative{position:relative}.start{inset-inline-start:var(--spacing)}.end{inset-inline-end:var(--spacing)}.mx-auto{margin-inline:auto}.mt-2{margin-top:calc(var(--spacing) * 2)}.mb-3{margin-bottom:calc(var(--spacing) * 3)}.mb-6{margin-bottom:calc(var(--spacing) * 6)}.block{display:block}.contents{display:contents}.grid{display:grid}.hidden{display:none}.inline{display:inline}.table{display:table}.w-full{width:100%}.max-w-screen-2xl{max-width:var(--breakpoint-2xl)}.table-auto{table-layout:auto}.border-collapse{border-collapse:collapse}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.gap-6{gap:calc(var(--spacing) * 6)}.overflow-x-auto{overflow-x:auto}.rounded-lg{border-radius:var(--radius-lg)}.rounded-xl{border-radius:var(--radius-xl)}.border{border-style:var(--tw-border-style);border-width:1px}.border-gray-200{border-color:var(--color-gray-200)}.bg-gray-50{background-color:var(--color-gray-50)}.bg-slate-100{background-color:var(--color-slate-100)}.bg-slate-900{background-color:var(--color-slate-900)}.bg-white{background-color:var(--color-white)}.p-1{padding:calc(var(--spacing) * 1)}.p-3{padding:calc(var(--spacing) * 3)}.p-4{padding:calc(var(--spacing) * 4)}.p-6{padding:calc(var(--spacing) * 6)}.px-2{padding-inline:calc(var(--spacing) * 2)}.px-3{padding-inline:calc(var(--spacing) * 3)}.py-1{padding-block:calc(var(--spacing) * 1)}.pr-3{padding-right:calc(var(--spacing) * 3)}.pr-4{padding-right:calc(var(--spacing) * 4)}.text-left{text-align:left}.align-top{vertical-align:top}.text-2xl{font-size:var(--text-2xl);line-height:var(--tw-leading,var(--text-2xl--line-height))}.text-lg{font-size:var(--text-lg);line-height:var(--tw-leading,var(--text-lg--line-height))}.text-sm{font-size:var(--text-sm);line-height:var(--tw-leading,var(--text-sm--line-height))}.text-xs{font-size:var(--text-xs);line-height:var(--tw-leading,var(--text-xs--line-height))}.leading-tight{--tw-leading:var(--leading-tight);line-height:var(--leading-tight)}.font-bold{--tw-font-weight:var(--font-weight-bold);font-weight:var(--font-weight-bold)}.font-medium{--tw-font-weight:var(--font-weight-medium);font-weight:var(--font-weight-medium)}.font-semibold{--tw-font-weight:var(--font-weight-semibold);font-weight:var(--font-weight-semibold)}.text-red-600{color:var(--color-red-600)}.text-slate-500{color:var(--color-slate-500)}.text-slate-600{color:var(--color-slate-600)}.text-slate-700{color:var(--color-slate-700)}.text-slate-900{color:var(--color-slate-900)}.text-white{color:var(--color-white)}.lowercase{text-transform:lowercase}.uppercase{text-transform:uppercase}.shadow-md{--tw-shadow:0 4px 6px -1px var(--tw-shadow-color,#0000001a), 0 2px 4px -2px var(--tw-shadow-color,#0000001a);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.filter{filter:var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,)}.transition{transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to,opacity,box-shadow,transform,translate,scale,rotate,filter,-webkit-backdrop-filter,backdrop-filter,display,content-visibility,overlay,pointer-events;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.odd\:bg-gray-50:nth-child(odd){background-color:var(--color-gray-50)}@media (min-width:48rem){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (min-width:80rem){.xl\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (prefers-color-scheme:dark){.dark\:bg-slate-700{background-color:var(--color-slate-700)}.dark\:text-slate-300{color:var(--color-slate-300)}}}@property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-leading{syntax:"*";inherits:false}@property --tw-font-weight{syntax:"*";inherits:false}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-blur{syntax:"*";inherits:false}@property --tw-brightness{syntax:"*";inherits:false}@property --tw-contrast{syntax:"*";inherits:false}@property --tw-grayscale{syntax:"*";inherits:false}@property --tw-hue-rotate{syntax:"*";inherits:false}@property --tw-invert{syntax:"*";inherits:false}@property --tw-opacity{syntax:"*";inherits:false}@property --tw-saturate{syntax:"*";inherits:false}@property --tw-sepia{syntax:"*";inherits:false}@property --tw-drop-shadow{syntax:"*";inherits:false}@property --tw-drop-shadow-color{syntax:"*";inherits:false}@property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-drop-shadow-size{syntax:"*";inherits:false}
+
+/* --- FORCE LIGHT THEME (NO DARK MODE) --- */
+:root {
+  color-scheme: light;
+}
+</style>
+</head>
+
+<body class="bg-gray-50 text-slate-900 p-6">
+  <div class="max-w-screen-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Pandas Series Exercise Report</h1>
     
-<title>Pandas Series Exercise Report</title></head>
-<body>
-  <div class="title">Pandas Series Exercise Report</div>
+<div class="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
   
-    <table class="kv" style="margin-top:8px;">
-      <tbody>
-        <tr><th> Sales Series is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-153ab71569104f79bf3073f72e83c9d4.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-153ab71569104f79bf3073f72e83c9d4 .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-153ab71569104f79bf3073f72e83c9d4 .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-153ab71569104f79bf3073f72e83c9d4" class="series2col-container series-collapsed">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Monday</th><td class='mono'>120</td></tr>
-<tr class='series-row'><th>Tuesday</th><td class='mono'>150</td></tr>
-<tr class='series-row'><th>Wednesday</th><td class='mono'>130</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>170</td></tr>
-<tr class='series-row'><th>Friday</th><td class='mono'>160</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>180</td></tr>
-<tr class='series-row extra'><th>Sunday</th><td class='mono'>300</td></tr>
-        </tbody>
-      </table>
-      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-153ab71569104f79bf3073f72e83c9d4");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Sales Serris Describe bare:</th><td>
-    <style>
-      table.kv2 { border-collapse: collapse; width: 100%; }
-      .kv2 th, .kv2 td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
-      .kv2 th { width: 28%; background: #f3f4f6; color: #374151; font-weight: 600; }
-      .kv2 tbody tr:nth-child(odd) td { background: #fafafa; }
-      .kv2 td.mono {
-        background: transparent !important; color: #334155 !important; border-radius: 0 !important;
-        overflow: visible !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace; font-size: 12px;
-      }
-    </style>
-    <table class="kv2"><caption style='caption-side:bottom;text-align:left;color:#6b7280;font-size:12px'>mapping</caption><tbody>
-      <tr><th>count</th><td class='mono'>7.0</td></tr>
-<tr><th>mean</th><td class='mono'>172.85714285714286</td></tr>
-<tr><th>std</th><td class='mono'>59.920582360956665</td></tr>
-<tr><th>min</th><td class='mono'>120.0</td></tr>
-<tr><th>25%</th><td class='mono'>140.0</td></tr>
-<tr><th>50%</th><td class='mono'>160.0</td></tr>
-<tr><th>75%</th><td class='mono'>175.0</td></tr>
-<tr><th>max</th><td class='mono'>300.0</td></tr>
-    </tbody></table>
-    </td></tr>
-<tr><th> Type of the Sales Series is:</th><td><div class="mono block">int64</div></td></tr>
-<tr><th> Sales Series based on labels:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-00b8935498084ee08019db4f914d2dbf.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-00b8935498084ee08019db4f914d2dbf .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-00b8935498084ee08019db4f914d2dbf .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-00b8935498084ee08019db4f914d2dbf" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Monday</th><td class='mono'>120</td></tr>
-<tr class='series-row'><th>Wednesday</th><td class='mono'>130</td></tr>
-<tr class='series-row'><th>Friday</th><td class='mono'>160</td></tr>
-<tr class='series-row'><th>Sunday</th><td class='mono'>300</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-00b8935498084ee08019db4f914d2dbf");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Sales Series based on contains:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-28824c3512cf45328a9fb22779071a7c.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-28824c3512cf45328a9fb22779071a7c .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-28824c3512cf45328a9fb22779071a7c .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-28824c3512cf45328a9fb22779071a7c" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Wednesday</th><td class='mono'>130</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>170</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>180</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-28824c3512cf45328a9fb22779071a7c");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Sales Series based on label contains ur or ed:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-6f2ce75760c5487d9b6daaaa2509efbf.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-6f2ce75760c5487d9b6daaaa2509efbf .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-6f2ce75760c5487d9b6daaaa2509efbf .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-6f2ce75760c5487d9b6daaaa2509efbf" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Wednesday</th><td class='mono'>130</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>170</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>180</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-6f2ce75760c5487d9b6daaaa2509efbf");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Total Sales:</th><td><div class="mono block">1210</div></td></tr>
-<tr><th> Average Sales:</th><td><div class="mono block">172.85714286</div></td></tr>
-<tr><th> Maximum Sales is occured on:</th><td><div class="mono block">Sunday</div></td></tr>
-<tr><th> Maximum Sale value is:</th><td><div class="mono block">300</div></td></tr>
-<tr><th> Minimum Sales is occured on:</th><td><div class="mono block">Monday</div></td></tr>
-<tr><th> Minimum Sale value is:</th><td><div class="mono block">120</div></td></tr>
-<tr><th> Standard Deviation is:</th><td><div class="mono block">59.92058236</div></td></tr>
-<tr><th> Q1 is:</th><td><div class="mono block">140.</div></td></tr>
-<tr><th>Q3 is:</th><td><div class="mono block">175.</div></td></tr>
-<tr><th> IQR is:</th><td><div class="mono block">35.</div></td></tr>
-<tr><th> Lower value as per IQR is:</th><td><div class="mono block">87.5</div></td></tr>
-<tr><th> Maximum value as per IQR is:</th><td><div class="mono block">227.5</div></td></tr>
-<tr><th> Outlier or the element which is far from average is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-74cfb1496ca34057b4d2bc11d230464c.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-74cfb1496ca34057b4d2bc11d230464c .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-74cfb1496ca34057b4d2bc11d230464c .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-74cfb1496ca34057b4d2bc11d230464c" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Sunday</th><td class='mono'>300</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-74cfb1496ca34057b4d2bc11d230464c");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Recommendation is to drop the outlier element for better decision</th><td><div class="mono block">[300]</div></td></tr>
-<tr><th> Z score is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-0fa30b3a1efe48088bd9b9f0ebfdcfad.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-0fa30b3a1efe48088bd9b9f0ebfdcfad .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-0fa30b3a1efe48088bd9b9f0ebfdcfad .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-0fa30b3a1efe48088bd9b9f0ebfdcfad" class="series2col-container series-collapsed">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Monday</th><td class='mono'>-0.882</td></tr>
-<tr class='series-row'><th>Tuesday</th><td class='mono'>-0.381</td></tr>
-<tr class='series-row'><th>Wednesday</th><td class='mono'>-0.715</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>-0.048</td></tr>
-<tr class='series-row'><th>Friday</th><td class='mono'>-0.215</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>0.119</td></tr>
-<tr class='series-row extra'><th>Sunday</th><td class='mono'>2.122</td></tr>
-        </tbody>
-      </table>
-      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-0fa30b3a1efe48088bd9b9f0ebfdcfad");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Acatual values in outliers based on Z score:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-44c2849126334c74a8bb00737edf0b8e.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-44c2849126334c74a8bb00737edf0b8e .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-44c2849126334c74a8bb00737edf0b8e .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-44c2849126334c74a8bb00737edf0b8e" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Sunday</th><td class='mono'>300</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-44c2849126334c74a8bb00737edf0b8e");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> As per sigma 2 rule outlier is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-52250bc50c6540a6b22cd8e294df3f88.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-52250bc50c6540a6b22cd8e294df3f88 .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-52250bc50c6540a6b22cd8e294df3f88 .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-52250bc50c6540a6b22cd8e294df3f88" class="series2col-container series-expanded">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Sunday</th><td class='mono'>2.122</td></tr>
-        </tbody>
-      </table>
-      
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-52250bc50c6540a6b22cd8e294df3f88");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Robust Z score is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-e49a1a81a2c84a7195741e908fe4be12.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-e49a1a81a2c84a7195741e908fe4be12 .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-e49a1a81a2c84a7195741e908fe4be12 .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-e49a1a81a2c84a7195741e908fe4be12" class="series2col-container series-collapsed">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Monday</th><td class='mono'>-1.349</td></tr>
-<tr class='series-row'><th>Tuesday</th><td class='mono'>-0.33725</td></tr>
-<tr class='series-row'><th>Wednesday</th><td class='mono'>-1.01175</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>0.33725</td></tr>
-<tr class='series-row'><th>Friday</th><td class='mono'>0.0</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>0.6745</td></tr>
-<tr class='series-row extra'><th>Sunday</th><td class='mono'>4.7215</td></tr>
-        </tbody>
-      </table>
-      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-e49a1a81a2c84a7195741e908fe4be12");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-<tr><th> Rank is:</th><td>
-    <style>
-      /* Color theme (tweak these) */
-      :root {
-        --series-head-fg: #1e3a8a;  /* header text */
-        --series-head-bg: #eef2ff;  /* header background */
-        --series-cell-fg: #334155;  /* cell text */
-      }
-
-      /* Table look */
-      table.series2col { border-collapse: collapse; width: 100%; }
-      .series2col th, .series2col td {
-          border: 1px solid #ddd; padding: 6px 8px; text-align: left;
-      }
-      .series2col thead th { background: var(--series-head-bg); color: var(--series-head-fg); }
-      .series2col tbody td { color: var(--series-cell-fg); }
-      .series2col tbody tr:nth-child(odd) { background: #fafafa; }
-
-      /* The global .mono style is dark; override in cells so they aren't black */
-      .series2col td.mono {
-        background: transparent !important;
-        color: var(--series-cell-fg) !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        overflow: visible !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                     "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-      }
-
-      /* Collapse behavior: hide rows > threshold when collapsed */
-      #series-b48b1c1800144762a3a1fc4f7b7c4340.series-collapsed .series-row.extra { display: none; }
-
-      /* Optional: style the toggle button */
-      #series-b48b1c1800144762a3a1fc4f7b7c4340 .series-toggle {
-        margin-top: 8px;
-        background: #1f2937; color: #fff; border: none;
-        border-radius: 6px; padding: 6px 10px; cursor: pointer;
-      }
-      #series-b48b1c1800144762a3a1fc4f7b7c4340 .series-toggle:hover { filter: brightness(1.1); }
-    </style>
-
-    <div id="series-b48b1c1800144762a3a1fc4f7b7c4340" class="series2col-container series-collapsed">
-      <table class="series2col">
-        <thead>
-          <tr><th>Index</th><th>Value</th></tr>
-        </thead>
-        <tbody>
-          <tr class='series-row'><th>Monday</th><td class='mono'>7.0</td></tr>
-<tr class='series-row'><th>Tuesday</th><td class='mono'>5.0</td></tr>
-<tr class='series-row'><th>Wednesday</th><td class='mono'>6.0</td></tr>
-<tr class='series-row'><th>Thursday</th><td class='mono'>3.0</td></tr>
-<tr class='series-row'><th>Friday</th><td class='mono'>4.0</td></tr>
-<tr class='series-row'><th>Saturday</th><td class='mono'>2.0</td></tr>
-<tr class='series-row extra'><th>Sunday</th><td class='mono'>1.0</td></tr>
-        </tbody>
-      </table>
-      <button type='button' class='series-toggle' data-total='7' aria-expanded='false'>Show all 1</button>
-    </div>
-
-    <script>
-    (function() {
-      var root = document.getElementById("series-b48b1c1800144762a3a1fc4f7b7c4340");
-      if (!root) return;
-      var btn = root.querySelector(".series-toggle");
-      if (!btn) return;
-
-      btn.addEventListener("click", function() {
-        var expanded = root.classList.toggle("series-expanded");
-        if (expanded) {
-          root.classList.remove("series-collapsed");
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "Show less";
-        } else {
-          root.classList.add("series-collapsed");
-          btn.setAttribute("aria-expanded", "false");
-          var total = btn.getAttribute("data-total") || "";
-          var threshold = 6;
-          var hidden = Math.max(0, total - threshold);
-          btn.textContent = hidden ? ("Show all " + hidden) : "Show all";
-        }
-      });
-
-      // Ensure initial state consistent
-      if (root.classList.contains("series-collapsed")) {
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        btn.setAttribute("aria-expanded", "true");
-        btn.textContent = "Show less";
-      }
-    })();
-    </script>
-    </td></tr>
-      </tbody>
-    </table>
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Sales Series is:</h2>
     
-  <div class="footer">Rendered 25 pairs.</div>
-</body></html>
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Monday</td><td class='border px-3 py-1'>120</td></tr>
+<tr><td class='border px-3 py-1'>Tuesday</td><td class='border px-3 py-1'>150</td></tr>
+<tr><td class='border px-3 py-1'>Wednesday</td><td class='border px-3 py-1'>130</td></tr>
+<tr><td class='border px-3 py-1'>Thursday</td><td class='border px-3 py-1'>170</td></tr>
+<tr><td class='border px-3 py-1'>Friday</td><td class='border px-3 py-1'>160</td></tr>
+<tr><td class='border px-3 py-1'>Saturday</td><td class='border px-3 py-1'>180</td></tr>
+<tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>300</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Sales Series Describe bare:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Description
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                count
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                7.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                mean
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                172.85714285714286
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                std
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                59.920582360956665
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                min
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                120.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                25%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                140.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                50%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                160.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                75%
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                175.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                max
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                300.0
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Type of the Sales Series is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Type
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                Series
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Sales Series based on labels:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Monday</td><td class='border px-3 py-1'>120</td></tr>
+<tr><td class='border px-3 py-1'>Wednesday</td><td class='border px-3 py-1'>130</td></tr>
+<tr><td class='border px-3 py-1'>Friday</td><td class='border px-3 py-1'>160</td></tr>
+<tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>300</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Sales Series based on contains:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Wednesday</td><td class='border px-3 py-1'>130</td></tr>
+<tr><td class='border px-3 py-1'>Thursday</td><td class='border px-3 py-1'>170</td></tr>
+<tr><td class='border px-3 py-1'>Saturday</td><td class='border px-3 py-1'>180</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Sales Series based on label contains ur or ed:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Wednesday</td><td class='border px-3 py-1'>130</td></tr>
+<tr><td class='border px-3 py-1'>Thursday</td><td class='border px-3 py-1'>170</td></tr>
+<tr><td class='border px-3 py-1'>Saturday</td><td class='border px-3 py-1'>180</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Summary of the Sales Series is:</h2>
+    
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Summary
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                
+
+<table class="table-auto border-collapse w-full text-sm">
+    <tbody>
+        
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Total Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                1210
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Average Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                172.85714285714286
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Maximum Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                300
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Day of Maximum Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                Sunday
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Minimum Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                120
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Day of Minimum Sales
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                Monday
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Standard Deviation
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                59.920582360956665
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Q1
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                140.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Q3
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                175.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                IQR
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                35.0
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Lower Fence
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                87.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Upper Fence
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                227.5
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Outliers (IQR)
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                300
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Z Scores
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                -0.882, -0.381, -0.715, -0.048, -0.215, 0.119, 2.122
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Outliers (Z-Score)
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                2.122
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Outliers (Z-Score) - Actual Values
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                300
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Robust Z Scores
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                -1.349, -0.337, -1.012, 0.337, 0.0, 0.674, 4.722
+            </td>
+        </tr>
+        
+
+        <tr class="odd:bg-gray-50">
+            <th class="border border-slate-300 bg-gray-100 text-left font-medium text-slate-700 px-3 py-1">
+                Rank (Descending)
+            </th>
+            <td class="border border-slate-300 px-3 py-1 text-slate-800">
+                7, 5, 6, 3, 4, 2, 1
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Outlier or the element which is far from average is:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>300</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Recommendation is to drop the outlier element for better decision</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>0</td><td class='border px-3 py-1'>300</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Z score is:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Monday</td><td class='border px-3 py-1'>-0.882</td></tr>
+<tr><td class='border px-3 py-1'>Tuesday</td><td class='border px-3 py-1'>-0.381</td></tr>
+<tr><td class='border px-3 py-1'>Wednesday</td><td class='border px-3 py-1'>-0.715</td></tr>
+<tr><td class='border px-3 py-1'>Thursday</td><td class='border px-3 py-1'>-0.048</td></tr>
+<tr><td class='border px-3 py-1'>Friday</td><td class='border px-3 py-1'>-0.215</td></tr>
+<tr><td class='border px-3 py-1'>Saturday</td><td class='border px-3 py-1'>0.119</td></tr>
+<tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>2.122</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> Acatual values in outliers based on Z score:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>300</td></tr></tbody>
+</table>
+
+</div>
+
+
+<div class="rounded-xl bg-white shadow-md border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold mb-3"> As per sigma 2 rule outlier is:</h2>
+    
+<table class="table-auto border-collapse w-full text-sm">
+  <thead>
+    <tr class="bg-slate-100">
+      <th class="border px-3 py-1 text-left">Index</th>
+      <th class="border px-3 py-1 text-left">Value</th>
+    </tr>
+  </thead>
+  <tbody><tr><td class='border px-3 py-1'>Sunday</td><td class='border px-3 py-1'>2.122</td></tr></tbody>
+</table>
+
+</div>
+
+</div>
+
+  </div>
+</body>
+</html>

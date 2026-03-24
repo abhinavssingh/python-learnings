@@ -1,5 +1,8 @@
 import numpy as np
-from lib.arrays_html import arrays_report_html
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_array
 from lib.report_utils import save_html_report
 
 
@@ -28,24 +31,27 @@ arr3_reshape = arr3.reshape(4, 2)
 arr3_t = arr3.transpose()
 
 # Build full column-wise page
-html_doc = arrays_report_html([
-    ("Original array (int)", arr1),
-    ("Reshape array (int)", arr1_reshape),
-    ("Transpose array (int)", arr1_t),
-    ("Original array (float)", arr2),
-    ("Reshape array (float)", arr2_reshape),
-    ("Transpose array (float)", arr2_t),
-    ("Original array (str)", arr3),
-    ("Reshape array (str)", arr3_reshape),
-    ("Transpose array (str)", arr3_t),
-], page_title="Array Details (Column-wise)")
 
+html = build_html_page(
+    "NumPy Arrays Basic Report",
+    grid([
+        card("Original Array (int)", render_array(arr1)),
+        card("Reshape Array (int)", render_array(arr1_reshape)),
+        card("Transpose Array (int)", render_array(arr1_t)),
+        card("Original Array (float)", render_array(arr2)),
+        card("Reshape Array (float)", render_array(arr2_reshape)),
+        card("Transpose Array (float)", render_array(arr2_t)),
+        card("Original Array (str)", render_array(arr3)),
+        card("Reshape Array (str)", render_array(arr3_reshape)),
+        card("Transpose Array (str)", render_array(arr3_t)),
+    ])
+)
 
 # html_doc is the string you already have
 output_path = save_html_report(
     __file__,
     "arrays_basics_report.html",   # file name
-    html_doc,
+    html,
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True
 )

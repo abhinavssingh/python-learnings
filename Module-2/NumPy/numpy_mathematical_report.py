@@ -1,5 +1,8 @@
 import numpy as np
-from lib.arrays_html import arrays_report_html
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_array, render_dict
 from lib.report_utils import save_html_report
 
 
@@ -76,35 +79,38 @@ arr3d_per_80 = np.percentile(array_3d, 80)
 arr3d_per_90 = np.percentile(array_3d, 90)
 
 # Build full column-wise page
-html_doc = arrays_report_html([
-    ("Original 1st 2D array (int)", arr1),
-    ("Original 2nd 2D array (int)", arr2),
-    ("Sum of two array (int)", sum),
-    ("Subtract of two array array2-array1 (int)", sub),
-    ("Multiplication of two array (int)", multiplication),
-    ("Division of two array array/array2 (int)", division),
-    ("Division of two array array/array2 after rounding (int)", rounded_division),
-    ("Power of two array (int)", power),
-    ("Mean of array 1 (int)", arr1_mean),
-    ("Median of array 1 (int)", arr1_median),
-    ("Standard Deviation of array 1 (int)", arr1_std),
-    ("Variance of array 1 (int)", arr1_var),
-    ("80 Percentile of array 1 (int)", arr1_per_80),
-    ("90 Percentile of array 1 (int)", arr1_per_90),
-    ("Original 1st 3D array (int)", a3),
-    ("Original 2nd 3D array (int)", array_3d),
-    ("Sum of two 3D array (int)", sum_3d),
-    ("Subtract of two 3D array array2-array1 (int)", sub_3d),
-    ("Multiplication of two 3D array (int)", multiplication_3d),
-    ("Division of two 3D array array/array2 (int)", division_3d),
-    ("Power of two 3D array (int)", power_3d),
-    ("Mean of 1st 3D array (int)", arr3d_mean),
-    ("Median of 1st 3D array 1 (int)", arr3d_median),
-    ("Standard Deviation of 1st 3D array 1 (int)", arr3d_std),
-    ("Variance of 1st 3D array (int)", arr3d_var),
-    ("80 Percentile of 1st 3D array (int)", arr3d_per_80),
-    ("90 Percentile of 1st 3D array (int)", arr3d_per_90),
-], page_title="Array Details (Column-wise)")
+html_doc = build_html_page(
+    "NumPy Mathematical Operations Report",
+    grid([
+        card("Original 1st 2D array (int)", render_array(arr1)),
+        card("Original 2nd 2D array (int)", render_array(arr2)),
+        card("Sum of two array (int)", render_array(sum)),
+        card("Subtract of two array array2-array1 (int)", render_array(sub)),
+        card("Multiplication of two array (int)", render_array(multiplication)),
+        card("Division of two array array/array2 (int)", render_array(division)),
+        card("Division of two array array/array2 after rounding (int)", render_array(rounded_division)),
+        card("Power of two array (int)", render_array(power)),
+        card("Mean of array 1 (int)", render_dict({"Mean": arr1_mean})),
+        card("Median of array 1 (int)", render_dict({"Median": arr1_median})),
+        card("Standard Deviation of array 1 (int)", render_dict({"Standard Deviation": arr1_std})),
+        card("Variance of array 1 (int)", render_dict({"Variance": arr1_var})),
+        card("80 Percentile of array 1 (int)", render_dict({"80 Percentile": arr1_per_80})),
+        card("90 Percentile of array 1 (int)", render_dict({"90 Percentile": arr1_per_90})),
+        card("Original 1st 3D array (int)", render_array(a3)),
+        card("Original 2nd 3D array (int)", render_array(array_3d)),
+        card("Sum of two 3D array (int)", render_array(sum_3d)),
+        card("Subtract of two 3D array array2-array1 (int)", render_array(sub_3d)),
+        card("Multiplication of two 3D array (int)", render_array(multiplication_3d)),
+        card("Division of two 3D array array/array2 (int)", render_array(division_3d)),
+        card("Power of two 3D array (int)", render_array(power_3d)),
+        card("Mean of 1st 3D array (int)", render_dict({"Mean": arr3d_mean})),
+        card("Median of 1st 3D array 1 (int)", render_dict({"Median": arr3d_median})),
+        card("Standard Deviation of 1st 3D array 1 (int)", render_dict({"Standard Deviation": arr3d_std})),
+        card("Variance of 1st 3D array (int)", render_dict({"Variance": arr3d_var})),
+        card("80 Percentile of 1st 3D array (int)", render_dict({"80 Percentile": arr3d_per_80})),
+        card("90 Percentile of 1st 3D array (int)", render_dict({"90 Percentile": arr3d_per_90})),
+    ])
+)
 
 # html_doc is the string you already have
 output_path = save_html_report(

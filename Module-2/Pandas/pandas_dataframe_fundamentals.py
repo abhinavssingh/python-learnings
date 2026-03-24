@@ -1,6 +1,9 @@
-import pandas as pd
 import numpy as np
-from lib.arrays_html import arrays_table_html, arrays_index_report_html
+import pandas as pd
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_dataframe, render_dict
 from lib.report_utils import save_html_report
 
 
@@ -31,27 +34,21 @@ data_array = np.array([['Alice', 25, 50000],
 
 df_array = pd.DataFrame(data_array, columns=columns_name)
 
-pairs = [
-    ("Dataframe created by Dictionary is:", df_dict),
-    ("Type of the Dataframe created by Dictionary is:", type(df_dict)),
-    ("Dataframe description are:", df_dict.describe().to_dict()),
-    ("Shape of the Dataframe is:", df_dict.shape),
-    ("Dataframe created by Lists is:", df_list),
-    ("Type of the Dataframe created by Lists is:", type(df_list)),
-    ("Dataframe description are:", df_list.describe().to_dict()),
-    ("Shape of the Dataframe created by Lists is:", df_list.shape),
-    ("Dataframe created by Numpy Array is:", df_array),
-    ("Type of the Dataframe created by Numpy Array is:", type(df_array)),
-    ("Dataframe description are:", df_array.describe().to_dict()),
-    ("Shape of the Dataframe created by Numpy Array is:", df_array.shape),
-]
+html_doc = build_html_page("Pandas Dataframe Fundamentals Report", grid([
+    card("Dataframe created by Dictionary is:", render_dataframe(df_dict)),
+    card("Type of the Dataframe created by Dictionary is:", render_dict({"Type": type(df_dict).__name__})),
+    card("Dataframe description are:", render_dict(df_dict.describe().to_dict())),
+    card("Shape of the Dataframe is:", render_dict({"Shape": df_dict.shape})),
+    card("Dataframe created by Lists is:", render_dataframe(df_list)),
+    card("Type of the Dataframe created by Lists is:", render_dict({"Type": type(df_list).__name__})),
+    card("Dataframe description are:", render_dict(df_list.describe().to_dict())),
+    card("Shape of the Dataframe created by Lists is:", render_dict({"Shape": df_list.shape})),
+    card("Dataframe created by Numpy Array is:", render_dataframe(df_array)),
+    card("Type of the Dataframe created by Numpy Array is:", render_dict({"Type": type(df_array).__name__})),
+    card("Dataframe description are:", render_dict(df_array.describe().to_dict())),
+    card("Shape of the Dataframe created by Numpy Array is:", render_dict({"Shape": df_array.shape})),
+]))
 
-# 1) Just the fragment (embed in an existing page or notebook cell)
-fragment = arrays_table_html(pairs)
-
-# 2) Full standalone page
-html_doc = arrays_index_report_html(
-    pairs, page_title="Pandas Dataframe Fundamentals Report")
 
 # html_doc is the string you already have
 output_path = save_html_report(

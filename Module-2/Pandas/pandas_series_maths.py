@@ -1,6 +1,9 @@
-import pandas as pd
 import numpy as np
-from lib.arrays_html import arrays_table_html, arrays_index_report_html
+import pandas as pd
+
+from lib.html.base import build_html_page
+from lib.html.components import card, grid
+from lib.html.renderers import render_series, render_dict
 from lib.report_utils import save_html_report
 
 
@@ -48,31 +51,26 @@ s1_values = s1[(s1 > 5) & (s1 < 10)]
 # Select elements based on a list of values
 s1_range = s1[s1.isin([6, 7, 8])]
 
-pairs = [
-    (" First series S1 for math operation is:", s1),
-    (" Second series S2 for math operation is:", s2),
-    (" Data Type of the Series S1:", s1.dtype),
-    (" Sum of the two series is:", sum),
-    (" Subtract of the two series is:", sub),
-    (" Multplication of the two series is:", mulitiplication),
-    (" Division of the two series is:", division),
-    (" Square of the S1 series is:", squared_series),
-    (" Default Sort order in series S1 is ascending:", s1_asc),
-    (" Reverse Sort order S1 series is:", s1_dsc),
-    (" Has S1 any null:", is_s1_null),
-    (" After filling S1 series if null exists:", filled_series),
-    (" Data Type of the Series S1 after filling value", filled_series.dtype),
-    (" Elemets from S1 series > 6", s1_greater_6),
-    (" Elemets from S1 series ==8", s1_equal_8),
-    (" Elemets from S1 series !=6", s1_not_equal_6),
-    (" Elemets from S1 series values equal to 6, 7, 8", s1_range),
-]
+html_doc = build_html_page("Pandas Series Maths Operation Report", grid([
+    card("First series S1 for math operation is:", render_series(s1)),
+    card("Second series S2 for math operation is:", render_series(s2)),
+    card("Data Type of the Series S1:", render_dict({"dtype": s1.dtype})),
+    card("Sum of the two series is:", render_series(sum)),
+    card("Subtract of the two series is:", render_series(sub)),
+    card("Multiplication of the two series is:", render_series(mulitiplication)),
+    card("Division of the two series is:", render_series(division)),
+    card("Square of the S1 series is:", render_series(squared_series)),
+    card("Default Sort order in series S1 is ascending:", render_series(s1_asc)),
+    card("Reverse Sort order S1 series is:", render_series(s1_dsc)),
+    card("Has S1 any null:", render_series(is_s1_null)),
+    card("After filling S1 series if null exists:", render_series(filled_series)),
+    card("Data Type of the Series S1 after filling value:", render_dict({"dtype": filled_series.dtype})),
+    card("Elements from S1 series > 6:", render_series(s1_greater_6)),
+    card("Elements from S1 series == 8:", render_series(s1_equal_8)),
+    card("Elements from S1 series != 6:", render_series(s1_not_equal_6)),
+    card("Elements from S1 series values equal to 6, 7, 8:", render_series(s1_range)),
+]))
 
-# 1) Just the fragment (embed in an existing page or notebook cell)
-fragment = arrays_table_html(pairs)
-
-# 2) Full standalone page
-html_doc = arrays_index_report_html(pairs, page_title="Pandas Series Maths Operation Report")
 
 # html_doc is the string you already have
 output_path = save_html_report(
