@@ -5,18 +5,20 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from lib.logger import log_error
 
 try:
     # pip install pytailwindcss
     import pytailwindcss as tw
 except Exception as e:
+    log_error(f"Failed to import pytailwindcss: {e}")
     print("pytailwindcss is not installed. Run: pip install pytailwindcss")
     raise
 
 
 def main() -> int:
     # Resolve repo root as the directory two levels up from this file, adjust if needed
-    root = Path(__file__).resolve().parents[1]  # C:\IHFC\python-learnings
+    root = Path(__file__).resolve().parent  # C:\IHFC\python-learnings
     assets = root / "assets"
     dist = root / "lib" / "html"
 
@@ -32,6 +34,7 @@ def main() -> int:
     if not input_css.exists():
         print(f"ERROR: Input CSS not found at: {input_css}")
         print("Create it with something like:\n  @import \"tailwindcss\";")
+        log_error("Input CSS file not found.")
         return 2
 
     dist.mkdir(parents=True, exist_ok=True)
@@ -49,6 +52,7 @@ def main() -> int:
         # Use cwd=root so relative @imports (if any) resolve from project root
         result = tw.run(args, auto_install=True, cwd=str(root))
     except Exception as e:
+        log_error(f"Tailwind CLI invocation failed: {e}")
         print("Tailwind CLI invocation failed.")
         raise
 

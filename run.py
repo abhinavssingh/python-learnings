@@ -15,17 +15,25 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
-import fnmatch
-import importlib
-import json
-import os
-import subprocess
-import sys
-from pathlib import Path
-from typing import List, Optional, Tuple
 
+from typing import List, Optional, Tuple
+from pathlib import Path
+import sys
+import subprocess
+import os
+import json
+import importlib
+import fnmatch
+import argparse
+
+
+from init import register_paths
+register_paths()
+
+
+from lib.logger import log_info, log_debug, log_error  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parent
+
 
 # Any folder you consider a "root" for code discovery.
 # The runner will recurse and treat any directory with __init__.py as a package.
@@ -34,10 +42,6 @@ DISCOVERY_ROOTS = [
     REPO_ROOT / "Module-2",    # discover nested packages under Module-2
     # add more roots if needed, e.g., REPO_ROOT / "lib", REPO_ROOT / "Module-1"
 ]
-
-
-def debug(msg: str) -> None:
-    print(f"[run.py] {msg}")
 
 
 def is_package_dir(path: Path) -> bool:
@@ -93,50 +97,72 @@ def module_name_from_path(py_file: Path) -> Optional[str]:
     return dotted
 
 
-def discover_modules() -> List[str]:
-    """
-    Scan for all importable .py modules within discovered packages.
-    Skips dunder files like __init__.py.
-    """
-    modules: List[str] = []
-    # Enumerate all .py files under each package dir
-    for pkg_dir in discover_packages():
-        for py in pkg_dir.glob("*.py"):
+def discover_modules():
+    modules = []
+
+    # Load folders from settings.json (used also by bootstrap)
+    from init import register_paths
+    project_root = register_paths()
+
+    # Load config directly
+    import json
+    config = json.loads((project_root / "settings.json").read_text())
+
+    search_paths = config.get("paths", [])
+
+    for rel in search_paths:
+        folder = (project_root / rel).resolve()
+
+        if not folder.exists():
+            continue
+
+        # Recursively scan all *.py files
+        for py in folder.rglob("*.py"):
+
+            # Skip non-script files
             if py.name.startswith("_"):
                 continue
-            mod = module_name_from_path(py)
-            if mod:
-                modules.append(mod)
-    modules = sorted(set(modules))
-    return modules
+
+            # Convert to dotted module path
+            try:
+                rel_path = py.relative_to(project_root)
+            except ValueError:
+                continue
+
+            dotted = str(rel_path.with_suffix("")).replace("\\", ".").replace("/", ".")
+
+            modules.append(dotted)
+
+    # Return unique, sorted list
+    return sorted(set(modules))
 
 
 def import_and_call(module_path: str, func_name: str = "main") -> int:
     try:
         mod = importlib.import_module(module_path)
     except Exception as e:
-        debug(f"Import failed for {module_path}: {e}")
+        log_error(f"Import failed for {module_path}: {e}")
         return 1
 
     func = getattr(mod, func_name, None)
     if callable(func):
-        debug(f"Calling {module_path}.{func_name}()")
+        log_info(f"Calling {module_path}.{func_name}()")
         try:
             rv = func()
             return 0 if (rv is None or rv == 0) else int(rv)
         except SystemExit as se:
             return int(se.code) if isinstance(se.code, int) else 1
         except Exception as e:
-            debug(f"Error while running {module_path}.{func_name}(): {e}")
+            log_error(f"Error while running {module_path}.{func_name}(): {e}")
             return 1
     else:
-        debug(f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
+        log_debug(f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
         return 1
 
 
 def run_as_module(module_path: str) -> int:
     cmd = [sys.executable, "-m", module_path]
-    debug(f"Executing: {' '.join(cmd)}")
+    log_info(f"Executing: {' '.join(cmd)}")
     proc = subprocess.run(cmd, cwd=REPO_ROOT)
     return proc.returncode
 

@@ -1,0 +1,16 @@
+{
+    "paths": [
+        "lib",
+        "lib/html",
+        "lib/tools",
+        "Module-1",
+        "Module-2",
+        "Module-2/NumPy",
+        "Module-2/Pandas"
+    ],
+    "log_cleanup": {
+        "enabled": true,
+        "max_days": 7,
+        "max_files": 20
+    }
+}

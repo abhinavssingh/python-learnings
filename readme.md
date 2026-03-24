@@ -32,10 +32,61 @@ Welcome to the **python-learnings** repository! This repo contains code samples,
         pip install nbstripout
         nbstripout --install
         ```
+## Folder Structure
+```
+C:\IHFC\PYTHON-LEARNINGS
+│   .editorconfig
+│   .gitignore
+│   settings.json
+│   readme.md
+├───.vscode
+│       settings.json
+│       tasks.json
+├───assets
+│       input.css
+├───lib
+│   │   logger.py
+│   │   report_utils.py
+│   │
+│   ├───html
+│   │   │   base.py
+│   │   │   components.py
+│   │   │   renderers.py
+│   │   │   theme.css
+│   │   │   theme.min.css
+│   
+│   build_tailwind.py
+│   init.py
+│   run.py
+│   runlist.json
+├───logs
+├───Module-1
+│   │   data_structures.ipynb
+│   ├───Adventure-Games
+│   │       adventure_game.py
+│   ├───Project
+│   │   │   app.py
+│   │   │   customer_data_insights.ipynb
+│   │   ├───templates
+│   │   │       form.html
+│   └───templates
+│           form.html
+└───Module-2
+    ├───NumPy
+    │   │   numpy_basics_report.py
+    │   │   README.md
+    │   ├───reports
+    │   │       arrays_basics_report.html
+    └───Pandas
+        │   pandas_dataframe_fundamentals.py
+        ├───reports
+        │       pandas_dataframe_fundamentals_report.html
+```
 
 ## How to Execute scripts at once
  - List everything the runner found
-`python run.py --list`
+ `python run.py --list` 
+ `python -m run --list `
 
 - Run the two specific scripts in order (from runlist)
 `python run.py --config runlist.json`

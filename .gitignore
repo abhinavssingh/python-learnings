@@ -18,3 +18,9 @@ venv/
 .venv/
 **/venv/
 **/.venv/
+
+# Logs and temporary files
+*.log
+*.tmp
+/settings.json
+!*.json.example

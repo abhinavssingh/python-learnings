@@ -15,9 +15,10 @@
     },
     // Autopep8 options (applied by the extension)
     "autopep8.args": [
-        "--max-line-length=150",
-        "--aggressive",
-        "--aggressive"
+        "--global-config",
+        "${workspaceFolder}/.editorconfig",
+        "--max-line-length",
+        "150"
     ],
     // (Optional) Linting to catch style issues the formatter won’t change
     "python.linting.enabled": true,

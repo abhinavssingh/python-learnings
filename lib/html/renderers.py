@@ -11,7 +11,10 @@ except Exception:
 
 # --- NumPy Arrays ---
 def render_array(arr: np.ndarray) -> str:
-    preview = html.escape(np.array2string(arr, threshold=40))
+    preview = html.escape(
+        np.array2string(arr, threshold=40, max_line_width=80)
+    )
+
     rows = [
         ("Size (elements)", arr.size),
         ("Shape", str(arr.shape)),
@@ -20,13 +23,15 @@ def render_array(arr: np.ndarray) -> str:
         ("Item Size (bytes)", arr.itemsize),
         ("Total Memory", f"{arr.nbytes} bytes"),
     ]
-    return f"""
 
+    return f"""
 <pre class="rounded-lg overflow-x-auto text-xs leading-tight
             p-4
             bg-slate-900 text-slate-100
             dark:bg-gray-200 dark:text-slate-900">
-{preview}</pre>
+{preview}
+</pre>
+
 {render_kv(rows)}
 """
 
@@ -222,15 +227,33 @@ border border-slate-300 dark:border-slate-700
 # --- Generic Key–Value Renderer ---
 
 
-def render_kv(rows: list[tuple[str, str]]) -> str:
+def render_kv(rows):
+    """
+    Tailwind-styled key-value table for metadata (NumPy / general use).
+    """
     html_rows = "\n".join(
-        f"<tr class='odd:bg-gray-50 dark:odd:bg-slate-900'><th class='border border-slate-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-700"
-        f"text-slate-700 dark:text-slate-100 px-4 py-2 font-medium text-left'>{k}</th><td class='border border-slate-300 dark:border-slate-700"
-        f"text-slate-800 dark:text-slate-100 px-4 py-2'>{v}</td></tr>"
+        f"""
+        <tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
+            <th class="border border-slate-300 dark:border-slate-700
+                       bg-gray-100 dark:bg-slate-700
+                       text-slate-700 dark:text-slate-200
+                       font-medium text-left px-4 py-2">
+                {html.escape(str(k))}
+            </th>
+            <td class="border border-slate-300 dark:border-slate-700
+                       text-slate-800 dark:text-slate-200
+                       px-4 py-2">
+                {html.escape(str(v))}
+            </td>
+        </tr>
+        """
         for k, v in rows
     )
+
     return f"""
-<table class="w-full text-sm border-collapse">
-  {html_rows}
+<table class="table-auto border-collapse w-full text-sm mt-2">
+    <tbody>
+        {html_rows}
+    </tbody>
 </table>
 """
