@@ -1,5 +1,15 @@
 root = true
 
+[*]
+# Use Unix-style line endings (LF) for all files
+end_of_line = lf
+# Ensure files end with a final newline character
+insert_final_newline = true
+charset = utf-8
+
+[html/**.py]
+max_line_length = off
+
 [*.py]
 # Define line length for imports (default is 79)
 line_length = 79
@@ -9,8 +19,5 @@ order_by_type = true
 combine_as_imports = true
 indent_style = space
 indent_size = 4
-end_of_line = lf
-charset = utf-8
 trim_trailing_whitespace = true
-insert_final_newline = true
 max_line_length = 150

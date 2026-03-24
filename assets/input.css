@@ -1,16 +1,9 @@
 @import "tailwindcss";
 
-@layer base {
-  /* Force light mode */
-  :root {
-    color-scheme: light;
-  }
-}
+/* Force Tailwind to include all utilities we use */
+@source "../../";
 
-@layer components {
-  /* Component styling overrides if needed */
-}
-
-@layer utilities {
-  /* Your custom utilities */
+/* Default: Light Mode */
+:root {
+  color-scheme: light;
 }
