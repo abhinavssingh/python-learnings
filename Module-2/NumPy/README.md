@@ -6,32 +6,10 @@ This module contains hands‑on exercises and helper utilities to learn **NumPy 
 > NumPy is the fundamental package for scientific computing in Python. If you’re new, start with the official quickstart and user guide, then return here to practice.  
 > Sources: [NumPy Quickstart](https://numpy.org/doc/stable/user/quickstart.html), [NumPy Tutorials repo](https://github.com/numpy/numpy-tutorials)
 
----
-
-## 📦 Requirements
-
-- Python 3.9+
-- NumPy (latest)
-- (Optional) Jupyter/Colab for inline HTML display
-
-```bash
-pip install numpy
-# optional for notebooks
-pip install jupyterlab
-```
 
 ---
 
-## 🚀 Quick Start
-
-Clone and move into this module:
-
-```bash
-git clone https://github.com/abhinavssingh/python-learnings.git
-cd python-learnings/Module-2/NumPy
-```
-
-Run any script, e.g.:
+## Execution
 
 ```bash
 py -m Module-2.NumPy.numpy_basics_report

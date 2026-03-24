@@ -1,11 +1,34 @@
 # Python Learnings
 
-Welcome to the **python-learnings** repository! This repo contains code samples, notes, and resources for learning and experimenting with Python.
+This repository contains a structured collection of Python learning exercises, utilities, report generators, and project experiments.  
+It is organized into multiple modules to keep NumPy, Pandas, fundamental concepts, and utilities clearly separated.
 
-## Contents
+The project includes a dynamic execution system (`run.py`) and a configuration-driven path management system (`init.py` + `settings.json`) to support flexible script execution without requiring Python packages or `__init__.py` files.
+---
+## Folder Structure
+```
+│   .editorconfig       # Defines consistent coding style across the project for all editors.   
+│   .gitignore          # Specifies which files/folders Git should not track.
+│   settings.json
+├───.vscode
+│       tasks.json      # Defines tasks you can run through Terminal → Run Task
+├───assets
+│       input.css       # Input Tailwind CSS file used by build_tailwind.py to generate final CSS.
+├───lib
+│   │   logger.py       # Lightweight logging utility for consistent console output (info/debug/error).
+│   │   report_utils.py # Common report-building utilities for HTML or text generation.
+│   ├───html            # HTML rendering engine which have many files.
+│   init.py             # Used for dynamic path registration.
+│   run.py              # Runner to execute through through Terminal → Run Task
+│   runlist.json        # List of modules to run in sequence via run.py.
+├───logs
+├───Module-1            # Contains Python fundamentals
+└───Module-2
+    ├───NumPy           # NumPy Array Samples 
+    └───Pandas          # Pandas Series and Dataframe Samples
 
-- `module/` — Mini-projects and exercises
-
+```
+---
 ## Getting Started
 
 1. Clone the repository:
@@ -32,71 +55,86 @@ Welcome to the **python-learnings** repository! This repo contains code samples,
         pip install nbstripout
         nbstripout --install
         ```
-## Folder Structure
+---
+## Script Execution
+
+All scripts support **three execution modes**, enabled through `init.py`.
+
+### 1. Direct Script Execution
 ```
-C:\IHFC\PYTHON-LEARNINGS
-│   .editorconfig
-│   .gitignore
-│   settings.json
-│   readme.md
-├───.vscode
-│       settings.json
-│       tasks.json
-├───assets
-│       input.css
-├───lib
-│   │   logger.py
-│   │   report_utils.py
-│   │
-│   ├───html
-│   │   │   base.py
-│   │   │   components.py
-│   │   │   renderers.py
-│   │   │   theme.css
-│   │   │   theme.min.css
-│   
-│   build_tailwind.py
-│   init.py
-│   run.py
-│   runlist.json
-├───logs
-├───Module-1
-│   │   data_structures.ipynb
-│   ├───Adventure-Games
-│   │       adventure_game.py
-│   ├───Project
-│   │   │   app.py
-│   │   │   customer_data_insights.ipynb
-│   │   ├───templates
-│   │   │       form.html
-│   └───templates
-│           form.html
-└───Module-2
-    ├───NumPy
-    │   │   numpy_basics_report.py
-    │   │   README.md
-    │   ├───reports
-    │   │       arrays_basics_report.html
-    └───Pandas
-        │   pandas_dataframe_fundamentals.py
-        ├───reports
-        │       pandas_dataframe_fundamentals_report.html
+python Module-2/NumPy/numpy_basics_report.py
 ```
 
-## How to Execute scripts at once
- - List everything the runner found
- `python run.py --list` 
- `python -m run --list `
+This mode runs the script using its file location as the working directory.  
+`init.py` ensures imports such as:
 
-- Run the two specific scripts in order (from runlist)
-`python run.py --config runlist.json`
+```python
+from lib.logger import log_info
+from lib.html.base import build_html_page
+```
+work correctly.
 
-- Run all NumPy scripts inside Module-2
-`python run.py --only "Module-2.NumPy.*"`
+---
 
-- Run a pattern from anywhere (root-level or nested)
-`python run.py --only "NumPy.numpy_*" --only "Module-2.Pandas.pandas_*"`
+### 2. Module Execution (`python -m package.module`)
+```
+python -m Module-2.NumPy.numpy_basics_report
+```
+This executes the script as a Python module.
 
+---
+
+### 3. Runner-Based Execution (`run.py`)
+#### List all discovered modules:
+```
+python run.py --list
+```
+
+#### Run selected modules (pattern matching):
+```
+python run.py --only "Module-2.NumPy.*"
+```
+
+#### Run scripts defined in `runlist.json`:
+```
+python run.py --config runlist.json
+```
+---
+## How Dynamic Path Resolution Works
+
+### `init.py`
+- Locates the project root by finding `settings.json`.
+- Adds all configured folders to `sys.path`.
+- Allows scripts to run without Python packages or `__init__.py` files.
+- Ensures compatibility with all execution modes.
+
+### `settings.json`
+Defines importable directories:
+```
+{
+    "paths": [
+        "lib",
+        "lib/tools",
+        "Module-1",
+        "Module-2"
+    ]
+}
+```
+
+---
+
+## Tests
+```
+python test.py
+```
+This confirms:
+- direct execution
+- module execution
+- runner discovery
+- pattern matching
+- runlist execution
+
+---
 ## Tech Stack Used
 
 - **Python 3.x** — Core programming language
@@ -104,11 +142,13 @@ C:\IHFC\PYTHON-LEARNINGS
 - **Git** — Version control
 - **VS Code** — Recommended code editor
 - **pip** — Package management
+- **tailwindcss** -- For report generation
 
+---
 ## Contributing
 
 Contributions are welcome! Please open issues or submit pull requests for improvements.
-
+---
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the Apache License.

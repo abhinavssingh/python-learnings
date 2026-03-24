@@ -115,60 +115,78 @@ Value</th>
 
 # --- Pandas DataFrame ---
 def render_dataframe(df):
-    if _HAS_PANDAS:
-        import pandas as pd
+    """
+    Render a pandas DataFrame or DataFrame-like structure.
+    Always returns a string (never None).
+    """
 
-        # Normalize:
-        if isinstance(df, pd.DataFrame):
-            pass
-        elif isinstance(df, list) and all(isinstance(x, dict) for x in df):
-            df = pd.DataFrame(df)
-        elif isinstance(df, dict) and all(isinstance(v, (list, tuple)) for v in df.values()):
-            df = pd.DataFrame(df)
-        else:
-            return f"<div class='text-red-600'>Invalid DataFrame-like object</div>"
+    if not _HAS_PANDAS:
+        return "<div class='text-red-600'>pandas not installed</div>"
 
-        # Empty handling
-        if df.empty:
-            return "<div class='italic text-slate-500'>Empty DataFrame</div>"
+    import pandas as pd
 
-        # Build header
-        header = "".join(
-            f"<th class='border border-slate-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 px-4 py-2"
-            f"font-medium text-left'>{html.escape(str(c))}</th>"
-            for c in df.columns
+    # Normalize input
+    if isinstance(df, pd.DataFrame):
+        pass
+
+    elif isinstance(df, list) and all(isinstance(x, dict) for x in df):
+        df = pd.DataFrame(df)
+
+    elif isinstance(df, dict) and all(isinstance(v, (list, tuple)) for v in df.values()):
+        df = pd.DataFrame(df)
+
+    else:
+        return (
+            "<div class='text-red-600 text-sm'>"
+            "Invalid DataFrame-like object</div>"
         )
 
-        # Build rows
-        rows = ""
-        for idx, row in df.iterrows():
-            cells = "".join(
-                f"<td class='border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 px-4 py-2"
-                f"text-slate-800 dark:text-slate-100 px-4 py-2'>{html.escape(str(v))}</td>"
-                for v in row.values
-            )
-            rows += f"""
-<tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
-    <td class="
-border border-slate-300 dark:border-slate-700
-           text-slate-800 dark:text-slate-100
-           px-4 py-2
-">
-        {html.escape(str(idx))}
-    </td>
+    # Empty DF
+    if df.empty:
+        return "<div class='italic text-slate-500'>Empty DataFrame</div>"
+
+    # ---- HEADER ----
+    header = "".join(
+        f"<th class='border border-slate-300 dark:border-slate-700 "
+        f"bg-gray-100 dark:bg-slate-700 "
+        f"text-slate-700 dark:text-slate-100 px-4 py-2 font-medium'>"
+        f"{html.escape(str(c))}</th>"
+        for c in df.columns
+    )
+
+    # ---- ROWS ----
+    rows = ""
+    for idx, row in df.iterrows():
+        cells = "".join(
+            f"<td class='border border-slate-300 dark:border-slate-700 "
+            f"text-slate-800 dark:text-slate-200 px-4 py-2'>"
+            f"{html.escape(str(v))}</td>"
+            for v in row.values
+        )
+
+        rows += f"""
+<tr class='odd:bg-gray-50 dark:odd:bg-slate-900'>
+    <td class='border border-slate-300 dark:border-slate-700
+               bg-gray-100 dark:bg-slate-800
+               text-slate-700 dark:text-slate-100
+               px-4 py-2 font-medium'>{html.escape(str(idx))}</td>
     {cells}
 </tr>
 """
 
-        return f"""
-<div class="overflow-x-auto">
-<table class="table-auto border-collapse w-full text-sm">
-    <thead><tr class="odd:bg-gray-50 dark:odd:bg-slate-900"><th class="
-border border-slate-300 dark:border-slate-700
-           bg-gray-100 dark:bg-slate-700
-           text-slate-700 dark:text-slate-100
-           px-4 py-2 font-medium text-left
-">Index</th>{header}</tr></thead>
+    # ---- FINAL HTML ----
+    return f"""
+<div class='overflow-x-auto'>
+<table class='table-auto border-collapse w-full text-sm'>
+    <thead>
+        <tr>
+            <th class='border border-slate-300 dark:border-slate-700 
+                      bg-gray-100 dark:bg-slate-700
+                      text-slate-700 dark:text-slate-100 
+                      px-4 py-2'>Index</th>
+            {header}
+        </tr>
+    </thead>
     <tbody>{rows}</tbody>
 </table>
 </div>
