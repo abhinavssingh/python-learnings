@@ -8,6 +8,8 @@
     { "module": "Module-2.Pandas.pandas_series_maths", "function": "main" },
     { "module": "Module-2.Pandas.pandas_series_exercise", "function": "main" },
     { "module": "Module-2.Pandas.pandas_dataframe_fundamentals", "function": "main" },
-    { "module": "Module-2.Pandas.pandas_dataframe_indexing_slicing", "function": "main" }
+    { "module": "Module-2.Pandas.pandas_dataframe_indexing_slicing", "function": "main" },
+    { "module": "Module-2.Pandas.pandas_dataframe_maths", "function": "main" },
+    { "module": "Module-2.Pandas.pandas_dataframe_exercise", "function": "main" }
   ]
 }

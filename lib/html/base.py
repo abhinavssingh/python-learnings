@@ -49,6 +49,43 @@ window.onload = () => {{
     const saved = localStorage.getItem("report-theme") || "light";
     document.documentElement.classList.add(saved);
 }};
+
+function toggleRows(uid, showAll) {{
+    var rows = document.querySelectorAll("tr[data-row='" + uid + "']");
+    var visible = 0;
+
+    rows.forEach(function(row) {{
+        var initiallyHidden = row.getAttribute("data-hidden") === "1";
+
+        if (!showAll && initiallyHidden) {{
+            row.style.display = "none";
+        }} else {{
+            row.style.display = "table-row";
+            visible++;
+        }}
+    }});
+
+    // Update info text
+    var info = document.getElementById(uid + "-info");
+    if (info) {{
+        info.textContent = showAll
+            ? "Showing all " + rows.length + " rows"
+            : "Showing " + visible + " of " + rows.length + " rows";
+    }}
+
+    // Toggle top-right Show Less button
+    var showLessBtn = document.getElementById(uid + "-showless");
+    if (showLessBtn) {{
+        showLessBtn.style.display = showAll ? "inline-flex" : "none";
+    }}
+
+    // Scroll back to top on collapse
+    if (!showAll) {{
+        if (info) {{
+            info.scrollIntoView({{ behavior: "smooth", block: "start" }});
+        }}
+    }}
+}}
 </script>
 
 </head>
