@@ -275,3 +275,13 @@ def render_kv(rows):
     </tbody>
 </table>
 """
+
+
+def render_pre(text: str) -> str:
+    return f"""
+<pre class="rounded-lg overflow-x-auto text-xs leading-tight p-4
+            bg-slate-900 text-slate-100
+            dark:bg-gray-200 dark:text-slate-900">
+{text}
+</pre>
+"""
