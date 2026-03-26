@@ -350,13 +350,64 @@ def render_kv(rows, max_visible_rows: int = 5):
 # --- Preformatted Text Renderer ---- For code snippets, error messages, or any preformatted text.
 
 
-def render_pre(text: str) -> str:
-    return f"""
-<pre class="rounded-lg overflow-x-auto text-xs leading-tight p-4
-            bg-slate-900 text-slate-100
-            dark:bg-gray-200 dark:text-slate-900">
-{text}
+def render_pre(text: str, max_visible_lines: int = 15) -> str:
+    uid = f"pre_{uuid.uuid4().hex[:8]}"
+
+    # Normalize line endings and count lines
+    lines = text.splitlines()
+    line_count = len(lines)
+
+    has_scroll = line_count > max_visible_lines
+
+    # Inline (possibly truncated) view
+    inline_pre = f"""
+<pre class="
+    rounded-lg
+    text-xs
+    leading-tight
+    p-4
+    bg-slate-900
+    text-slate-100
+    dark:bg-gray-200
+    dark:text-slate-900
+    {'max-h-80 overflow-y-auto' if has_scroll else ''}
+">
+{html.escape(text)}
 </pre>
+"""
+
+    # Full (modal) view – no height restriction
+    modal_pre = f"""
+<pre class="
+    rounded-lg
+    text-xs
+    leading-tight
+    p-4
+    bg-slate-900
+    text-slate-100
+    dark:bg-gray-200
+    dark:text-slate-900
+">
+{html.escape(text)}
+</pre>
+"""
+
+    return f"""
+{inline_pre}
+{(
+        f'''
+<button onclick="openModalFromTemplate('{uid}')"
+        class="mt-2 text-sm px-3 py-1.5 rounded
+               bg-slate-600 text-white hover:bg-slate-700">
+  View details
+</button>
+
+<template id="{uid}">
+  {modal_pre}
+</template>
+'''
+        if has_scroll else ""
+    )}
 """
 
 # --- Collapsible DataFrame Renderer --- Renders a DataFrame with "Show more" / "Show less" controls to manage large tables without overwhelming the card's layout.
