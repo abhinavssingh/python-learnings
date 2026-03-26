@@ -33,9 +33,20 @@ body {{
   background-color: var(--bg-color);
   color: var(--fg-color);
 }}
+
+
+/* ---------- Enforce readable text in dark cards ---------- */
+.dark .card,
+.dark table,
+.dark td,
+.dark th,
+.dark pre {{
+        color: #e5e7eb; /* slate-200 */
+}}
 </style>
 
 <script>
+/* -------- Theme Toggle -------- */
 function toggleTheme() {{
     const html = document.documentElement;
     const current = html.classList.contains("dark") ? "dark" : "light";
@@ -50,6 +61,7 @@ window.onload = () => {{
     document.documentElement.classList.add(saved);
 }};
 
+/* -------- Row Toggle (DataFrame Collapsible) -------- */
 function toggleRows(uid, showAll) {{
     var rows = document.querySelectorAll("tr[data-row='" + uid + "']");
     var visible = 0;
@@ -65,7 +77,6 @@ function toggleRows(uid, showAll) {{
         }}
     }});
 
-    // Update info text
     var info = document.getElementById(uid + "-info");
     if (info) {{
         info.textContent = showAll
@@ -73,19 +84,72 @@ function toggleRows(uid, showAll) {{
             : "Showing " + visible + " of " + rows.length + " rows";
     }}
 
-    // Toggle top-right Show Less button
     var showLessBtn = document.getElementById(uid + "-showless");
     if (showLessBtn) {{
         showLessBtn.style.display = showAll ? "inline-flex" : "none";
     }}
 
-    // Scroll back to top on collapse
-    if (!showAll) {{
-        if (info) {{
-            info.scrollIntoView({{ behavior: "smooth", block: "start" }});
-        }}
+    if (!showAll && info) {{
+        info.scrollIntoView({{ behavior: "smooth", block: "start" }});
     }}
 }}
+
+/* -------- Optimized Filter Rows (Debounced) -------- */
+let filterTimeout = null;
+
+function filterRows(uid, query) {{
+    // Debounce: cancel previous filter call
+    if (filterTimeout) {{
+        clearTimeout(filterTimeout);
+    }}
+
+    filterTimeout = setTimeout(function () {{
+        const q = query.toLowerCase();
+        const rows = document.querySelectorAll("tr[data-row='" + uid + "']");
+        let visible = 0;
+
+        rows.forEach(function(row) {{
+            // textContent is MUCH faster than innerText
+            const text = row.textContent.toLowerCase();
+
+            if (text.includes(q)) {{
+                row.style.display = "table-row";
+                visible++;
+            }} else {{
+                row.style.display = "none";
+            }}
+        }});
+
+        const info = document.getElementById(uid + "-info");
+        if (info) {{
+            if (q) {{
+                info.textContent = "Filtered: " + visible + " of " + rows.length + " rows";
+            }} else {{
+                info.textContent = "Showing " + visible + " of " + rows.length + " rows";
+            }}
+        }}
+    }}, 150); // ✅ 150ms debounce
+}}
+
+
+/* -------- Modal Logic (Layout Stable) -------- */
+function openModalFromTemplate(templateId) {{
+    var tpl = document.getElementById(templateId);
+    if (!tpl) return;
+
+    document.getElementById("modal-content").innerHTML = tpl.innerHTML;
+    document.getElementById("global-modal").style.display = "flex";
+}}
+
+function closeModal() {{
+    document.getElementById("global-modal").style.display = "none";
+}}
+
+document.addEventListener("keydown", function(e) {{
+    if (e.key === "Escape") {{
+        closeModal();
+    }}
+}});
 </script>
 
 </head>
@@ -104,6 +168,36 @@ function toggleRows(uid, showAll) {{
 
     {body_html}
   </div>
+
+  <!-- -------- Global Modal (does NOT affect layout) -------- -->
+  <div id="global-modal"
+       style="display:none"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+
+    <div class="bg-white dark:bg-slate-800
+                max-w-6xl w-full mx-6
+                rounded-xl shadow-lg
+                max-h-[85vh] overflow-y-auto">
+
+      <div class="flex justify-between items-center
+                  border-b border-slate-300 dark:border-slate-700
+                  px-6 py-4">
+
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            Details
+        </h3>
+
+        <button onclick="closeModal()"
+                class="text-slate-500 hover:text-slate-900
+                       dark:text-slate-400 dark:hover:text-white text-2xl">
+          &times;
+        </button>
+      </div>
+
+      <div id="modal-content" class="p-6"></div>
+    </div>
+  </div>
+
 </body>
 </html>
 """

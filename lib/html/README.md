@@ -8,6 +8,7 @@ This project provides a **clean, modular, and scalable HTML reporting system** f
 - Dictionary-based metadata and summaries
 - Interactive reports with Light/Dark theme
 - Large CSV / Excel data previews with filtering
+- **On-demand modal (detail) views for truncated content**
 
 The system is designed to **avoid performance issues**, maintain **good UX**, and scale from **small tutorials to large datasets**.
 
@@ -18,8 +19,8 @@ The system is designed to **avoid performance issues**, maintain **good UX**, an
 ```
 lib/
 ├── html/
-│   ├── base.py          # Page shell, CSS injection, JS helpers
-│   ├── components.py    # Layout components (cards, grids)
+│   ├── base.py          # Page shell, CSS injection, JS helpers (theme, modal, filter)
+│   ├── components.py    # Layout components (cards, grids, full-width sections)
 │   ├── renderers.py     # Data renderers (arrays, series, dataframes)
 │   └── theme.css        # Tailwind CSS build
 │
@@ -38,6 +39,7 @@ lib/
 4. **Interactive UX for large datasets**
 5. **Safe for HTML & Python f-strings**
 6. **Consistent Light/Dark theming**
+7. **Progressive disclosure of detail (inline → modal)**
 
 ---
 
@@ -51,8 +53,8 @@ lib/
 
 **Examples:**
 - NumPy array preview
-- Pandas `Series.describe()`
-- Small DataFrame (`df.head()`)
+- Pandas `Series.head()`
+- Small DataFrame
 
 ```python
 card("Original Array", render_array(arr))
@@ -63,13 +65,12 @@ card("Original Array", render_array(arr))
 ### ✅ `full_width_card(title, content)`
 **Use when:**
 - Content is *large or interactive*
-- Tables need horizontal scrolling
-- User interaction is expected
+- Horizontal scrolling is expected
+- Filtering or expansion controls are present
 
 **Examples:**
-- Large CSV / Excel preview
 - Collapsible DataFrame
-- Filterable datasets
+- Filterable CSV / Excel preview
 
 ```python
 full_width_card(
@@ -107,7 +108,12 @@ grid([
 
 **Renders:**
 - Pretty array preview (`<pre>`)
-- Shape, dtype, memory usage (tabular)
+- Shape, dtype, memory usage (key–value table)
+
+**Detail behavior:**
+- Inline view always shown
+- Uses key–value renderer for metadata
+- Modal view is enabled **only if metadata table scrolls**
 
 ✅ Use with `card()`
 
@@ -118,12 +124,18 @@ grid([
 
 **Best for:**
 - Pandas Series
-- Small list-like data
 - Aggregated results
+- Label/value inspection
 
 **Renders:**
 - Index | Value table
-- Styled for light & dark mode
+
+**Detail behavior:**
+- If number of rows ≤ threshold → inline table only
+- If number of rows > threshold:
+  - Inline table with vertical scroll
+  - **“View details” button appears**
+  - Full Series available in modal
 
 ✅ Use with `card()`
 
@@ -135,11 +147,17 @@ grid([
 **Best for:**
 - Statistics
 - Configuration data
-- Aggregation results
+- Pandas `.describe().to_dict()` output
 
 **Renders:**
-- Key-Value table with borders
-- Handles nested dicts and NumPy types
+- Key–Value table
+- Supports **nested dictionaries** (recursive rendering)
+
+**Detail behavior:**
+- Small dictionaries → inline table only
+- Large dictionaries →
+  - Inline table with vertical scroll
+  - **“View details” modal for full structure**
 
 ✅ Use with `card()`
 
@@ -165,31 +183,42 @@ card("DataFrame Info", render_pre(buf.getvalue()))
 ---
 
 ### ✅ `render_dataframe(df)`
-**Purpose:** Small DataFrame rendering
+**Purpose:** Small to medium DataFrame rendering
 
-**Use ONLY when:**
-- `df.shape[0] <= 20–30 rows`
-- `df.head()`, `df.describe()`
+**Use when:**
+- DataFrame is modest in size
+- Displaying `.head()`, `.tail()`, or small computed results
 
-❌ Do NOT use for full CSV / Excel
+**Detail behavior:**
+- If rows ≤ threshold → inline table only
+- If rows > threshold →
+  - Inline table with vertical scroll
+  - **“View details” button shown**
+  - Full DataFrame accessible via modal
+
+❌ Not suitable for very large datasets
 
 ✅ Use with `card()`
-
 
 ---
 
 ### ✅ `render_dataframe_collapsible(df, initial_rows=15)`
-**Purpose:** Interactive DataFrame preview
+**Purpose:** Interactive DataFrame preview for large datasets
 
 ✅ **Recommended for large datasets**
 
 **Features:**
 - Show first N rows by default
-- Show more / show less
-- Filter box (search all columns)
+- Show more / show less controls
+- Debounced filter box (search all columns)
 - Proper index handling
 - Light/Dark theme support
 - No external JS libraries
+
+**Detail behavior:**
+- Inline preview always visible
+- Users progressively expand rows
+- Modal not required because full dataset is already accessible interactively
 
 ✅ Use with `full_width_card()`
 
@@ -204,14 +233,16 @@ full_width_card(
 
 ## 📘 Which renderer to use? (Quick Guide)
 
-| Data type | Size | Renderer | Layout |
-|---------|------|---------|-------|
-NumPy array | small/medium | `render_array` | `card` |
-Pandas Series | any | `render_series` | `card` |
-Metadata dict | any | `render_dict` | `card` |
-Raw text (`.info()`) | any | `render_pre` | `card` |
-Small DataFrame | ≤ 20 rows | `render_dataframe` | `card` |
-Interactive large DF | large | `render_dataframe_collapsible` | `full_width_card` |
+| Data type | Size | Renderer | Layout | Details (Modal) |
+|---------|------|---------|-------|------------------|
+| NumPy array | small/medium | `render_array` | `card` | Conditional |
+| Pandas Series | small | `render_series` | `card` | ❌ |
+| Pandas Series | large | `render_series` | `card` | ✅ |
+| Metadata dict | small | `render_dict` | `card` | ❌ |
+| Metadata dict | large | `render_dict` | `card` | ✅ |
+| Small DataFrame | small | `render_dataframe` | `card` | ❌ |
+| Medium DataFrame | medium | `render_dataframe` | `card` | ✅ |
+| Large DataFrame | large | `render_dataframe_collapsible` | `full_width_card` | N/A |
 
 ---
 
@@ -219,57 +250,55 @@ Interactive large DF | large | `render_dataframe_collapsible` | `full_width_card
 
 - Supported: **Light & Dark**
 - Theme toggled from page header
-- All renderers are theme-aware
-- Index column, borders, text contrast handled explicitly
+- All renderers explicitly set text and background colors
+- Borders and index columns are visible in both themes
+- Modal uses same HTML as inline view
 
 ---
 
 ## ✅ Best Practices
 
 ✅ Do
-- Use `render_dataframe_collapsible()` for large data
+- Use modal view only when content is truncated
+- Use `render_dataframe_collapsible()` for large datasets
 - Separate grid sections from full-width sections
-- Reset index in renderers for user clarity
-- Keep large tables out of grids
+- Keep inline cards readable and compact
 
 ❌ Avoid
-- Rendering entire CSV without pagination/collapse
-- Dumping 1000+ rows in grid cards
-- Mixing summary cards with large tables
-- Relying on implicit Tailwind text colors
+- Showing “View details” when no extra data exists
+- Rendering entire CSV in grid cards
+- Filtering without debouncing on large tables
+- Relying on inherited text colors
 
 ---
 
 ## 🧠 Why this design works
 
 - Prevents browser slowdowns
-- Keeps HTML size reasonable
-- Clear UX separation
-- Easy future extension:
-  - pagination
-  - column sorting
-  - export buttons
-  - sticky headers
+- Keeps grids aligned and stable
+- Uses progressive disclosure for details
+- Modal does not affect layout flow
+- Scales cleanly from small demos to large datasets
 
 ---
 
 ## 🚀 Future Enhancements (Optional)
 
-- ✅ Column sorting
-- ✅ Sticky headers & index
+- ✅ Column sorting (inline or modal)
+- ✅ Sticky headers & index (modal-only)
 - ✅ Page size selector (15 / 50 / 100 / All)
-- ✅ CSV / Excel download
+- ✅ CSV / Excel download from modal
 - ✅ Server-side pagination
 
 ---
 
 ## ✅ Summary
 
-This system is designed to scale from **learning notebooks** to **production-grade HTML dashboards**.
+This system balances **clarity, performance, and extensibility**.
 
-Using the **right renderer + right component** is the key to:
-- Performance
-- UX
-- Maintainability
+Key ideas:
+- Inline views stay compact and readable
+- Details are revealed **only when necessary** via modal windows
+- Large datasets remain interactive without overwhelming the UI
 
-You’re building this exactly the right way.
+You’re building this the right way.

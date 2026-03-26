@@ -38,117 +38,108 @@ def render_array(arr: np.ndarray) -> str:
 
 # --- Pandas Series ---
 def render_series(s, max_visible_rows: int = 5):
-    """
-    Render a pandas Series or list-like object.
-    Adds vertical scrolling if the number of rows exceeds max_visible_rows.
-    """
+    uid = f"series_{uuid.uuid4().hex[:8]}"
 
     def build_rows(iterable):
         return "\n".join(
             f"""
             <tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
-                <td class="border border-slate-300 dark:border-slate-700
-                           text-slate-800 dark:text-slate-100
-                           px-4 py-2 font-medium">
-                    {html.escape(str(i))}
-                </td>
-                <td class="border border-slate-300 dark:border-slate-700
-                           text-slate-800 dark:text-slate-100
-                           px-4 py-2">
-                    {html.escape(str(v))}
-                </td>
+              <td class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-white dark:bg-slate-800
+    px-4 py-2
+">
+                {html.escape(str(i))}
+              </td>
+              <td class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-white dark:bg-slate-800
+    px-4 py-2
+">
+                {html.escape(str(v))}
+              </td>
             </tr>
             """
             for i, v in iterable
         )
 
-    # --- Handle list / tuple / numpy array ---
     if isinstance(s, (list, tuple, np.ndarray)):
-        row_count = len(s)
         rows = build_rows(enumerate(s))
-
-    # --- Handle pandas Series ---
-    elif _HAS_PANDAS:
-        import pandas as pd
-        if isinstance(s, pd.Series):
-            row_count = len(s)
-            rows = build_rows(s.items())
-        else:
-            return f"<div class='text-red-600'>Cannot render series-like object: {type(s)}</div>"
+        row_count = len(s)
+    elif _HAS_PANDAS and isinstance(s, pd.Series):
+        rows = build_rows(s.items())
+        row_count = len(s)
     else:
-        return f"<div class='text-red-600'>Cannot render series-like object: {type(s)}</div>"
+        return "<div class='text-red-600'>Cannot render series</div>"
 
-    # Enable scrolling only if series is large
-    scroll_wrapper_class = (
-        "max-h-64 overflow-y-auto pr-1"
-        if row_count > max_visible_rows
-        else ""
-    )
+    has_scroll = row_count > max_visible_rows
+    scroll_class = "max-h-64 overflow-y-auto pr-1" if has_scroll else ""
+
+    table = f"""
+    <table class="table-auto border-collapse w-full text-sm">
+      <thead>
+        <tr>
+          <th class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-gray-100 dark:bg-slate-700
+    px-4 py-2 font-medium
+">Index</th>
+          <th class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-gray-100 dark:bg-slate-700
+    px-4 py-2
+">Value</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    """
 
     return f"""
-<div class="{scroll_wrapper_class}">
-  <table class="table-auto border-collapse w-full text-sm">
-    <thead>
-      <tr>
-        <th class="border border-slate-300 dark:border-slate-700
-                   bg-gray-100 dark:bg-slate-700
-                   text-slate-700 dark:text-slate-100
-                   px-4 py-2 font-medium text-left">
-          Index
-        </th>
-        <th class="border border-slate-300 dark:border-slate-700
-                   bg-gray-100 dark:bg-slate-700
-                   text-slate-700 dark:text-slate-100
-                   px-4 py-2 font-medium text-left">
-          Value
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      {rows}
-    </tbody>
-  </table>
+<div class="{scroll_class}">
+  {table}
 </div>
+{(
+        f'''
+<button onclick="openModalFromTemplate('{uid}')"
+        class="mt-2 text-sm px-3 py-1.5 rounded bg-slate-600 text-white hover:bg-slate-700">
+  View details
+</button>
+
+<template id="{uid}">
+  {table}
+</template>
+'''
+        if has_scroll else ""
+    )}
 """
 
 
 # --- Pandas DataFrame ---
 def render_dataframe(df, max_visible_rows: int = 5):
-    """
-    Render a pandas DataFrame or DataFrame-like structure.
-    Adds vertical scrolling when row count exceeds max_visible_rows.
-    """
-
     if not _HAS_PANDAS:
         return "<div class='text-red-600'>pandas not installed</div>"
 
-    import pandas as pd
+    if not isinstance(df, pd.DataFrame):
+        return "<div class='text-red-600'>Invalid DataFrame</div>"
 
-    # -------- Normalize input --------
-    if isinstance(df, pd.DataFrame):
-        pass
-    elif isinstance(df, list) and all(isinstance(x, dict) for x in df):
-        df = pd.DataFrame(df)
-    elif isinstance(df, dict) and all(isinstance(v, (list, tuple)) for v in df.values()):
-        df = pd.DataFrame(df)
-    else:
-        return (
-            "<div class='text-red-600 text-sm'>"
-            "Invalid DataFrame-like object</div>"
-        )
-
-    # Empty DF
     if df.empty:
         return "<div class='italic text-slate-500'>Empty DataFrame</div>"
 
+    uid = f"df_{uuid.uuid4().hex[:8]}"
     row_count = len(df)
+    has_scroll = row_count > max_visible_rows
 
-    # -------- Header --------
+    # ---- Header (unchanged from old version) ----
     header = "".join(
         f"""
         <th class="border border-slate-300 dark:border-slate-700
                    bg-gray-100 dark:bg-slate-700
-                   text-slate-700 dark:text-slate-100
+                   text-slate-900 dark:text-slate-100
                    px-4 py-2 font-medium">
             {html.escape(str(c))}
         </th>
@@ -156,13 +147,13 @@ def render_dataframe(df, max_visible_rows: int = 5):
         for c in df.columns
     )
 
-    # -------- Rows --------
+    # ---- Rows (restore striping + old backgrounds) ----
     rows = ""
     for idx, row in df.iterrows():
         cells = "".join(
             f"""
-            <td class="border border-slate-300 dark:border-slate-700
-                       text-slate-800 dark:text-slate-200
+            <td class="border border-slate-300 dark:border-slate-600
+                       text-slate-900 dark:text-slate-100
                        px-4 py-2">
                 {html.escape(str(v))}
             </td>
@@ -172,9 +163,9 @@ def render_dataframe(df, max_visible_rows: int = 5):
 
         rows += f"""
 <tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
-    <td class="border border-slate-300 dark:border-slate-700
+    <td class="border border-slate-300 dark:border-slate-600
                bg-gray-100 dark:bg-slate-800
-               text-slate-800 dark:text-slate-100
+               text-slate-900 dark:text-slate-100
                px-4 py-2 font-medium">
         {html.escape(str(idx))}
     </td>
@@ -182,152 +173,180 @@ def render_dataframe(df, max_visible_rows: int = 5):
 </tr>
 """
 
-    # -------- Conditional scroll wrapper --------
-    scroll_wrapper_class = (
-        "max-h-72 overflow-y-auto pr-1"
-        if row_count > max_visible_rows
-        else ""
-    )
+    table = f"""
+<table class="table-auto border-collapse w-full text-sm">
+    <thead>
+        <tr>
+            <th class="border border-slate-300 dark:border-slate-700
+                       bg-gray-100 dark:bg-slate-700
+                       text-slate-900 dark:text-slate-100
+                       px-4 py-2 font-medium">
+                Index
+            </th>
+            {header}
+        </tr>
+    </thead>
+    <tbody>
+        {rows}
+    </tbody>
+</table>
+"""
 
-    # -------- Final HTML --------
+    scroll_class = "max-h-72 overflow-y-auto pr-1" if has_scroll else ""
+
     return f"""
-<div class="{scroll_wrapper_class} overflow-x-auto">
-  <table class="table-auto border-collapse w-full text-sm">
-      <thead>
-          <tr>
-              <th class="border border-slate-300 dark:border-slate-700
-                         bg-gray-100 dark:bg-slate-700
-                         text-slate-700 dark:text-slate-100
-                         px-4 py-2">
-                  Index
-              </th>
-              {header}
-          </tr>
-      </thead>
-      <tbody>
-          {rows}
-      </tbody>
-  </table>
+<div class="{scroll_class} overflow-x-auto">
+  {table}
 </div>
+{(
+        f'''
+<button onclick="openModalFromTemplate('{uid}')"
+        class="mt-2 text-sm px-3 py-1.5 rounded
+               bg-slate-600 text-white hover:bg-slate-700">
+  View details
+</button>
+
+<template id="{uid}">
+  {table}
+</template>
+'''
+        if has_scroll else ""
+    )}
 """
 
 
 # --- Python Dict ---
-def render_dict(d: dict, title: str | None = None, max_visible_rows: int = 1) -> str:
-    """
-    Render a Python dict as a Tailwind key-value table.
-    If the dict is large, enable vertical scrolling to avoid card height explosion.
-    """
+def render_dict(d: dict, title: str | None = None, max_visible_rows: int = 1):
+    uid = f"dict_{uuid.uuid4().hex[:8]}"
+    row_count = len(d)
+    has_scroll = row_count > max_visible_rows
 
     def clean_value(v):
+        # NumPy scalar → Python scalar
         if isinstance(v, (np.generic,)):
             return v.item()
+
+    # Plain Python scalar
+        if isinstance(v, (int, float, bool, str)):
+            return v
+
+    # Lists / arrays
         if isinstance(v, (list, tuple, np.ndarray)):
             return ", ".join(str(clean_value(x)) for x in v)
+
+    # ✅ FIX: Nested dict → render recursively
         if isinstance(v, dict):
             return render_dict(v)
-        return str(v)
 
-    row_count = len(d)
+    # Fallback
+        return str(v)
 
     rows = "\n".join(
         f"""
         <tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
-            <th class="
-                border border-slate-300 dark:border-slate-700
-                bg-gray-100 dark:bg-slate-700
-                text-slate-700 dark:text-slate-100
-                px-4 py-2 font-medium text-left
-            ">
-                {html.escape(str(k))}
-            </th>
-            <td class="
-                border border-slate-300 dark:border-slate-700
-                text-slate-800 dark:text-slate-200
-                px-4 py-2
-            ">
-                {clean_value(v)}
-            </td>
+          <th class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-gray-100 dark:bg-slate-700
+    px-4 py-2 font-medium
+">
+            {html.escape(str(k))}
+          </th>
+          <td class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-white dark:bg-slate-800
+    px-4 py-2
+">
+            {clean_value(v)}
+          </td>
         </tr>
         """
         for k, v in d.items()
     )
 
-    header = (
-        f"<h3 class='text-md font-semibold mb-2 text-slate-800 dark:text-slate-100'>{title}</h3>"
-        if title
-        else ""
-    )
-
-    # Enable scroll if dictionary is large
-    scroll_wrapper_class = (
-        "max-h-72 overflow-y-auto pr-1"
-        if row_count > max_visible_rows
-        else ""
-    )
+    scroll_class = "max-h-72 overflow-y-auto pr-1" if has_scroll else ""
+    header = f"<h3 class='text-md font-semibold mb-2'>{title}</h3>" if title else ""
 
     return f"""
 {header}
-<div class="{scroll_wrapper_class}">
+<div class="{scroll_class}">
   <table class="table-auto border-collapse w-full text-sm">
-      <tbody>
-          {rows}
-      </tbody>
+    <tbody>{rows}</tbody>
   </table>
 </div>
-"""
+{(
+        f'''
+<button onclick="openModalFromTemplate('{uid}')"
+        class="mt-2 text-sm px-3 py-1.5 rounded bg-slate-600 text-white hover:bg-slate-700">
+  View details
+</button>
 
+<template id="{uid}">
+  <table class="table-auto border-collapse w-full text-sm">
+    <tbody>{rows}</tbody>
+  </table>
+</template>
+'''
+        if has_scroll else ""
+    )}
+"""
 # --- Generic Key–Value Renderer ---
 
 
 def render_kv(rows, max_visible_rows: int = 5):
-    """
-    Tailwind-styled key-value table for metadata (NumPy / general use).
-    Adds vertical scrolling when the number of rows exceeds max_visible_rows.
-    """
-
+    uid = f"kv_{uuid.uuid4().hex[:8]}"
     row_count = len(rows)
+    has_scroll = row_count > max_visible_rows
 
     html_rows = "\n".join(
         f"""
         <tr class="odd:bg-gray-50 dark:odd:bg-slate-900">
-            <th class="
-                border border-slate-300 dark:border-slate-700
-                bg-gray-100 dark:bg-slate-700
-                text-slate-700 dark:text-slate-200
-                font-medium text-left px-4 py-2
-            ">
-                {html.escape(str(k))}
-            </th>
-            <td class="
-                border border-slate-300 dark:border-slate-700
-                text-slate-800 dark:text-slate-200
-                px-4 py-2
-            ">
-                {html.escape(str(v))}
-            </td>
+          <th class="
+              border border-slate-300 dark:border-slate-600
+              bg-gray-100 dark:bg-slate-700
+              text-slate-900 dark:text-slate-100
+              px-4 py-2 font-medium text-left
+          ">
+              {html.escape(str(k))}
+          </th>
+          <td class="
+              border border-slate-300 dark:border-slate-600
+              bg-white dark:bg-slate-800
+              text-slate-900 dark:text-slate-100
+              px-4 py-2
+          ">
+              {html.escape(str(v))}
+          </td>
         </tr>
         """
         for k, v in rows
     )
 
-    # Enable vertical scroll only for large metadata sets
-    scroll_wrapper_class = (
-        "max-h-64 overflow-y-auto pr-1"
-        if row_count > max_visible_rows
-        else ""
-    )
+    scroll_class = "max-h-64 overflow-y-auto pr-1" if has_scroll else ""
 
     return f"""
-<div class="{scroll_wrapper_class}">
-    <table class="table-auto border-collapse w-full text-sm mt-2">
-        <tbody>
-            {html_rows}
-        </tbody>
-    </table>
+<div class="{scroll_class}">
+  <table class="table-auto border-collapse w-full text-sm mt-2">
+    <tbody>{html_rows}</tbody>
+  </table>
 </div>
-"""
+{(
+        f'''
+<button onclick="openModalFromTemplate('{uid}')"
+        class="mt-2 text-sm px-3 py-1.5 rounded bg-slate-600 text-white hover:bg-slate-700">
+  View details
+</button>
 
+<template id="{uid}">
+  <table class="table-auto border-collapse w-full text-sm">
+    <tbody>{html_rows}</tbody>
+  </table>
+</template>
+'''
+        if has_scroll else ""
+    )}
+"""
 # --- Preformatted Text Renderer ---- For code snippets, error messages, or any preformatted text.
 
 
@@ -358,9 +377,12 @@ def render_dataframe_collapsible(df, initial_rows: int = 15) -> str:
     # Header
     header = "".join(
         f"""
-        <th class="border border-slate-300 dark:border-slate-700
-                   bg-gray-100 dark:bg-slate-700
-                   px-4 py-2 text-left font-medium text-slate-700 dark:text-slate-200">
+        <th class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-gray-100 dark:bg-slate-700
+    px-4 py-2 font-medium
+">
             {html.escape(str(col))}
         </th>
         """
@@ -372,8 +394,12 @@ def render_dataframe_collapsible(df, initial_rows: int = 15) -> str:
     for row_idx, (df_index, row) in enumerate(df.iterrows()):
         cells = "".join(
             f"""
-            <td class="border border-slate-300 dark:border-slate-700
-                       px-4 py-2 text-slate-800 dark:text-slate-200">
+            <td class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-white dark:bg-slate-800
+    px-4 py-2
+">
                 {html.escape(str(v))}
             </td>
             """
@@ -387,10 +413,12 @@ def render_dataframe_collapsible(df, initial_rows: int = 15) -> str:
         data-row="{uid}"
         data-hidden="{1 if row_idx >= initial_rows else 0}"
         {hidden_style}>
-        <td class="border border-slate-300 dark:border-slate-700
-           px-4 py-2 font-medium text-left
-           text-slate-800 dark:text-slate-100
-           bg-gray-100 dark:bg-slate-800">
+        <td class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-white dark:bg-slate-800
+    px-4 py-2
+">
             {html.escape(str(df_index))}
         </td>
         {cells}
@@ -437,9 +465,12 @@ def render_dataframe_collapsible(df, initial_rows: int = 15) -> str:
     <table class="table-auto border-collapse w-full text-sm">
       <thead>
         <tr>
-          <th class="border border-slate-300 dark:border-slate-700
-                     bg-gray-100 dark:bg-slate-700
-                     px-4 py-2 text-left font-medium">
+              <th class="
+border border-slate-300 dark:border-slate-700
+    text-slate-900 dark:text-slate-100
+    bg-gray-100 dark:bg-slate-700
+    px-4 py-2 font-medium
+">
             Index
           </th>
           {header}
