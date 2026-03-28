@@ -9,7 +9,7 @@ from lib.report_utils import save_html_report
 
 def main():
     # your current script code goes here
-    print("Running NumPy basics report...")
+    print("Running Pandas dataframe maths report...")
     # ...
 
 
@@ -49,7 +49,7 @@ df_intersection = pd.merge(df_1, df_2, on='Key', how='inner')  # Intersection of
 df_1_sorted = df_1.sort_values(by='Col_A')  # Sort df_1 by 'Col_A'
 df_2_sorted = df_2.sort_values(by='Col_C')  # Sort df_2 by 'Col_C'
 
-html_doc = build_html_page("Pandas Dataframe Fundamentals Report", grid([
+html_doc = build_html_page("Pandas Dataframe Maths Report", grid([
     card("Dataframe 1:", render_dataframe(df_1)),
     card("Dataframe 2:", render_dataframe(df_2)),
     card("Sum of Dataframes:", render_dataframe(df_sum)),
@@ -75,7 +75,7 @@ html_doc = build_html_page("Pandas Dataframe Fundamentals Report", grid([
 # html_doc is the string you already have
 output_path = save_html_report(
     __file__,
-    "pandas_dataframe_fundamentals_report.html",   # file name
+    "pandas_dataframe_maths_report.html",   # file name
     html_doc,
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True

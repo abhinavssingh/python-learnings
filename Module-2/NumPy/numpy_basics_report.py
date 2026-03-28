@@ -33,7 +33,7 @@ arr3_t = arr3.transpose()
 # Build full column-wise page
 
 html = build_html_page(
-    "NumPy Arrays Basic Report",
+    "NumPy Basic Report",
     grid([
         card("Original Array (int)", render_array(arr1)),
         card("Reshape Array (int)", render_array(arr1_reshape)),
@@ -50,7 +50,7 @@ html = build_html_page(
 # html_doc is the string you already have
 output_path = save_html_report(
     __file__,
-    "arrays_basics_report.html",   # file name
+    "numpy_basics_report.html",   # file name
     html,
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True

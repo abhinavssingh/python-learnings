@@ -8,7 +8,7 @@ from lib.report_utils import save_html_report
 
 def main():
     # your current script code goes here
-    print("Running NumPy basics report...")
+    print("Running NumPy Transpose Operations report...")
     # ...
 
 
@@ -114,7 +114,7 @@ html_doc = build_html_page(
 # html_doc is the string you already have
 output_path = save_html_report(
     __file__,
-    "arrays_transpose_report.html",
+    "numpy_transpose_report.html",
     html_doc,
     subfolder="reports",
     open_in_browser=True

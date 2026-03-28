@@ -10,7 +10,7 @@ from lib.report_utils import save_html_report
 
 def main():
     # your current script code goes here
-    print("Running NumPy basics report...")
+    print("Running Pandas DataFrame Fundamentals report...")
     # ...
 
 
@@ -32,6 +32,58 @@ df_list = pd.DataFrame(data_list, columns=columns_name)
 data_array = np.array([['Alice', 25, 50000],
                        ['Bob', 30, 60000],
                        ['Charlie', 22, 45000]])
+
+# Creating a DataFrame from a NumPy array using random method
+
+# For reproducibility (optional)
+np.random.seed(42)
+
+# Number of employees
+n = 10
+
+# Data generation
+data = {
+    "Name": [f"Employee_{i+1}" for i in range(n)],
+
+    "Age": np.random.randint(22, 40, size=n),
+
+    "Gender": np.random.choice(
+        ["Male", "Female"], size=n
+    ),
+
+    "Salary": np.random.randint(
+        40000, 100000, size=n
+    ),
+
+    "City": np.random.choice(
+        ["Delhi", "Gurgaon", "Noida", "Faridabad", "Mohali", "Chandigarh", "Mumbai"], size=n
+    ),
+
+    "Zipcode": np.random.choice(
+        [110001, 122001, 201301, 121001, 160055, 160001, 400001], size=n
+    ),
+
+    "Education": np.random.choice(
+        ["B.Tech", "MBA", "B.Com", "M.Tech", "MCA", "BBA"], size=n
+    ),
+
+    "Passing Year": np.random.randint(
+        2012, 2023, size=n
+    )
+}
+
+# Create DataFrame
+hr_df = pd.DataFrame(data)
+
+
+# Create Employee ID as the DataFrame Index (Best Practice)
+# hr_df.index = [f"EMP{1001+i}" for i in range(n)]
+# hr_df.index.name = "Employee_ID"
+
+# Keep Employee ID as a Column, Then Set Index
+hr_df.insert(0, "Employee_ID", [f"EMP{1001+i}" for i in range(n)])
+hr_df.set_index("Employee_ID", inplace=True)
+
 
 df_array = pd.DataFrame(data_array, columns=columns_name)
 df_array_head = df_array.head(2)  # Get the first few rows of the DataFrame
@@ -57,6 +109,7 @@ html_doc = build_html_page("Pandas Dataframe Fundamentals Report", grid([
     card("Dataframe description are:", render_dict(df_array.describe().to_dict())),
     card("Shape of the Dataframe created by Numpy Array is:", render_dict({"Shape": df_array.shape})),
     card("First 2 rows of the Dataframe created by Numpy Array:", render_dataframe(df_array_head)),
+    card("HR Dataframe created by Random Numpy Array is:", render_dataframe(hr_df)),
 ]))
 
 

@@ -9,7 +9,7 @@ from lib.report_utils import save_html_report
 
 def main():
     # your current script code goes here
-    print("Running NumPy basics report...")
+    print("Running Pandas series exercise report...")
     # ...
 
 
