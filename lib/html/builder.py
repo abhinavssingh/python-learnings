@@ -1,13 +1,12 @@
 """
 HtmlBuilder: A unified class-based interface for building HTML reports.
 
-This class provides a single import point that internally delegates to the 
+This class provides a single import point that internally delegates to the
 modular builder classes (PageBuilder, ComponentsBuilder, RenderersBuilder),
 keeping the codebase clean and fully object-oriented.
 
 Usage:
     from lib.html import HtmlBuilder
-    
     builder = HtmlBuilder()
     html = builder.build_page(
         "Report Title",cl
@@ -29,7 +28,7 @@ class HtmlBuilder:
     Unified interface for HTML report generation.
 
     Internally delegates to PageBuilder, ComponentsBuilder, and RenderersBuilder
-    for clean code organization. All HTML functionality accessible through a 
+    for clean code organization. All HTML functionality accessible through a
     single class instance.
     """
 

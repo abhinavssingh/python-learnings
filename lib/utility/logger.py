@@ -23,11 +23,17 @@ class Logger:
     # ------------------------------------------------------------------
     # Initialization
     # ------------------------------------------------------------------
+
     @classmethod
     def _get_project_root(cls) -> Path:
-        return Path(__file__).resolve().parents[1]
+        current = Path(__file__).resolve()
+        for parent in current.parents:
+            if (parent / "settings.json").exists():
+                return parent
+        raise RuntimeError("Project root not found (settings.json missing)")
 
     ROOT = _get_project_root.__func__(None)
+
     CONFIG_FILE = ROOT / "settings.json"
     LOG_DIR = ROOT / "log"
     LOG_DIR.mkdir(exist_ok=True)

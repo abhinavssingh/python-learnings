@@ -5,7 +5,6 @@ Provides a single-interface class-based approach to building styled HTML reports
 
 Usage:
     from lib.html import HtmlBuilder
-    
     builder = HtmlBuilder()
     html = builder.build_page(
         "Report Title",
