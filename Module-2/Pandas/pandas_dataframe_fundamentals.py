@@ -2,10 +2,8 @@ import numpy as np
 import pandas as pd
 import io
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_dataframe, render_dict, render_pre
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -13,6 +11,10 @@ def main():
     print("Running Pandas DataFrame Fundamentals report...")
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 # Creating a DataFrame from a dictionary
 data_dict = {'Name': ['Alice', 'Bob', 'Charlie'],
@@ -93,28 +95,28 @@ buffer = io.StringIO()
 df_dict_info = df_dict.info(buf=buffer)
 df_dict_info_str = buffer.getvalue()  # Retrieve the string from the buffer
 
-html_doc = build_html_page("Pandas Dataframe Fundamentals Report", grid([
-    card("Dataframe created by Dictionary is:", render_dataframe(df_dict)),
-    card("Type of the Dataframe created by Dictionary is:", render_dict({"Type": type(df_dict).__name__})),
-    card("Dataframe description are:", render_dict(df_dict.describe().to_dict())),
-    card("Information about the Dataframe created by Dictionary is:", render_pre(df_dict_info_str)),
-    card("Last row of the Dataframe created by Dictionary:", render_dataframe(df_dict_tail)),
-    card("Shape of the Dataframe is:", render_dict({"Shape": df_dict.shape})),
-    card("Dataframe created by Lists is:", render_dataframe(df_list)),
-    card("Type of the Dataframe created by Lists is:", render_dict({"Type": type(df_list).__name__})),
-    card("Dataframe description are:", render_dict(df_list.describe().to_dict())),
-    card("Shape of the Dataframe created by Lists is:", render_dict({"Shape": df_list.shape})),
-    card("Dataframe created by Numpy Array is:", render_dataframe(df_array)),
-    card("Type of the Dataframe created by Numpy Array is:", render_dict({"Type": type(df_array).__name__})),
-    card("Dataframe description are:", render_dict(df_array.describe().to_dict())),
-    card("Shape of the Dataframe created by Numpy Array is:", render_dict({"Shape": df_array.shape})),
-    card("First 2 rows of the Dataframe created by Numpy Array:", render_dataframe(df_array_head)),
-    card("HR Dataframe created by Random Numpy Array is:", render_dataframe(hr_df)),
+html_doc = builder.build_page("Pandas Dataframe Fundamentals Report", builder.grid([
+    builder.card("Dataframe created by Dictionary is:", builder.render_dataframe(df_dict)),
+    builder.card("Type of the Dataframe created by Dictionary is:", builder.render_dict({"Type": type(df_dict).__name__})),
+    builder.card("Dataframe description are:", builder.render_dict(df_dict.describe().to_dict())),
+    builder.card("Information about the Dataframe created by Dictionary is:", builder.render_pre(df_dict_info_str)),
+    builder.card("Last row of the Dataframe created by Dictionary:", builder.render_dataframe(df_dict_tail)),
+    builder.card("Shape of the Dataframe is:", builder.render_dict({"Shape": df_dict.shape})),
+    builder.card("Dataframe created by Lists is:", builder.render_dataframe(df_list)),
+    builder.card("Type of the Dataframe created by Lists is:", builder.render_dict({"Type": type(df_list).__name__})),
+    builder.card("Dataframe description are:", builder.render_dict(df_list.describe().to_dict())),
+    builder.card("Shape of the Dataframe created by Lists is:", builder.render_dict({"Shape": df_list.shape})),
+    builder.card("Dataframe created by Numpy Array is:", builder.render_dataframe(df_array)),
+    builder.card("Type of the Dataframe created by Numpy Array is:", builder.render_dict({"Type": type(df_array).__name__})),
+    builder.card("Dataframe description are:", builder.render_dict(df_array.describe().to_dict())),
+    builder.card("Shape of the Dataframe created by Numpy Array is:", builder.render_dict({"Shape": df_array.shape})),
+    builder.card("First 2 rows of the Dataframe created by Numpy Array:", builder.render_dataframe(df_array_head)),
+    builder.card("HR Dataframe created by Random Numpy Array is:", builder.render_dataframe(hr_df)),
 ]))
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "pandas_dataframe_fundamentals_report.html",   # file name
     html_doc,

@@ -31,7 +31,7 @@ from init import register_paths
 register_paths()
 
 
-from lib.logger import log_info, log_debug, log_error  # noqa: E402
+from lib.utility.logger import Logger  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parent
 
 
@@ -141,28 +141,28 @@ def import_and_call(module_path: str, func_name: str = "main") -> int:
     try:
         mod = importlib.import_module(module_path)
     except Exception as e:
-        log_error(f"Import failed for {module_path}: {e}")
+        Logger.error(f"Import failed for {module_path}: {e}")
         return 1
 
     func = getattr(mod, func_name, None)
     if callable(func):
-        log_info(f"Calling {module_path}.{func_name}()")
+        Logger.info(f"Calling {module_path}.{func_name}()")
         try:
             rv = func()
             return 0 if (rv is None or rv == 0) else int(rv)
         except SystemExit as se:
             return int(se.code) if isinstance(se.code, int) else 1
         except Exception as e:
-            log_error(f"Error while running {module_path}.{func_name}(): {e}")
+            Logger.error(f"Error while running {module_path}.{func_name}(): {e}")
             return 1
     else:
-        log_debug(f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
+        Logger.debug(f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
         return 1
 
 
 def run_as_module(module_path: str) -> int:
     cmd = [sys.executable, "-m", module_path]
-    log_info(f"Executing: {' '.join(cmd)}")
+    Logger.info(f"Executing: {' '.join(cmd)}")
     proc = subprocess.run(cmd, cwd=REPO_ROOT)
     return proc.returncode
 

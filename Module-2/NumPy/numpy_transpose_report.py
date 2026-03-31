@@ -1,9 +1,7 @@
 import numpy as np
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_array
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -11,6 +9,10 @@ def main():
     print("Running NumPy Transpose Operations report...")
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 # Your arrays
 # 0D array
@@ -89,30 +91,30 @@ a4_t_0132 = a4.transpose(0, 1, 3, 2)
 a4_t_1023 = a4.transpose(1, 0, 2, 3)
 
 # Build full column-wise page
-html_doc = build_html_page(
+html_doc = builder.build_page(
     "NumPy Transpose Operations Report",
-    grid([
-        card("Original array 0D (int)", render_array(a0)),
-        card("Original array 1D (int)", render_array(a1)),
-        card("Original array 2D (int)", render_array(a2)),
-        card("Transpose array 2D (int)", render_array(a2_t)),
-        card("Index Based Transpose array 2D (int)", render_array(a2_t_idx)),
-        card("Original array 3D (int)", render_array(a3)),
-        card("Transpose array 3D (int)", render_array(a3_t)),
-        card("Index 0,2,1 based Transpose array 3D (int)", render_array(a3_t_021)),
-        card("Index 1,0,2 based Transpose array 3D (int)", render_array(a3_t_102)),
-        card("Index 1,2,0 based Transpose array 3D (int)", render_array(a3_t_120)),
-        card("Original array 4D (int)", render_array(a4)),
-        card("Transpose array 4D (int)", render_array(a4_t)),
-        card("Index 0,1,3,2 based Transpose array 4D (int)", render_array(a4_t_0132)),
-        card("Index 0,2,3,1 based Transpose array 4D (int)", render_array(a4_t_0231)),
-        card("Index 0,3,1,2 based Transpose array 4D (int)", render_array(a4_t_0312)),
-        card("Index 1,0,2,3 based Transpose array 4D (int)", render_array(a4_t_1023)),
+    builder.grid([
+        builder.card("Original array 0D (int)", builder.render_array(a0)),
+        builder.card("Original array 1D (int)", builder.render_array(a1)),
+        builder.card("Original array 2D (int)", builder.render_array(a2)),
+        builder.card("Transpose array 2D (int)", builder.render_array(a2_t)),
+        builder.card("Index Based Transpose array 2D (int)", builder.render_array(a2_t_idx)),
+        builder.card("Original array 3D (int)", builder.render_array(a3)),
+        builder.card("Transpose array 3D (int)", builder.render_array(a3_t)),
+        builder.card("Index 0,2,1 based Transpose array 3D (int)", builder.render_array(a3_t_021)),
+        builder.card("Index 1,0,2 based Transpose array 3D (int)", builder.render_array(a3_t_102)),
+        builder.card("Index 1,2,0 based Transpose array 3D (int)", builder.render_array(a3_t_120)),
+        builder.card("Original array 4D (int)", builder.render_array(a4)),
+        builder.card("Transpose array 4D (int)", builder.render_array(a4_t)),
+        builder.card("Index 0,1,3,2 based Transpose array 4D (int)", builder.render_array(a4_t_0132)),
+        builder.card("Index 0,2,3,1 based Transpose array 4D (int)", builder.render_array(a4_t_0231)),
+        builder.card("Index 0,3,1,2 based Transpose array 4D (int)", builder.render_array(a4_t_0312)),
+        builder.card("Index 1,0,2,3 based Transpose array 4D (int)", builder.render_array(a4_t_1023)),
     ])
 )
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "numpy_transpose_report.html",
     html_doc,

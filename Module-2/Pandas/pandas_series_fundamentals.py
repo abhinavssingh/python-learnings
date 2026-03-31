@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_series, render_dict
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -34,32 +32,33 @@ string_series = pd.Series(['apple', 'banana', 'cherry', 'date', 'elderberry'])
 string_series_char_pattern = string_series[string_series.str.startswith('b')]
 string_series_char_contains = string_series[string_series.str.contains("er")]
 
-html_doc = build_html_page("Pandas Series Fundamentals Report", grid([
-    card("Original series is:", render_series(series)),
-    card("Type of the Series is:", render_dict({"dtype": str(series.dtype)})),
-    card("Series description are:", render_dict(series.describe().to_dict())),
-    card("Shape of the Series is:", render_dict({"shape": series.shape})),
-    card("Unique values in the series are:", render_series(series.unique())),
-    card("No of unique values in the Series are:", render_series([series.nunique()])),
-    card("First 5 value of the Series are:", render_series(series.head(5))),
-    card("Last 4 values of the Series are:", render_series(series.tail(4))),
-    card("Series with pre defined index is:", render_series(series_with_defined_index)),
-    card("Type of the pre defined index is:", render_dict({"type": type(series_with_defined_index).__name__})),
-    card("Description of the pre defined index are:", render_dict(series_with_defined_index.describe().to_dict())),
-    card("Dictionary Series is:", render_series(dict_series)),
-    card("Type of the Dictionary Series is:", render_dict({"type": type(dict_series).__name__})),
-    card("Description of the Dictionary Series are:", render_dict(dict_series.describe().to_dict())),
-    card("Elements from the Dictionary Series based on index position [1:4]:", render_series(s_position_values)),
-    card("Elements from the Dictionary Series based on index name ['a', 'c', 'e']:", render_series(s_index_name_values)),
-    card("String Series is:", render_series(string_series)),
-    card("Data type of the string series is:", render_dict({"dtype": string_series.dtype})),
-    card("Elements from the String Series starts with b:", render_series(string_series_char_pattern)),
-    card("Elements from the String Series contains er:", render_series(string_series_char_contains)),
+builder = HtmlBuilder()
+html_doc = builder.build_page("Pandas Series Fundamentals Report", builder.grid([
+    builder.card("Original series is:", builder.render_series(series)),
+    builder.card("Type of the Series is:", builder.render_dict({"dtype": str(series.dtype)})),
+    builder.card("Series description are:", builder.render_dict(series.describe().to_dict())),
+    builder.card("Shape of the Series is:", builder.render_dict({"shape": series.shape})),
+    builder.card("Unique values in the series are:", builder.render_series(series.unique())),
+    builder.card("No of unique values in the Series are:", builder.render_series([series.nunique()])),
+    builder.card("First 5 value of the Series are:", builder.render_series(series.head(5))),
+    builder.card("Last 4 values of the Series are:", builder.render_series(series.tail(4))),
+    builder.card("Series with pre defined index is:", builder.render_series(series_with_defined_index)),
+    builder.card("Type of the pre defined index is:", builder.render_dict({"type": type(series_with_defined_index).__name__})),
+    builder.card("Description of the pre defined index are:", builder.render_dict(series_with_defined_index.describe().to_dict())),
+    builder.card("Dictionary Series is:", builder.render_series(dict_series)),
+    builder.card("Type of the Dictionary Series is:", builder.render_dict({"type": type(dict_series).__name__})),
+    builder.card("Description of the Dictionary Series are:", builder.render_dict(dict_series.describe().to_dict())),
+    builder.card("Elements from the Dictionary Series based on index position [1:4]:", builder.render_series(s_position_values)),
+    builder.card("Elements from the Dictionary Series based on index name ['a', 'c', 'e']:", builder.render_series(s_index_name_values)),
+    builder.card("String Series is:", builder.render_series(string_series)),
+    builder.card("Data type of the string series is:", builder.render_dict({"dtype": string_series.dtype})),
+    builder.card("Elements from the String Series starts with b:", builder.render_series(string_series_char_pattern)),
+    builder.card("Elements from the String Series contains er:", builder.render_series(string_series_char_contains)),
 ]))
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "pandas_series_fundamentals_report.html",   # file name
     html_doc,

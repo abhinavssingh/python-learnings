@@ -1,9 +1,7 @@
-from lib.data_loader import read_dataset
-import io
-from lib.html.base import build_html_page
-from lib.html.components import full_width_card, grid, card
-from lib.html.renderers import render_dataframe_collapsible, render_pre
-from lib.report_utils import save_html_report
+from lib.utility.dataframe.data_loader import DataLoader as dl
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
+from lib.utility.dataframe.df_helper import DataFrameHelper
 
 
 def main():
@@ -11,37 +9,40 @@ def main():
     print("Running Capstone-1 report...")
     # ...
 
+# Build full column-wise page
 
-df = read_dataset("NSMES1988.csv")
+
+builder = HtmlBuilder()
+
+df = dl.read_dataset("NSMES1988.csv")
 
 content = []
 
 # use for the large dataset
 content.append(
-    full_width_card(
+    builder.card(
         "Capstone-1 Data– Interactive Preview",
-        render_dataframe_collapsible(df, initial_rows=15)
+        builder.render_dataframe_collapsible(df, initial_rows=15)
     )
 )
 
 # Get information about the DataFrame
-buffer = io.StringIO()
-df_info = df.info(buf=buffer)
-df_info_str = buffer.getvalue()  # Retrieve the string from the buffer
+
+df_info_str = DataFrameHelper.get_dataframe_info_str(df)
 
 content.append(
-    grid([
-        card("Information of the Capstone-1 Dataframe is:", render_pre(df_info_str)),
+    builder.grid([
+        builder.card("Information of the Capstone-1 Dataframe is:", builder.render_pre(df_info_str)),
     ]))
 
-html_doc = build_html_page(
+html_doc = builder.build_page(
     "Capstone-1 Exercise  Report",
     "\n".join(content)
 )
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "capstone_1_exercise_report.html",   # file name
     html_doc,

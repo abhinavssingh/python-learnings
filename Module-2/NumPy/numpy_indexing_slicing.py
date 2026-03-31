@@ -1,9 +1,7 @@
 import numpy as np
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_array, render_kv
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -12,6 +10,10 @@ def main():
 
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 array_1d = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 array_2d = np.array(
@@ -33,38 +35,39 @@ array_3d = np.array(
         ]
     ])
 
-html_doc = build_html_page(
+html_doc = builder.build_page(
     "NumPy Indexing and Slicing Examples",
-    grid([
-        card("Original 1D array", render_array(array_1d)),
-        card("value at index 3 of the 1D NumPy array", render_kv([("Value", array_1d[3])])),
-        card("sum of the values at indexes 0 and 1 in the 1D NumPy array", render_kv([("Sum", array_1d[1] + array_1d[0])])),
-        card("fourth element from the end of the 1D array using negative indexing", render_kv([("Value", array_1d[-4])])),
-        card("Slicing on 1D array based on negative pattern [-2:-8:-3]", render_array(array_1d[-2:-8:-3])),
-        card("Slicing on 1D array based on pattern [2:10:2]", render_array(array_1d[2:10:2])),
-        card("Negative slicing for 1D array based on pattern [:-1]", render_array(array_1d[:-1])),
-        card("Original 2D array", render_array(array_2d)),
-        card('Third element in the first row of the 2D array: ', render_kv([("Value", array_2d[0, 2])])),
-        card('Second element in the second row of the 2D array: ', render_kv([("Value", array_2d[1, 1])])),
-        card('Slicing on 2D array based on pattern [1, 1:4]: ', render_array(array_2d[1, 1:4])),
-        card('Slicing on 2D array based on pattern [0, 1:5:2]: ', render_array(array_2d[0, 1:5:2])),
-        card('Negative Slicing on 2D array based on pattern [2, -1:-5:-2]: ', render_array(array_2d[2, -1:-5:-2])),
-        card("last element in the second row of the 2D array using negative indexing", render_array(array_2d[1, -1])),
-        card("Slicing on 2D array based on pattern [0, 2:3] ", render_array(array_2d[0, 2:3])),
-        card("Original 3D array", render_array(array_3d)),
-        card("first element of the first row of the 3D array", render_kv([("Value", array_3d[1, 0, 0])])),
-        card("last element in the last row of the 3D array using negative indexing [1, 1, -1]", render_kv([("Value", array_3d[1, 1, -1])])),
-        card("Middle element in the first row of the 3D array using negative indexing [1, 0, -2]", render_kv([("Value", array_3d[1, 0, -2])])),
-        card("Middle element in the second row of the 3D array using negative indexing [1, 1, -2]", render_kv([("Value", array_3d[1, 1, -2])])),
-        card("Slicing on 3D array based on pattern [0,1:,1:]", render_array(array_3d[0, 1:, 1:])),
-        card("Negative Slicing on 3D array based on pattern [0,0:,-1:]", render_array(array_3d[0, 0:, -1::])),
-        card("Negative Slicing on 3D array based on pattern [0,0:,-1::]", render_array(array_3d[0, 0:, -1:])),
-        card("Negative Slicing on 3D array based on pattern [1,1:,-2:]", render_array(array_3d[1, 1:, -2:])),
+    builder.grid([
+        builder.card("Original 1D array", builder.render_array(array_1d)),
+        builder.card("value at index 3 of the 1D NumPy array", builder.render_kv([("Value", array_1d[3])])),
+        builder.card("sum of the values at indexes 0 and 1 in the 1D NumPy array", builder.render_kv([("Sum", array_1d[1] + array_1d[0])])),
+        builder.card("fourth element from the end of the 1D array using negative indexing", builder.render_kv([("Value", array_1d[-4])])),
+        builder.card("Slicing on 1D array based on negative pattern [-2:-8:-3]", builder.render_array(array_1d[-2:-8:-3])),
+        builder.card("Slicing on 1D array based on pattern [2:10:2]", builder.render_array(array_1d[2:10:2])),
+        builder.card("Negative slicing for 1D array based on pattern [:-1]", builder.render_array(array_1d[:-1])),
+        builder.card("Original 2D array", builder.render_array(array_2d)),
+        builder.card('Third element in the first row of the 2D array: ', builder.render_kv([("Value", array_2d[0, 2])])),
+        builder.card('Second element in the second row of the 2D array: ', builder.render_kv([("Value", array_2d[1, 1])])),
+        builder.card('Negative Slicing on 2D array based on pattern [2, -1:-5:-2]: ', builder.render_array(array_2d[2, -1:-5:-2])),
+        builder.card("last element in the second row of the 2D array using negative indexing", builder.render_array(array_2d[1, -1])),
+        builder.card("Slicing on 2D array based on pattern [0, 2:3] ", builder.render_array(array_2d[0, 2:3])),
+        builder.card("Original 3D array", builder.render_array(array_3d)),
+        builder.card("first element of the first row of the 3D array", builder.render_kv([("Value", array_3d[1, 0, 0])])),
+        builder.card(
+            "last element in the last row of the 3D array using negative indexing [1, 1, -1]", builder.render_kv([("Value", array_3d[1, 1, -1])])),
+        builder.card(
+            "Middle element in the first row of the 3D array using negative indexing [1, 0, -2]", builder.render_kv([("Value", array_3d[1, 0, -2])])),
+        builder.card(
+            "Middle element in the second row of the 3D array using negative indexing [1, 1, -2]", builder.render_kv([("Value", array_3d[1, 1, -2])])),
+        builder.card("Slicing on 3D array based on pattern [0,1:,1:]", builder.render_array(array_3d[0, 1:, 1:])),
+        builder.card("Negative Slicing on 3D array based on pattern [0,0:,-1:]", builder.render_array(array_3d[0, 0:, -1::])),
+        builder.card("Negative Slicing on 3D array based on pattern [0,0:,-1::]", builder.render_array(array_3d[0, 0:, -1:])),
+        builder.card("Negative Slicing on 3D array based on pattern [1,1:,-2:]", builder.render_array(array_3d[1, 1:, -2:])),
     ])
 )
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "numpy_indexing_slicing_report.html",
     html_doc,

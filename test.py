@@ -15,7 +15,7 @@ import subprocess
 from pathlib import Path
 import sys
 import textwrap
-from lib.logger import log_error
+from lib.utility.logger import Logger
 
 ROOT = Path(__file__).resolve().parent
 
@@ -59,7 +59,7 @@ def main():
         print("✓ init.py imported successfully")
     except Exception as e:
         print(f"✖ init import failed: {e}")
-        log_error(f"init import failed: {e}")
+        Logger.error(f"init import failed: {e}")
         sys.exit(1)
 
     # 2. Test direct script execution

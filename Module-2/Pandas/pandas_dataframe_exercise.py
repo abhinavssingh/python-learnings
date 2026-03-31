@@ -1,9 +1,9 @@
-from lib.data_loader import read_dataset
-import io
-from lib.html.base import build_html_page
-from lib.html.components import full_width_card, grid, card
-from lib.html.renderers import render_dataframe_collapsible, render_pre, render_dict
-from lib.report_utils import save_html_report
+from lib.utility.dataframe.data_loader import DataLoader as dl
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
+import pandas as pd
+import numpy as np
+from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 
 
 def main():
@@ -40,17 +40,41 @@ Axis | Direction    | Operation
 - Determine the correlation between different numerical variables such as __LotArea__ and __SalePrice__
 , __YearBuilt__ and __SalePrice__, __1stFlrSF__ and __SalePrice__, and __2ndFlrSF__ and __SalePrice__
 """
-df = read_dataset("housing_data.csv")
+# Build full column-wise page
 
+builder = HtmlBuilder()
+
+df = dl.read_dataset("housing_data.csv")
+df[['YearBuilt', 'YearRemodAdd']] = df[['YearBuilt', 'YearRemodAdd']].apply(pd.to_datetime, format='%Y')
+diff = df["YearRemodAdd"].dt.year - df["YearBuilt"].dt.year
+
+# Create category using vectorized logic
+# Use cut when you need to segment and sort data values into bins.
+# This function is also useful for going from a continuous variable to a categorical variable.
+category_house = pd.cut(
+    diff,
+    bins=[-np.inf, 5, 20, 50, np.inf],
+    labels=[
+        "New Construction",
+        "Modern Resale",
+        "Established",
+        "Historical"
+    ],
+)
+
+
+# Insert the new column at the calculated location
+df = dfh.insert_column_after(df, after_col="YearRemodAdd", new_col="HouseAge", values=diff, inplace=True)
+df = dfh.insert_column_after(df, after_col="HouseAge", new_col="HouseCategory", values=category_house, inplace=True)
+category_house_label_encoding = df['HouseCategory'].astype('category').cat.codes
+df = dfh.insert_column_after(df, after_col="HouseCategory", new_col="HouseCategoryEncoded", values=category_house_label_encoding, inplace=True)
 content = []
 
 # Get information about the DataFrame
-buffer = io.StringIO()
-df_info = df.info(buf=buffer)
-df_info_str = buffer.getvalue()  # Retrieve the string from the buffer
+df_info_str = dfh.get_dataframe_info_str(df)
 
 lot_area_desc = df["LotArea"].describe()
-year_built_desc = df["YearBuilt"].describe()
+year_built_desc = df["YearBuilt"].describe()  # YearBuilt is now datetime, so describe will give count, unique, top, freq instead of mean, std, etc.
 first_flr_desc = df["1stFlrSF"].describe()
 second_flr_desc = df["2ndFlrSF"].describe()
 sale_price_desc = df["SalePrice"].describe()
@@ -67,7 +91,7 @@ statistics_summary = {
     "2ndFlrSF Median": second_flr_desc["50%"],
     "SalePrice Median": sale_price_desc["50%"],
     "LotArea Std Dev": lot_area_desc["std"],
-    "YearBuilt Std Dev": year_built_desc["std"],
+    # "YearBuilt Std Dev": year_built_desc["std"], # YearBuilt is datetime, so std is not applicable
     "1stFlrSF Std Dev": first_flr_desc["std"],
     "2ndFlrSF Std Dev": second_flr_desc["std"],
     "SalePrice Std Dev": sale_price_desc["std"]
@@ -92,67 +116,79 @@ category_counts = {
     "HouseStyle": df.groupby("HouseStyle").size().to_dict()
 }
 
+house_category_counts = {
+    "HouseCategory": df.groupby("HouseCategory").size().to_dict(),
+    "HouseCategoryEncoded": df.groupby("HouseCategoryEncoded").size().to_dict()
+}
+
 numeric_df = df.select_dtypes(include=["number"])
 non_numeric_df = df.select_dtypes(exclude=["number"])
 
 # use for the large dataset
 content.append(
-    full_width_card(
+    builder.full_width_card(
         "Housing Dataset – Interactive Preview",
-        render_dataframe_collapsible(df, initial_rows=15)
+        builder.render_dataframe_collapsible(df, initial_rows=15)
     )
 )
 
-content.append(full_width_card(
+content.append(builder.full_width_card(
     "Numeric DataFrame",
-    render_dataframe_collapsible(numeric_df, initial_rows=10)
+    builder.render_dataframe_collapsible(numeric_df, initial_rows=10)
 ))
 
-content.append(full_width_card(
+content.append(builder.full_width_card(
     "Non-Numeric DataFrame",
-    render_dataframe_collapsible(non_numeric_df, initial_rows=10)
+    builder.render_dataframe_collapsible(non_numeric_df, initial_rows=10)
 ))
 
-content.append(full_width_card(
+content.append(builder.full_width_card(
     "Statistics of the Numeric DataFrame Using Transposed",
-    render_dataframe_collapsible(numeric_df.describe().T, initial_rows=10)
+    builder.render_dataframe_collapsible(numeric_df.describe().T, initial_rows=10)
 ))
 
-content.append(full_width_card(
+# DataFrame.describe() is dtype‑aware
+# By default:
+# It summarizes numeric columns
+# If no numeric columns, it summarizes datetime columns
+# It ignores plain object (string/categorical) columns unless explicitly told otherwise
+content.append(builder.full_width_card(
     "Statistics of the Non-Numeric DataFrame Using Transposed",
-    render_dataframe_collapsible(non_numeric_df.describe().T, initial_rows=10)
+    builder.render_dataframe_collapsible(non_numeric_df.describe(include="all").T, initial_rows=10)
 ))
 
 # Section — small summaries
 content.append(
-    grid([
-        card("DataFrame Basics:", render_pre(df_basics)),
-        card("Information of the Housing Dataframe is:", render_pre(df_info_str)),
-        card("Shape of the Housing DataFrame is:", render_dict({"Shape": df.shape})),
-        card("Dataframe description are:", render_dict(df.describe().to_dict())),
-        card("Unique Neighborhoods, Building Types, and House Styles using Category and sorting in descending order:", render_dict(category_summary)),
-        card("Unique Neighborhoods, Building Types, and House Styles Counts using groupby:", render_dict(category_counts)),
-        card("Lot Area Description:", render_dict(lot_area_desc.to_dict())),
-        card("Year Built Description:", render_dict(year_built_desc.to_dict())),
-        card("1st Floor SF Description:", render_dict(first_flr_desc.to_dict())),
-        card("2nd Floor SF Description:", render_dict(second_flr_desc.to_dict())),
-        card("Sale Price Description:", render_dict(sale_price_desc.to_dict())),
-        card(" Statistics of the Numeric DataFrame:", render_dict(numeric_df.describe().to_dict())),
-        card("Statistics of the Non-Numeric DataFrame:", render_dict(non_numeric_df.describe().to_dict())),
-        card("Summary of Descriptive Statistics for Key Numerical Columns:", render_dict(statistics_summary)),
-        card("Correlation Summary for Key Numerical Columns:", render_dict(corelation_summary))
+    builder.grid([
+        builder.card("DataFrame Basics:", builder.render_pre(df_basics)),
+        builder.card("Information of the Housing Dataframe is:", builder.render_pre(df_info_str)),
+        builder.card("Shape of the Housing DataFrame is:", builder.render_dict({"Shape": df.shape})),
+        builder.card("Dataframe description are:", builder.render_dict(df.describe().to_dict())),
+        builder.card("Unique Neighborhoods, Building Types, and House Styles using Category and sorting in descending order:",
+                     builder.render_dict(category_summary)),
+        builder.card("Unique Neighborhoods, Building Types, and House Styles Counts using groupby:", builder.render_dict(category_counts)),
+        builder.card("Lot Area Description:", builder.render_dict(lot_area_desc.to_dict())),
+        builder.card("Year Built Description:", builder.render_dict(year_built_desc.to_dict())),
+        builder.card("1st Floor SF Description:", builder.render_dict(first_flr_desc.to_dict())),
+        builder.card("2nd Floor SF Description:", builder.render_dict(second_flr_desc.to_dict())),
+        builder.card("Sale Price Description:", builder.render_dict(sale_price_desc.to_dict())),
+        builder.card(" Statistics of the Numeric DataFrame:", builder.render_dict(numeric_df.describe().to_dict())),
+        builder.card("Statistics of the Non-Numeric DataFrame:", builder.render_dict(non_numeric_df.describe().to_dict())),
+        builder.card("Summary of Descriptive Statistics for Key Numerical Columns:", builder.render_dict(statistics_summary)),
+        builder.card("Correlation Summary for Key Numerical Columns:", builder.render_dict(corelation_summary)),
+        builder.card("House Category Counts:", builder. render_dict(house_category_counts))
     ])
 )
 
 
-html_doc = build_html_page(
+html_doc = builder.build_page(
     "Pandas Exercise  Report",
     "\n".join(content)
 )
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "pandas_dataframe_exercise_report.html",   # file name
     html_doc,

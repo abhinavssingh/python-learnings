@@ -1,10 +1,33 @@
+"""
+HTML Page Builder
+
+Provides page builder class for creating complete HTML pages with Tailwind CSS.
+"""
+
 from pathlib import Path
 
 TAILWIND_CSS = (Path(__file__).parent / "theme.css").read_text(encoding="utf-8")
 
 
-def build_html_page(title: str, body_html: str) -> str:
-    return f"""
+class PageBuilder:
+    """Builder class for creating complete HTML pages."""
+
+    def __init__(self):
+        """Initialize PageBuilder with Tailwind CSS."""
+        self.tailwind_css = TAILWIND_CSS
+
+    def build_page(self, title: str, body_html: str) -> str:
+        """
+        Build a complete HTML page with Tailwind CSS styling and theme toggle.
+
+        Args:
+            title: Page title (shown in browser tab and header)
+            body_html: Body content HTML
+
+        Returns:
+            Complete HTML page as string
+        """
+        return f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,7 +35,7 @@ def build_html_page(title: str, body_html: str) -> str:
 <title>{title}</title>
 
 <style>
-{TAILWIND_CSS}
+{self.tailwind_css}
 
 /* Default theme (light) */
 :root {{
@@ -94,42 +117,59 @@ function toggleRows(uid, showAll) {{
     }}
 }}
 
-/* -------- Optimized Filter Rows (Debounced) -------- */
+
+/* -------- Optimized Filter Rows (Collapsible-safe & Debounced) -------- */
 let filterTimeout = null;
 
 function filterRows(uid, query) {{
-    // Debounce: cancel previous filter call
     if (filterTimeout) {{
         clearTimeout(filterTimeout);
     }}
 
     filterTimeout = setTimeout(function () {{
-        const q = query.toLowerCase();
+        const q = query.trim().toLowerCase();
         const rows = document.querySelectorAll("tr[data-row='" + uid + "']");
         let visible = 0;
 
         rows.forEach(function(row) {{
-            // textContent is MUCH faster than innerText
+            const initiallyHidden = row.getAttribute("data-hidden") === "1";
             const text = row.textContent.toLowerCase();
 
-            if (text.includes(q)) {{
-                row.style.display = "table-row";
-                visible++;
+            if (q) {{
+                // Filtering active → ignore collapsible state
+                if (text.includes(q)) {{
+                    row.style.display = "table-row";
+                    visible++;
+                }} else {{
+                    row.style.display = "none";
+                }}
             }} else {{
-                row.style.display = "none";
+                // Filter cleared → restore collapsible default
+                if (initiallyHidden) {{
+                    row.style.display = "none";
+                }} else {{
+                    row.style.display = "table-row";
+                    visible++;
+                }}
             }}
         }});
 
         const info = document.getElementById(uid + "-info");
         if (info) {{
-            if (q) {{
-                info.textContent = "Filtered: " + visible + " of " + rows.length + " rows";
-            }} else {{
-                info.textContent = "Showing " + visible + " of " + rows.length + " rows";
-            }}
+            info.textContent = q
+                ? "Filtered: " + visible + " of " + rows.length + " rows"
+                : "Showing first " + visible + " of " + rows.length + " rows";
         }}
-    }}, 150); // ✅ 150ms debounce
+
+        // Reset Show Less button when filter cleared
+        const showLessBtn = document.getElementById(uid + "-showless");
+        if (showLessBtn) {{
+            showLessBtn.style.display = q ? "inline-flex" : "none";
+        }}
+
+    }}, 150); // debounce
 }}
+
 
 
 /* -------- Modal Logic (Layout Stable) -------- */

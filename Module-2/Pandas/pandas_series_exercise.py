@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_series, render_dict
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -12,6 +10,10 @@ def main():
     print("Running Pandas series exercise report...")
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 sales_data = [120, 150, 130, 170, 160, 180, 140]
 days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -78,25 +80,25 @@ results = {
     "Rank (Descending)": rank_desc.astype(int).tolist()
 }
 
-html_doc = build_html_page("Pandas Series Exercise Report", grid(
+html_doc = builder.build_page("Pandas Series Exercise Report", builder.grid(
     [
-        card(" Sales Series is:", render_series(sales_series)),
-        card(" Sales Series Describe bare:", render_dict({"Description": sales_series.describe().to_dict()})),
-        card(" Type of the Sales Series is:", render_dict({"Type": type(sales_series).__name__})),
-        card(" Sales Series based on labels:", render_series(sales_series_preferred_days)),
-        card(" Sales Series based on contains:", render_series(sales_series_on_contains)),
-        card(" Sales Series based on label contains ur or ed:", render_series(sales_series_on_contains)),
-        card(" Summary of the Sales Series is:", render_dict({"Summary": results})),
-        card(" Outlier or the element which is far from average is:", render_series(outliers_iqr)),
-        card(" Recommendation is to drop the outlier element for better decision", render_series(outliers_iqr.values)),
-        card(" Z score is:", render_series(z)),
-        card(" Acatual values in outliers based on Z score:", render_series(outliers_z_actual_values)),
-        card(" As per sigma 2 rule outlier is:", render_series(outliers_z)),
+        builder.card(" Sales Series is:", builder.render_series(sales_series)),
+        builder.card(" Sales Series Describe bare:", builder.render_dict({"Description": sales_series.describe().to_dict()})),
+        builder.card(" Type of the Sales Series is:", builder.render_dict({"Type": type(sales_series).__name__})),
+        builder.card(" Sales Series based on labels:", builder.render_series(sales_series_preferred_days)),
+        builder.card(" Sales Series based on contains:", builder.render_series(sales_series_on_contains)),
+        builder.card(" Sales Series based on label contains ur or ed:", builder.render_series(sales_series_on_contains)),
+        builder.card(" Summary of the Sales Series is:", builder.render_dict({"Summary": results})),
+        builder.card(" Outlier or the element which is far from average is:", builder.render_series(outliers_iqr)),
+        builder.card(" Recommendation is to drop the outlier element for better decision", builder.render_series(outliers_iqr.values)),
+        builder.card(" Z score is:", builder.render_series(z)),
+        builder.card(" Acatual values in outliers based on Z score:", builder.render_series(outliers_z_actual_values)),
+        builder.card(" As per sigma 2 rule outlier is:", builder.render_series(outliers_z)),
     ]))
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "pandas_series_exercise_report.html",   # file name
     html_doc,

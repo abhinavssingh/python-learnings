@@ -11,6 +11,7 @@
     { "module": "Module-2.Pandas.pandas_dataframe_indexing_slicing", "function": "main" },
     { "module": "Module-2.Pandas.pandas_dataframe_maths", "function": "main" },
     { "module": "Module-2.Pandas.pandas_dataframe_exercise", "function": "main" },
+    { "module": "Module-2.Pandas.pandas_dataframe_dates", "function": "main" },
     { "module": "Module-2.Projects.Capstone-1.capstone_1_exercise", "function": "main" }
   ]
 }

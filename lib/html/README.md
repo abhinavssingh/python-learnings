@@ -16,17 +16,32 @@ The system is designed to **avoid performance issues**, maintain **good UX**, an
 
 ## 🧱 Architecture Overview
 
+### File Structure
 ```
 lib/
 ├── html/
-│   ├── base.py          # Page shell, CSS injection, JS helpers (theme, modal, filter)
-│   ├── components.py    # Layout components (cards, grids, full-width sections)
-│   ├── renderers.py     # Data renderers (arrays, series, dataframes)
-│   └── theme.css        # Tailwind CSS build
+│   ├── __init__.py          # Exports only HtmlBuilder (single import point)
+│   ├── builder.py           # HtmlBuilder class - unified OOP interface
+│   ├── base.py              # PageBuilder class - page shell, CSS, JS (theme, modal)
+│   ├── components.py        # ComponentsBuilder class - cards, grids, layouts
+│   ├── renderers.py         # RenderersBuilder class - data visualization
+│   └── theme.css            # Tailwind CSS build
 │
-├── report_utils.py      # Save/open report helpers
-└── logger.py            # Centralized logging helper
+├── report_utils.py          # Save/open report helpers
+└── logger.py                # Centralized logging helper
 ```
+
+### Class-Based Delegation Pattern
+**HtmlBuilder** is the unified interface that internally delegates to three specialized builders:
+- **PageBuilder** – Builds complete HTML5 pages with Tailwind CSS, theme toggle, modals
+- **ComponentsBuilder** – Creates layout components (cards, grids, full-width sections)
+- **RenderersBuilder** – Renders data (arrays, series, dataframes, dicts, preformatted text)
+
+**Benefits:**
+- Single import point: `from lib.html import HtmlBuilder`
+- Clean separation of concerns
+- No code duplication across modules
+- Fully object-oriented design
 
 ---
 
@@ -43,9 +58,39 @@ lib/
 
 ---
 
-## 🧩 Components (`components.py`)
+## 🚀 Quick Start
 
-### ✅ `card(title, content)`
+### Modern OOP API (Recommended)
+```python
+from lib.html import HtmlBuilder
+import numpy as np
+
+builder = HtmlBuilder()
+
+# Use all three builder classes through unified interface
+array_card = builder.card("NumPy Array", builder.render_array(np.array([[1, 2], [3, 4]])))
+dict_card = builder.card("Stats", builder.render_dict({"mean": 42, "std": 5}))
+
+page = builder.build_page(
+    "Report Title",
+    builder.grid([array_card, dict_card, ...])
+)
+```
+
+### Legacy Function-Based API (Backward Compatible)
+```python
+from lib.html.components import card, grid
+from lib.html.renderers import render_array, render_dict
+
+# Old function-based API still works
+card("Title", render_array(arr))
+```
+
+---
+
+## 🧩 Components (via ComponentsBuilder)
+
+### ✅ `builder.card(title, content)` or `card(title, content)`
 **Use when:**
 - Content is *small or medium*
 - Fits naturally inside a grid
@@ -57,12 +102,16 @@ lib/
 - Small DataFrame
 
 ```python
+# OOP API
+builder.card("Original Array", builder.render_array(arr))
+
+# Legacy API (backward compatible)
 card("Original Array", render_array(arr))
 ```
 
 ---
 
-### ✅ `full_width_card(title, content)`
+### ✅ `builder.full_width_card(title, content)` or `full_width_card(title, content)`
 **Use when:**
 - Content is *large or interactive*
 - Horizontal scrolling is expected
@@ -73,6 +122,13 @@ card("Original Array", render_array(arr))
 - Filterable CSV / Excel preview
 
 ```python
+# OOP API
+builder.full_width_card(
+    "Housing Dataset – Interactive Preview",
+    builder.render_dataframe_collapsible(df)
+)
+
+# Legacy API
 full_width_card(
     "Housing Dataset – Interactive Preview",
     render_dataframe_collapsible(df)
@@ -81,12 +137,20 @@ full_width_card(
 
 ---
 
-### ✅ `grid(cards, columns=3)`
+### ✅ `builder.grid(cards, columns=3)` or `grid(cards, columns=3)`
 **Use when:**
 - Displaying multiple **small cards**
 - Dashboards, comparisons, summaries
 
 ```python
+# OOP API
+builder.grid([
+    builder.card("Mean Price", builder.render_dict(stats)),
+    builder.card("Array Shape", builder.render_array(arr)),
+    builder.card("Top Values", builder.render_series(s))
+])
+
+# Legacy API
 grid([
     card("Mean Price", render_dict(stats)),
     card("Array Shape", render_array(arr)),
@@ -96,9 +160,9 @@ grid([
 
 ---
 
-## 📐 Renderers (`renderers.py`)
+## 📐 Renderers (via RenderersBuilder)
 
-### ✅ `render_array(arr: np.ndarray)`
+### ✅ `builder.render_array(arr: np.ndarray)` or `render_array(arr: np.ndarray)`
 **Purpose:** NumPy array visualization
 
 **Best for:**
@@ -119,7 +183,7 @@ grid([
 
 ---
 
-### ✅ `render_series(series)`
+### ✅ `builder.render_series(series)` or `render_series(series)`
 **Purpose:** Pandas Series display
 
 **Best for:**
@@ -141,7 +205,7 @@ grid([
 
 ---
 
-### ✅ `render_dict(data: dict)`
+### ✅ `builder.render_dict(data: dict)` or `render_dict(data: dict)`
 **Purpose:** Metadata & summaries
 
 **Best for:**
@@ -163,7 +227,7 @@ grid([
 
 ---
 
-### ✅ `render_pre(text: str)`
+### ✅ `builder.render_pre(text: str)` or `render_pre(text: str)`
 **Purpose:** Monospaced raw text output
 
 **Best for:**
@@ -182,7 +246,7 @@ card("DataFrame Info", render_pre(buf.getvalue()))
 
 ---
 
-### ✅ `render_dataframe(df)`
+### ✅ `builder.render_dataframe(df)` or `render_dataframe(df)`
 **Purpose:** Small to medium DataFrame rendering
 
 **Use when:**
@@ -202,7 +266,7 @@ card("DataFrame Info", render_pre(buf.getvalue()))
 
 ---
 
-### ✅ `render_dataframe_collapsible(df, initial_rows=15)`
+### ✅ `builder.render_dataframe_collapsible(df, initial_rows=15)` or `render_dataframe_collapsible(df, initial_rows=15)`
 **Purpose:** Interactive DataFrame preview for large datasets
 
 ✅ **Recommended for large datasets**
@@ -223,6 +287,13 @@ card("DataFrame Info", render_pre(buf.getvalue()))
 ✅ Use with `full_width_card()`
 
 ```python
+# OOP API
+builder.full_width_card(
+    "Housing Dataset – Interactive Preview",
+    builder.render_dataframe_collapsible(df, initial_rows=15)
+)
+
+# Legacy API
 full_width_card(
     "Housing Dataset – Interactive Preview",
     render_dataframe_collapsible(df, initial_rows=15)
@@ -259,8 +330,10 @@ full_width_card(
 ## ✅ Best Practices
 
 ✅ Do
+- **Prefer OOP API**: Use `HtmlBuilder` class for new code
+- Mix OOP and legacy APIs: No issues with backward compatibility
 - Use modal view only when content is truncated
-- Use `render_dataframe_collapsible()` for large datasets
+- Use `builder.render_dataframe_collapsible()` for large datasets
 - Separate grid sections from full-width sections
 - Keep inline cards readable and compact
 

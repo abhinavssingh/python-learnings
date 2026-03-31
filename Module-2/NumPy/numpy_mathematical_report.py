@@ -1,9 +1,7 @@
 import numpy as np
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_array, render_dict
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -11,6 +9,10 @@ def main():
     print("Running NumPy Mathematical Operations report...")
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 # Your arrays
 arr1 = np.array(
@@ -79,41 +81,41 @@ arr3d_per_80 = np.percentile(array_3d, 80)
 arr3d_per_90 = np.percentile(array_3d, 90)
 
 # Build full column-wise page
-html_doc = build_html_page(
+html_doc = builder.build_page(
     "NumPy Mathematical Operations Report",
-    grid([
-        card("Original 1st 2D array (int)", render_array(arr1)),
-        card("Original 2nd 2D array (int)", render_array(arr2)),
-        card("Sum of two array (int)", render_array(sum)),
-        card("Subtract of two array array2-array1 (int)", render_array(sub)),
-        card("Multiplication of two array (int)", render_array(multiplication)),
-        card("Division of two array array/array2 (int)", render_array(division)),
-        card("Division of two array array/array2 after rounding (int)", render_array(rounded_division)),
-        card("Power of two array (int)", render_array(power)),
-        card("Mean of array 1 (int)", render_dict({"Mean": arr1_mean})),
-        card("Median of array 1 (int)", render_dict({"Median": arr1_median})),
-        card("Standard Deviation of array 1 (int)", render_dict({"Standard Deviation": arr1_std})),
-        card("Variance of array 1 (int)", render_dict({"Variance": arr1_var})),
-        card("80 Percentile of array 1 (int)", render_dict({"80 Percentile": arr1_per_80})),
-        card("90 Percentile of array 1 (int)", render_dict({"90 Percentile": arr1_per_90})),
-        card("Original 1st 3D array (int)", render_array(a3)),
-        card("Original 2nd 3D array (int)", render_array(array_3d)),
-        card("Sum of two 3D array (int)", render_array(sum_3d)),
-        card("Subtract of two 3D array array2-array1 (int)", render_array(sub_3d)),
-        card("Multiplication of two 3D array (int)", render_array(multiplication_3d)),
-        card("Division of two 3D array array/array2 (int)", render_array(division_3d)),
-        card("Power of two 3D array (int)", render_array(power_3d)),
-        card("Mean of 1st 3D array (int)", render_dict({"Mean": arr3d_mean})),
-        card("Median of 1st 3D array 1 (int)", render_dict({"Median": arr3d_median})),
-        card("Standard Deviation of 1st 3D array 1 (int)", render_dict({"Standard Deviation": arr3d_std})),
-        card("Variance of 1st 3D array (int)", render_dict({"Variance": arr3d_var})),
-        card("80 Percentile of 1st 3D array (int)", render_dict({"80 Percentile": arr3d_per_80})),
-        card("90 Percentile of 1st 3D array (int)", render_dict({"90 Percentile": arr3d_per_90})),
+    builder.grid([
+        builder.card("Original 1st 2D array (int)", builder.render_array(arr1)),
+        builder.card("Original 2nd 2D array (int)", builder.render_array(arr2)),
+        builder.card("Sum of two array (int)", builder.render_array(sum)),
+        builder.card("Subtract of two array array2-array1 (int)", builder.render_array(sub)),
+        builder.card("Multiplication of two array (int)", builder.render_array(multiplication)),
+        builder.card("Division of two array array/array2 (int)", builder.render_array(division)),
+        builder.card("Division of two array array/array2 after rounding (int)", builder.render_array(rounded_division)),
+        builder.card("Power of two array (int)", builder.render_array(power)),
+        builder.card("Mean of array 1 (int)", builder.render_dict({"Mean": arr1_mean})),
+        builder.card("Median of array 1 (int)", builder.render_dict({"Median": arr1_median})),
+        builder.card("Standard Deviation of array 1 (int)", builder.render_dict({"Standard Deviation": arr1_std})),
+        builder.card("Variance of array 1 (int)", builder.render_dict({"Variance": arr1_var})),
+        builder.card("80 Percentile of array 1 (int)", builder.render_dict({"80 Percentile": arr1_per_80})),
+        builder.card("90 Percentile of array 1 (int)", builder.render_dict({"90 Percentile": arr1_per_90})),
+        builder.card("Original 1st 3D array (int)", builder.render_array(a3)),
+        builder.card("Original 2nd 3D array (int)", builder.render_array(array_3d)),
+        builder.card("Sum of two 3D array (int)", builder.render_array(sum_3d)),
+        builder.card("Subtract of two 3D array array2-array1 (int)", builder.render_array(sub_3d)),
+        builder.card("Multiplication of two 3D array (int)", builder.render_array(multiplication_3d)),
+        builder.card("Division of two 3D array array/array2 (int)", builder.render_array(division_3d)),
+        builder.card("Power of two 3D array (int)", builder.render_array(power_3d)),
+        builder.card("Mean of 1st 3D array (int)", builder.render_dict({"Mean": arr3d_mean})),
+        builder.card("Median of 1st 3D array 1 (int)", builder.render_dict({"Median": arr3d_median})),
+        builder.card("Standard Deviation of 1st 3D array 1 (int)", builder.render_dict({"Standard Deviation": arr3d_std})),
+        builder.card("Variance of 1st 3D array (int)", builder.render_dict({"Variance": arr3d_var})),
+        builder.card("80 Percentile of 1st 3D array (int)", builder.render_dict({"80 Percentile": arr3d_per_80})),
+        builder.card("90 Percentile of 1st 3D array (int)", builder.render_dict({"90 Percentile": arr3d_per_90})),
     ])
 )
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "numpy_mathematical_report.html",
     html_doc,

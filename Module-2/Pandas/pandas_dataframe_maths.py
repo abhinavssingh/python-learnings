@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from lib.html.base import build_html_page
-from lib.html.components import card, grid
-from lib.html.renderers import render_dataframe
-from lib.report_utils import save_html_report
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -12,6 +10,10 @@ def main():
     print("Running Pandas dataframe maths report...")
     # ...
 
+# Build full column-wise page
+
+
+builder = HtmlBuilder()
 
 data_1 = np.random.randint(0, 10, size=(5, 5))  # Create a 5x5 array of random integers
 column_labels = ['Col_A', 'Col_B', 'Col_C', 'Col_D', 'Col_E']  # Define column labels
@@ -49,31 +51,31 @@ df_intersection = pd.merge(df_1, df_2, on='Key', how='inner')  # Intersection of
 df_1_sorted = df_1.sort_values(by='Col_A')  # Sort df_1 by 'Col_A'
 df_2_sorted = df_2.sort_values(by='Col_C')  # Sort df_2 by 'Col_C'
 
-html_doc = build_html_page("Pandas Dataframe Maths Report", grid([
-    card("Dataframe 1:", render_dataframe(df_1)),
-    card("Dataframe 2:", render_dataframe(df_2)),
-    card("Sum of Dataframes:", render_dataframe(df_sum)),
-    card("Difference of Dataframes:", render_dataframe(df_subtract)),
-    card("Element-wise Multiplication of Dataframes:", render_dataframe(df_multiply)),
-    card("Element-wise Division of Dataframes:", render_dataframe(df_divide)),
-    card("Dataframe 1 raised to the power of 2:", render_dataframe(df_power)),
-    card("Square root of Dataframe 2:", render_dataframe(df_apply_func)),
-    card("Dataframe 2 with each element doubled:", render_dataframe(df_apply_func_lambda)),
-    card("Concatenation of Dataframes along rows:", render_dataframe(df_concat)),
-    card("Concatenation of Dataframes along columns:", render_dataframe(df_concat_columns)),
-    card("Concatenation of Dataframes with keys:", render_dataframe(df_concat_keys)),
-    card("Merged Dataframes (Inner Join):", render_dataframe(df_merged_inner)),
-    card("Merged Dataframes (Outer Join):", render_dataframe(df_merged_outer)),
-    card("Merged Dataframes (Left Join):", render_dataframe(df_merged_left)),
-    card("Merged Dataframes (Right Join):", render_dataframe(df_merged_right)),
-    card("Intersection of Dataframes based on 'Key':", render_dataframe(df_intersection)),
-    card("Dataframe 1 sorted by 'Col_A':", render_dataframe(df_1_sorted)),
-    card("Dataframe 2 sorted by 'Col_C':", render_dataframe(df_2_sorted)),
+html_doc = builder.build_page("Pandas Dataframe Maths Report", builder.grid([
+    builder.card("Dataframe 1:", builder.render_dataframe(df_1)),
+    builder.card("Dataframe 2:", builder.render_dataframe(df_2)),
+    builder.card("Sum of Dataframes:", builder.render_dataframe(df_sum)),
+    builder.card("Difference of Dataframes:", builder.render_dataframe(df_subtract)),
+    builder.card("Element-wise Multiplication of Dataframes:", builder.render_dataframe(df_multiply)),
+    builder.card("Element-wise Division of Dataframes:", builder.render_dataframe(df_divide)),
+    builder.card("Dataframe 1 raised to the power of 2:", builder.render_dataframe(df_power)),
+    builder.card("Square root of Dataframe 2:", builder.render_dataframe(df_apply_func)),
+    builder.card("Dataframe 2 with each element doubled:", builder.render_dataframe(df_apply_func_lambda)),
+    builder.card("Concatenation of Dataframes along rows:", builder.render_dataframe(df_concat)),
+    builder.card("Concatenation of Dataframes along columns:", builder.render_dataframe(df_concat_columns)),
+    builder.card("Concatenation of Dataframes with keys:", builder.render_dataframe(df_concat_keys)),
+    builder.card("Merged Dataframes (Inner Join):", builder.render_dataframe(df_merged_inner)),
+    builder.card("Merged Dataframes (Outer Join):", builder.render_dataframe(df_merged_outer)),
+    builder.card("Merged Dataframes (Left Join):", builder.render_dataframe(df_merged_left)),
+    builder.card("Merged Dataframes (Right Join):", builder.render_dataframe(df_merged_right)),
+    builder.card("Intersection of Dataframes based on 'Key':", builder.render_dataframe(df_intersection)),
+    builder.card("Dataframe 1 sorted by 'Col_A':", builder.render_dataframe(df_1_sorted)),
+    builder.card("Dataframe 2 sorted by 'Col_C':", builder.render_dataframe(df_2_sorted)),
 ]))
 
 
 # html_doc is the string you already have
-output_path = save_html_report(
+output_path = ru.save_html_report(
     __file__,
     "pandas_dataframe_maths_report.html",   # file name
     html_doc,
