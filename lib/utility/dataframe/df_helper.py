@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Literal
 
 from typing import Any, Callable, Union
 import pandas as pd
@@ -160,9 +161,12 @@ class DataFrameHelper:
 
         after = df.memory_usage(deep=True).sum()
 
-        Logger.info(f"Memory usage before optimization: {before / 1024**2:.2f} MB")
-        Logger.info(f"Memory usage after optimization: {after / 1024**2:.2f} MB")
-        Logger.info(f"Memory reduction: {(before - after) / before * 100:.2f}%")
+        Logger.info(
+            f"Memory usage before optimization: {before / 1024**2:.2f} MB")
+        Logger.info(
+            f"Memory usage after optimization: {after / 1024**2:.2f} MB")
+        Logger.info(
+            f"Memory reduction: {(before - after) / before * 100:.2f}%")
 
         return df
 
@@ -177,3 +181,58 @@ class DataFrameHelper:
         buffer = io.StringIO()
         df.info(buf=buffer)
         return buffer.getvalue()
+
+    # ===============================================================================
+    # DataFrame rendering information as preformatted text blocks
+    # using dynamic column detection and safe access patterns.
+    # using itertuples by default for better performance, with an option for iterrows.
+    # ===============================================================================
+    @staticmethod
+    def dataframe_rows_as_pre(
+        df: pd.DataFrame,
+        method: Literal["itertuples", "iterrows"] = "itertuples",
+        include_index: bool = True,
+        index_label: str = "Index",
+    ) -> str:
+        """
+        Convert each DataFrame row into preformatted text blocks
+        using dynamic column detection.
+
+        ✅ Safe for column names with spaces / special characters
+        """
+
+        blocks: list[str] = []
+        columns = list(df.columns)
+
+        if method == "itertuples":
+            for row in df.itertuples():
+                row_dict = row._asdict()
+                lines = []
+
+                if include_index:
+                    lines.append(f"{index_label:<15}: {row_dict['Index']}")
+
+                for col in columns:
+                    value = row_dict.get(col.replace(" ", "_"), row_dict.get(col))
+                    lines.append(f"{col:<15}: {value}")
+
+                blocks.append("\n".join(lines))
+
+        elif method == "iterrows":
+            for idx, row in df.iterrows():
+                lines = []
+
+                if include_index:
+                    lines.append(f"{index_label:<15}: {idx}")
+
+                for col in columns:
+                    lines.append(f"{col:<15}: {row[col]}")
+
+                blocks.append("\n".join(lines))
+
+        else:
+            raise ValueError(
+                "Invalid method. Use 'itertuples' (default) or 'iterrows'."
+            )
+
+        return "\n\n".join(blocks)

@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-import io
 
 from lib.html import HtmlBuilder
 from lib.utility.reports.report_utils import ReportUtils as ru
+from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 
 
 def main():
@@ -45,7 +45,7 @@ n = 10
 
 # Data generation
 data = {
-    "Name": [f"Employee_{i+1}" for i in range(n)],
+    "Name": [f"Employee_{i + 1}" for i in range(n)],
 
     "Age": np.random.randint(22, 40, size=n),
 
@@ -83,17 +83,16 @@ hr_df = pd.DataFrame(data)
 # hr_df.index.name = "Employee_ID"
 
 # Keep Employee ID as a Column, Then Set Index
-hr_df.insert(0, "Employee_ID", [f"EMP{1001+i}" for i in range(n)])
+hr_df.insert(0, "Employee_ID", [f"EMP{1001 + i}" for i in range(n)])
 hr_df.set_index("Employee_ID", inplace=True)
-
+hr_emp_data_str = dfh.dataframe_rows_as_pre(hr_df, method="iterrows", include_index=True, index_label="Employee ID")
+hr_emp_data_str_salary = dfh.dataframe_rows_as_pre(hr_df.sort_values(by="Salary", ascending=False))
 
 df_array = pd.DataFrame(data_array, columns=columns_name)
 df_array_head = df_array.head(2)  # Get the first few rows of the DataFrame
 df_dict_tail = df_dict.tail(1)  # Get the last few rows of the DataFrame
 # Get information about the DataFrame
-buffer = io.StringIO()
-df_dict_info = df_dict.info(buf=buffer)
-df_dict_info_str = buffer.getvalue()  # Retrieve the string from the buffer
+df_dict_info_str = dfh.get_dataframe_info_str(df_dict)
 
 html_doc = builder.build_page("Pandas Dataframe Fundamentals Report", builder.grid([
     builder.card("Dataframe created by Dictionary is:", builder.render_dataframe(df_dict)),
@@ -112,6 +111,9 @@ html_doc = builder.build_page("Pandas Dataframe Fundamentals Report", builder.gr
     builder.card("Shape of the Dataframe created by Numpy Array is:", builder.render_dict({"Shape": df_array.shape})),
     builder.card("First 2 rows of the Dataframe created by Numpy Array:", builder.render_dataframe(df_array_head)),
     builder.card("HR Dataframe created by Random Numpy Array is:", builder.render_dataframe(hr_df)),
+    builder.card("HR Dataframe description are:", builder.render_dict(hr_df.describe().to_dict())),
+    builder.card("HR Dataframe Employee Data is:", builder.render_pre(hr_emp_data_str)),
+    builder.card("HR Dataframe Employee Salary Data sorted by Salary in Descending Order is:", builder.render_pre(hr_emp_data_str_salary)),
 ]))
 
 

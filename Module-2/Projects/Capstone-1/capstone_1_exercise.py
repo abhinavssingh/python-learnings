@@ -16,6 +16,17 @@ builder = HtmlBuilder()
 
 df = dl.read_dataset("NSMES1988.csv")
 
+df.rename(columns={
+    "age": "Age in years (divided by 10)",
+    "income": "Family income in USD 10000"
+}, inplace=True)
+
+# convert column name to title case
+df.columns = [col.title() for col in df.columns]
+
+df_numeric_uint = df.select_dtypes(include=["uint8", "uint16"])
+df_numeric_float = df.select_dtypes(include=["float16", "float32"])
+df.to_json("NSMES1988.json", orient="records", lines=True)  # Save as JSON for future use
 content = []
 
 # use for the large dataset
@@ -25,6 +36,15 @@ content.append(
         builder.render_dataframe_collapsible(df, initial_rows=15)
     )
 )
+
+content.append(
+    builder.card(
+        "Integer Dataframe", builder.render_dataframe_collapsible(df_numeric_uint))
+)
+
+content.append(
+    builder.card(
+        "Float Dataframe", builder.render_dataframe_collapsible(df_numeric_float)))
 
 # Get information about the DataFrame
 

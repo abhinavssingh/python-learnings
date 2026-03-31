@@ -4,16 +4,14 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 charset = utf-8
-indent_style = space
-indent_size = 4
-trim_trailing_whitespace = true
+
 
 # Apply to all Python files
 [*.py]
 max_line_length = 150
-# autopep8 options for general files
-order_by_type = true
-combine_as_imports = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
 
 [**/lib/html/*.py]
 max_line_length = off
