@@ -120,7 +120,10 @@ Defines importable directories:
     ]
 }
 ```
-
+---
+### Format Using Autopep8
+Format an Entire Directory: To recursively format all .py files in a folder:
+`autopep8 --in-place --recursive .`
 ---
 
 ## Tests

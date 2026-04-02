@@ -16,11 +16,13 @@ import sys
 from contextlib import redirect_stdout
 from typing import Dict
 
-#=========logging============================
+# =========logging============================
+
 
 def _maybe_enable_logging():
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--log", metavar="FILE", help="Capture all game output to FILE")
+    parser.add_argument("--log", metavar="FILE",
+                        help="Capture all game output to FILE")
     args, _ = parser.parse_known_args()
 
     if not args.log:
@@ -32,21 +34,31 @@ def _maybe_enable_logging():
     class Tee(io.TextIOBase):
         """A stdout replacement that mirrors writes to console and a file,
         while still quacking like the original console (TTY)."""
+
         def __init__(self, console_stream, file_stream):
             self.console = console_stream
             self.file = file_stream
         # --- essential stream behavior ---
+
         def write(self, s):
-            self.console.write(s); self.console.flush()
-            self.file.write(s);    self.file.flush()
+            self.console.write(s)
+            self.console.flush()
+            self.file.write(s)
+            self.file.flush()
             return len(s)
+
         def flush(self):
-            try: self.console.flush()
-            finally: self.file.flush()
+            try:
+                self.console.flush()
+            finally:
+                self.file.flush()
+
         def writable(self): return True
         # --- make this look like a real terminal ---
+
         def isatty(self):
             return getattr(self.console, "isatty", lambda: False)()
+
         def fileno(self):
             # Some TTY detection paths call fileno(); delegate to console.
             return getattr(self.console, "fileno")()
@@ -56,6 +68,7 @@ def _maybe_enable_logging():
     sys.stdout = Tee(console, logf)  # replace stdout with TTY-like tee
 
     return
+
 
 _maybe_enable_logging()
 
@@ -98,9 +111,11 @@ def _read_key() -> str:
         import termios
         import tty
         fd = sys.stdin.fileno()
-        old = termios.tcgetattr(fd) # type: ignore[attr-defined, reportAttributeAccessIssue]
+        # type: ignore[attr-defined, reportAttributeAccessIssue]
+        old = termios.tcgetattr(fd)
         try:
-            tty.setraw(fd) # type: ignore[attr-defined, reportAttributeAccessIssue]
+            # type: ignore[attr-defined, reportAttributeAccessIssue]
+            tty.setraw(fd)
             ch = sys.stdin.read(1)
             if ch == '\x1b':  # escape sequence
                 seq = sys.stdin.read(2)
@@ -113,7 +128,8 @@ def _read_key() -> str:
                 return 'ENTER'
             return ch
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old) # type: ignore[attr-defined, reportAttributeAccessIssue]
+            # type: ignore[attr-defined, reportAttributeAccessIssue]
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 
 def _supports_raw_keys() -> bool:
@@ -154,7 +170,8 @@ def select_with_arrows(prompt: str, options: Dict[str, str]) -> str:
             prefix = '> ' if i == idx else '  '
             line = f"{prefix}{options[k]}  (key: {k})"
             sys.stdout.write(line + '\n')
-        sys.stdout.write("\nUse UP/DOWN and Enter. Press letter/number keys to jump.\n")
+        sys.stdout.write(
+            "\nUse UP/DOWN and Enter. Press letter/number keys to jump.\n")
         sys.stdout.flush()
 
     # Clear between renders by printing carriage returns and re-rendering
@@ -181,7 +198,8 @@ def select_with_arrows(prompt: str, options: Dict[str, str]) -> str:
                 return keys[idx]
             elif isinstance(key, str) and key:
                 # Jump by first-character match if unique
-                matches = [i for i, k in enumerate(keys) if k.startswith(key.lower())]
+                matches = [i for i, k in enumerate(
+                    keys) if k.startswith(key.lower())]
                 if len(matches) == 1:
                     clear_lines(lines_rendered)
                     return keys[matches[0]]
@@ -202,10 +220,12 @@ def prompt_choice_text(prompt: str, options: Dict[str, str]) -> str:
     while True:
         choice = input("> Your choice: ").strip().lower()
         if choice not in options:
-            matches = [k for k in options if k.startswith(choice)] if choice else []
+            matches = [k for k in options if k.startswith(
+                choice)] if choice else []
             if len(matches) == 1:
                 return matches[0]
-            print("  [!] Invalid choice. Please pick one of:", ", ".join(options.keys()))
+            print("  [!] Invalid choice. Please pick one of:",
+                  ", ".join(options.keys()))
             continue
         return choice
 
@@ -217,7 +237,8 @@ def forest_path(player: str) -> str:
 
     Returns: 'win' | 'lose' | 'continue'
     """
-    print(f"\n\U0001F332 The forest is dense and quiet, {player}. You hear water nearby.")
+    print(
+        f"\n\U0001F332 The forest is dense and quiet, {player}. You hear water nearby.")
     choice = select_with_arrows(
         "Do you follow the sound of the river or climb a tall tree to scout?",
         {"river": "Follow the river", "tree": "Climb the tree"},
@@ -245,7 +266,8 @@ def cave_path(player: str) -> str:
 
     Returns: 'win' | 'lose' | 'continue'
     """
-    print(f"\n\U0001F573\uFE0F  The cave yawns before you, {player}. A chill wind carries faint echoes.")
+    print(
+        f"\n\U0001F573\uFE0F  The cave yawns before you, {player}. A chill wind carries faint echoes.")
     choice = select_with_arrows(
         "Do you light a torch or proceed in the dark?",
         {"torch": "Light a torch", "dark": "Proceed in the dark"},
@@ -275,23 +297,27 @@ def start_game() -> None:
     ===============================
     """)
     player = input("What is your name, explorer? > ").strip() or "Explorer"
-    print(f"\nWelcome, {player}! Your quest is to find the legendary treasure hidden in these lands.")
+    print(
+        f"\nWelcome, {player}! Your quest is to find the legendary treasure hidden in these lands.")
 
     while True:
         path = select_with_arrows(
             "Choose your path:",
-            {"forest": "Explore the dark forest", "cave": "Enter the mysterious cave"},
+            {"forest": "Explore the dark forest",
+                "cave": "Enter the mysterious cave"},
         )
-        outcome = forest_path(player) if path == "forest" else cave_path(player)
+        outcome = forest_path(
+            player) if path == "forest" else cave_path(player)
 
         if outcome == "win":
-            print("\n\U0001F389 Congratulations! You found the treasure and completed your quest.")
+            print(
+                "\n\U0001F389 Congratulations! You found the treasure and completed your quest.")
         else:
             print("\n\u2620\uFE0F  Alas! Your choices led to failure this time.")
 
         again = select_with_arrows(
             "Would you like to play again?",
-            {"yes": "Yes, restart" , "no": "No, quit"}
+            {"yes": "Yes, restart", "no": "No, quit"}
         )
         if again == "no":
             print("\nThanks for playing. Farewell!")

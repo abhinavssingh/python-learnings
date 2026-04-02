@@ -6,7 +6,8 @@ Provides page builder class for creating complete HTML pages with Tailwind CSS.
 
 from pathlib import Path
 
-TAILWIND_CSS = (Path(__file__).parent / "theme.css").read_text(encoding="utf-8")
+TAILWIND_CSS = (Path(__file__).parent /
+                "theme.css").read_text(encoding="utf-8")
 
 
 class PageBuilder:

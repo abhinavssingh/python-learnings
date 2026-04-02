@@ -1,11 +1,12 @@
-# app.py is the main entry point for the Flask application. It sets up the Flask app, configures the database, 
+# app.py is the main entry point for the Flask application. It sets up the Flask app, configures the database,
 # and initializes the SQLAlchemy extension.
-# app.py is managed by customer_model.ipynb and if you want to make changes to the app setup, 
+# app.py is managed by customer_model.ipynb and if you want to make changes to the app setup,
 # please edit customer_model.ipynb instead of app.py directly.
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+
 
 def create_app(db_uri: str = "sqlite:///customer_order_insights.db",
                secret_key: str = "9cbd5ad3-cc37-4515-924f-45afc2932d46"):

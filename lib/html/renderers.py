@@ -4,8 +4,9 @@ HTML Renderers Builder
 Provides renderer classes for displaying data (arrays, dataframes, dicts, etc.) as HTML.
 """
 
-import uuid
 import html
+import uuid
+
 import numpy as np
 import pandas as pd
 

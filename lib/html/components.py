@@ -114,7 +114,7 @@ class ComponentsBuilder:
             Grid HTML
         """
         return f"""
-<div class="grid gap-6 grid-cols-1 md:grid-cols-2">
+<div class="grid gap-6 grid-cols-1 md:grid-cols-2 pt-6">
     {''.join(cards)}
 </div>
 """

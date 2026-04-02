@@ -1,13 +1,12 @@
 from __future__ import annotations
-from typing import Literal
 
-from typing import Any, Callable, Union
-import pandas as pd
-import numpy as np
 import io
+from typing import Any, Callable, Literal, Union
+
+import numpy as np
+import pandas as pd
 
 from lib.utility.logger import Logger
-
 
 InsertValue = Union[Any, pd.Series]
 ValueFactory = Callable[[pd.DataFrame], InsertValue]
@@ -213,7 +212,8 @@ class DataFrameHelper:
                     lines.append(f"{index_label:<15}: {row_dict['Index']}")
 
                 for col in columns:
-                    value = row_dict.get(col.replace(" ", "_"), row_dict.get(col))
+                    value = row_dict.get(col.replace(
+                        " ", "_"), row_dict.get(col))
                     lines.append(f"{col:<15}: {value}")
 
                 blocks.append("\n".join(lines))

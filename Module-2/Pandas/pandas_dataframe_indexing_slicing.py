@@ -38,7 +38,8 @@ df_row_1_row_3 = df.loc['Row_1':'Row_3']
 df_loc_row_1_col_a = df.loc['Row_1', 'Col_A']
 df_iloc_row_4 = df.iloc[3]  # Using iloc for the 4th row (index 3)
 df_at_row_2_col_b = df.at['Row_2', 'Col_B']  # Using at for a single value
-df_iat_row_3_col_c = df.iat[2, 2]  # Using iat for a single value (Row 3, Col C)
+# Using iat for a single value (Row 3, Col C)
+df_iat_row_3_col_c = df.iat[2, 2]
 
 # Condition basis to get the rows and columns based on a condition
 # For example, select rows where 'Col_A' is greater than 10
@@ -50,15 +51,22 @@ html_doc = builder.build_page("Pandas Dataframe Indexing and Slicing Report", bu
     builder.card("Dataframe is:", builder.render_dataframe(df)),
     builder.card("Column A:", builder.render_series(df_col_a)),
     builder.card("Row 1:", builder.render_series(df_row_1)),
-    builder.card("Value at Row 1, Column A:", builder.render_dict({"Value": df_loc_row_1_col_a})),
+    builder.card("Value at Row 1, Column A:",
+                 builder.render_dict({"Value": df_loc_row_1_col_a})),
     builder.card("Columns A and D:", builder.render_dataframe(df_col_a_col_d)),
-    builder.card("Rows 1 to 3 using loc:", builder.render_dataframe(df_row_1_row_3)),
+    builder.card("Rows 1 to 3 using loc:",
+                 builder.render_dataframe(df_row_1_row_3)),
     builder.card("Row 4 (using iloc):", builder.render_series(df_iloc_row_4)),
-    builder.card("Value at Row 2, Column B (using at):", builder.render_dict({"Value": df_at_row_2_col_b})),
-    builder.card("Value at Row 3, Column C (using iat):", builder.render_dict({"Value": df_iat_row_3_col_c})),
-    builder.card("Rows where Column A > 10:", builder.render_dataframe(df_col_a_gt_10)),
-    builder.card("Values in Row 3 > 13:", builder.render_series(df_row_3_gt_13)),
-    builder.card("Values in Column E > 11 and Row is Row 2:", builder.render_dataframe(df_col_e_row_2_gt_11)),
+    builder.card("Value at Row 2, Column B (using at):",
+                 builder.render_dict({"Value": df_at_row_2_col_b})),
+    builder.card("Value at Row 3, Column C (using iat):",
+                 builder.render_dict({"Value": df_iat_row_3_col_c})),
+    builder.card("Rows where Column A > 10:",
+                 builder.render_dataframe(df_col_a_gt_10)),
+    builder.card("Values in Row 3 > 13:",
+                 builder.render_series(df_row_3_gt_13)),
+    builder.card("Values in Column E > 11 and Row is Row 2:",
+                 builder.render_dataframe(df_col_e_row_2_gt_11)),
 ]))
 
 

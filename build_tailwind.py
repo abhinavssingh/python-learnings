@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-
 import sys
 from pathlib import Path
+
 from lib.utility.logger import Logger
 
 try:
@@ -70,7 +70,8 @@ def main() -> int:
     min_path = output_css.with_suffix(".min.css")
     try:
         # If you want a short name (tw.min.css), otherwise skip this block
-        min_path.write_text(output_css.read_text(encoding="utf-8"), encoding="utf-8")
+        min_path.write_text(output_css.read_text(
+            encoding="utf-8"), encoding="utf-8")
     except Exception:
         pass
 

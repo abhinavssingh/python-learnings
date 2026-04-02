@@ -15,23 +15,23 @@ Usage:
 
 from __future__ import annotations
 
-
-from typing import List, Optional, Tuple
-from pathlib import Path
-import sys
-import subprocess
-import os
-import json
-import importlib
-import fnmatch
 import argparse
-
+import fnmatch
+import importlib
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 from init import register_paths
+
 register_paths()
 
 
 from lib.utility.logger import Logger  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent
 
 
@@ -129,7 +129,8 @@ def discover_modules():
             except ValueError:
                 continue
 
-            dotted = str(rel_path.with_suffix("")).replace("\\", ".").replace("/", ".")
+            dotted = str(rel_path.with_suffix("")).replace(
+                "\\", ".").replace("/", ".")
 
             modules.append(dotted)
 
@@ -153,10 +154,12 @@ def import_and_call(module_path: str, func_name: str = "main") -> int:
         except SystemExit as se:
             return int(se.code) if isinstance(se.code, int) else 1
         except Exception as e:
-            Logger.error(f"Error while running {module_path}.{func_name}(): {e}")
+            Logger.error(
+                f"Error while running {module_path}.{func_name}(): {e}")
             return 1
     else:
-        Logger.debug(f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
+        Logger.debug(
+            f"No callable `{func_name}` in {module_path}, falling back to `python -m`.")
         return 1
 
 
@@ -203,12 +206,18 @@ def filter_by_patterns(modules: List[str], patterns: List[str]) -> List[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run selected project scripts.")
-    parser.add_argument("-c", "--config", type=str, help="Path to runlist.json at project root")
-    parser.add_argument("-o", "--only", action="append", help="Glob(s), e.g. 'Module-2.NumPy.numpy_*'")
-    parser.add_argument("--function", default="main", help="Default function to call if present")
-    parser.add_argument("--list", action="store_true", help="List discovered modules and exit")
-    parser.add_argument("--stop-on-error", action="store_true", help="Stop at first failing script")
+    parser = argparse.ArgumentParser(
+        description="Run selected project scripts.")
+    parser.add_argument("-c", "--config", type=str,
+                        help="Path to runlist.json at project root")
+    parser.add_argument("-o", "--only", action="append",
+                        help="Glob(s), e.g. 'Module-2.NumPy.numpy_*'")
+    parser.add_argument("--function", default="main",
+                        help="Default function to call if present")
+    parser.add_argument("--list", action="store_true",
+                        help="List discovered modules and exit")
+    parser.add_argument("--stop-on-error", action="store_true",
+                        help="Stop at first failing script")
     args = parser.parse_args()
 
     # Ensure imports from repo root work
@@ -230,7 +239,8 @@ def main() -> int:
             runlist_path = REPO_ROOT / runlist_path
         to_run = load_runlist(runlist_path)
         # Fill missing function with default
-        to_run = [(m, f if f is not None else args.function) for (m, f) in to_run]
+        to_run = [(m, f if f is not None else args.function)
+                  for (m, f) in to_run]
     elif args.only:
         filtered = filter_by_patterns(discovered, args.only)
         if not filtered:

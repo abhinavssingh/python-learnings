@@ -1,7 +1,8 @@
 import pandas as pd
+
 from lib.html import HtmlBuilder
-from lib.utility.reports.report_utils import ReportUtils as ru
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -65,12 +66,18 @@ content.append(
 # Section — small summaries
 content.append(
     builder.grid([
-        builder.card("Information of the Date Range Dataframe is:", builder.render_pre(df_info_str)),
-        builder.card("Fiscal Year and Quarter Summary", builder.render_dataframe(fy_summary)),
-        builder.card("Weekend vs Weekday Count by Fiscal Year", builder.render_dataframe(weekend_summary)),
-        builder.card("Weekend vs Weekday Count by Calendar Quarter", builder.render_dataframe(weekend_summary_calendar)),
-        builder.card("Data types after modification", builder.render_pre(df_modified_info_str)),
-        builder.card("Fiscal Year End Dates", builder.render_dataframe(fy_end_dates))
+        builder.card("Information of the Date Range Dataframe is:",
+                     builder.render_pre(df_info_str)),
+        builder.card("Fiscal Year and Quarter Summary",
+                     builder.render_dataframe(fy_summary)),
+        builder.card("Weekend vs Weekday Count by Fiscal Year",
+                     builder.render_dataframe(weekend_summary)),
+        builder.card("Weekend vs Weekday Count by Calendar Quarter",
+                     builder.render_dataframe(weekend_summary_calendar)),
+        builder.card("Data types after modification",
+                     builder.render_pre(df_modified_info_str)),
+        builder.card("Fiscal Year End Dates",
+                     builder.render_dataframe(fy_end_dates))
     ])
 )
 

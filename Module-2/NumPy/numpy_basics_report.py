@@ -1,6 +1,7 @@
-from lib.utility.reports.report_utils import ReportUtils as ru
-from lib.html import HtmlBuilder
 import numpy as np
+
+from lib.html import HtmlBuilder
+from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
@@ -35,13 +36,16 @@ html = builder.build_page(
     "NumPy Basic Report",
     builder.grid([
         builder.card("Original Array (int)", builder.render_array(arr1)),
-        builder.card("Reshape Array (int)", builder.render_array(arr1_reshape)),
+        builder.card("Reshape Array (int)",
+                     builder.render_array(arr1_reshape)),
         builder.card("Transpose Array (int)", builder.render_array(arr1_t)),
         builder.card("Original Array (float)", builder.render_array(arr2)),
-        builder.card("Reshape Array (float)", builder.render_array(arr2_reshape)),
+        builder.card("Reshape Array (float)",
+                     builder.render_array(arr2_reshape)),
         builder.card("Transpose Array (float)", builder.render_array(arr2_t)),
         builder.card("Original Array (str)", builder.render_array(arr3)),
-        builder.card("Reshape Array (str)", builder.render_array(arr3_reshape)),
+        builder.card("Reshape Array (str)",
+                     builder.render_array(arr3_reshape)),
         builder.card("Transpose Array (str)", builder.render_array(arr3_t)),
     ])
 )

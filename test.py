@@ -12,9 +12,10 @@ Runs all 3 execution modes to verify:
 
 import os
 import subprocess
-from pathlib import Path
 import sys
 import textwrap
+from pathlib import Path
+
 from lib.utility.logger import Logger
 
 ROOT = Path(__file__).resolve().parent

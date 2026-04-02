@@ -16,11 +16,14 @@ def main():
 builder = HtmlBuilder()
 
 sales_data = [120, 150, 130, 170, 160, 180, 140]
-days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+days_of_week = ['Monday', 'Tuesday', 'Wednesday',
+                'Thursday', 'Friday', 'Saturday', 'Sunday']
 sales_series = pd.Series(sales_data, index=days_of_week)
 sales_series["Sunday"] = 300
-sales_series_preferred_days = sales_series.loc[['Monday', 'Wednesday', 'Friday', 'Sunday']]
-sales_series_on_contains = sales_series[sales_series.index.str.contains("ur") | sales_series.index.str.contains("ed")]
+sales_series_preferred_days = sales_series.loc[[
+    'Monday', 'Wednesday', 'Friday', 'Sunday']]
+sales_series_on_contains = sales_series[sales_series.index.str.contains(
+    "ur") | sales_series.index.str.contains("ed")]
 sales_series_total = sales_series.sum()
 sales_series_average = sales_series.mean()
 sales_serries_max = sales_series.max()
@@ -38,7 +41,8 @@ lower_fence = q1 - 1.5 * iqr
 upper_fence = q3 + 1.5 * iqr
 
 # IQR outliers
-outliers_iqr = sales_series[(sales_series.astype(float) < lower_fence) | (sales_series.astype(float) > upper_fence)]
+outliers_iqr = sales_series[(sales_series.astype(float) < lower_fence) | (
+    sales_series.astype(float) > upper_fence)]
 
 # Z-scores (population vs sample doesn't matter for ranking); using sample std
 z = ((sales_series - sales_series_average) / sales_series_std).round(3)
@@ -50,7 +54,8 @@ outliers_z_actual_values = sales_series[common_index]
 # MAD / robust z
 median = sales_series.median()
 mad = (sales_series - median).abs().median()
-robust_z = 0.6745 * (sales_series - median) / (mad if mad != 0 else np.nan)  # avoid div 0
+robust_z = 0.6745 * (sales_series - median) / \
+    (mad if mad != 0 else np.nan)  # avoid div 0
 
 # Day-over-day changes
 pct_change = sales_series.pct_change() * 100
@@ -83,17 +88,27 @@ results = {
 html_doc = builder.build_page("Pandas Series Exercise Report", builder.grid(
     [
         builder.card(" Sales Series is:", builder.render_series(sales_series)),
-        builder.card(" Sales Series Describe bare:", builder.render_dict({"Description": sales_series.describe().to_dict()})),
-        builder.card(" Type of the Sales Series is:", builder.render_dict({"Type": type(sales_series).__name__})),
-        builder.card(" Sales Series based on labels:", builder.render_series(sales_series_preferred_days)),
-        builder.card(" Sales Series based on contains:", builder.render_series(sales_series_on_contains)),
-        builder.card(" Sales Series based on label contains ur or ed:", builder.render_series(sales_series_on_contains)),
-        builder.card(" Summary of the Sales Series is:", builder.render_dict({"Summary": results})),
-        builder.card(" Outlier or the element which is far from average is:", builder.render_series(outliers_iqr)),
-        builder.card(" Recommendation is to drop the outlier element for better decision", builder.render_series(outliers_iqr.values)),
+        builder.card(" Sales Series Describe bare:", builder.render_dict(
+            {"Description": sales_series.describe().to_dict()})),
+        builder.card(" Type of the Sales Series is:", builder.render_dict(
+            {"Type": type(sales_series).__name__})),
+        builder.card(" Sales Series based on labels:",
+                     builder.render_series(sales_series_preferred_days)),
+        builder.card(" Sales Series based on contains:",
+                     builder.render_series(sales_series_on_contains)),
+        builder.card(" Sales Series based on label contains ur or ed:",
+                     builder.render_series(sales_series_on_contains)),
+        builder.card(" Summary of the Sales Series is:",
+                     builder.render_dict({"Summary": results})),
+        builder.card(" Outlier or the element which is far from average is:",
+                     builder.render_series(outliers_iqr)),
+        builder.card(" Recommendation is to drop the outlier element for better decision",
+                     builder.render_series(outliers_iqr.values)),
         builder.card(" Z score is:", builder.render_series(z)),
-        builder.card(" Acatual values in outliers based on Z score:", builder.render_series(outliers_z_actual_values)),
-        builder.card(" As per sigma 2 rule outlier is:", builder.render_series(outliers_z)),
+        builder.card(" Acatual values in outliers based on Z score:",
+                     builder.render_series(outliers_z_actual_values)),
+        builder.card(" As per sigma 2 rule outlier is:",
+                     builder.render_series(outliers_z)),
     ]))
 
 
