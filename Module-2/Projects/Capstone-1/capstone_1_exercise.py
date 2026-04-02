@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from lib.html import HtmlBuilder
-from lib.plot import PlotRenderer
-from lib.plot.plotutility import PlotUtility as pu
+from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
+from lib.utility.plot.plotutility import PlotUtility as pu
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -165,15 +164,20 @@ content.append(
         builder.card("Age vs Gender Summary:",
                      builder.render_dataframe(age_gender_df)),
         builder.card("Health vs Age Summary:",
-                     builder.render_dataframe(health_age_df)),
-        builder.chart_card(
-            "Age vs Income", plotRendrer.plot_to_html(plot_age_income)),
-        builder.chart_card(
-            "Health vs Age", plotRendrer.plot_to_html(plot_health_age)),
-        builder.chart_card(
-            "Age vs Gender", plotRendrer.plot_to_html(plot_age_gender)),
-    ]))
+                     builder.render_dataframe(health_age_df))
+    ])
+)
 
+content.append(
+    builder.chart_grid([
+        plotRendrer.plot_to_card(
+            plot_age_income, "Age vs Income"),
+        plotRendrer.plot_to_card(
+            plot_health_age, "Health vs Age",),
+        plotRendrer.plot_to_card(
+            plot_age_gender, "Age vs Gender"),
+    ])
+)
 
 html_doc = builder.build_page(
     "Capstone-1 Exercise  Report",

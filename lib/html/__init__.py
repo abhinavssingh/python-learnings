@@ -16,5 +16,6 @@ Usage:
 """
 
 from .builder import HtmlBuilder
+from .plotrenderer import PlotRenderer
 
-__all__ = ["HtmlBuilder"]
+__all__ = ["HtmlBuilder", "PlotRenderer"]

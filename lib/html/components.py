@@ -1,10 +1,10 @@
-
-
 """
 HTML Components Builder
 
 Provides component classes for building HTML cards, grids, and layouts.
 """
+
+import uuid
 
 
 class ComponentsBuilder:
@@ -22,18 +22,23 @@ class ComponentsBuilder:
             Card HTML
         """
         return f"""
-<div class="rounded-xl border border-slate-300 dark:border-slate-700
-            p-6 bg-white dark:bg-slate-800 shadow-md">
+            <!-- ======================= Card: {title} ======================= -->
+            <div class="rounded-xl border border-slate-300 dark:border-slate-700
+                        p-6 bg-white dark:bg-slate-800 shadow-md">
 
-    <h2 class="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
-        {title}
-    </h2>
+                <!-- Card header -->
+                <h2 class="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
+                    {title}
+                </h2>
 
-    <div class="space-y-3">
-        {content}
-    </div>
-</div>
-"""
+                <!-- Card body -->
+                <div class="space-y-3">
+                    {content}
+                </div>
+
+            </div>
+            <!-- ===================== End Card: {title} ===================== -->
+            """
 
     def grid(self, cards: list[str], columns: int = 3) -> str:
         """
@@ -47,10 +52,12 @@ class ComponentsBuilder:
             Grid HTML
         """
         return f"""
-<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-{columns}">
-    {''.join(cards)}
-</div>
-"""
+            <!-- ======================= Card Grid ======================= -->
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-{columns}">
+                {''.join(cards)}
+            </div>
+            <!-- ===================== End Card Grid ===================== -->
+            """
 
     def full_width_card(self, title: str, content: str) -> str:
         """
@@ -64,74 +71,109 @@ class ComponentsBuilder:
             Full-width card HTML
         """
         return f"""
-<section class="w-full rounded-xl border border-slate-300 dark:border-slate-700
-               bg-white dark:bg-slate-800 shadow-md p-6 mb-6">
+            <!-- ================ Full Width Card: {title} ================ -->
+            <section class="w-full rounded-xl border border-slate-300 dark:border-slate-700
+                        bg-white dark:bg-slate-800 shadow-md p-6 mb-6">
 
-    <h2 class="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
-        {title}
-    </h2>
+                <!-- Full-width card header -->
+                <h2 class="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
+                    {title}
+                </h2>
 
-    <div class="w-full overflow-x-auto">
-        {content}
-    </div>
-</section>
-"""
+                <!-- Full-width card content -->
+                <div class="w-full overflow-x-auto">
+                    {content}
+                </div>
 
-    def chart_card(self, title: str, content: str) -> str:
+            </section>
+            <!-- ============== End Full Width Card: {title} ============== -->
+            """
+
+    def chart_card(self, title: str, content: str,
+                   plotly_var: str,
+                   modal_height: int = 500) -> str:
         """
-        Create a card optimized for charts (less padding, better proportions).
+        Create a chart card with modal expansion support.
 
         Args:
-            title: Card title
-            content: Card content HTML
+            title: Chart title
+            content: Inline chart HTML
+            plotly_var: Plotly JS variable name (window-scoped)
+            modal_height: Height of chart when shown in modal
+        """
+        uid = f"chart_{uuid.uuid4().hex[:8]}"
 
-        Returns:
-            Chart card HTML
+        return f"""
+            <!-- ======================= Chart Card: {title} ======================= -->
+            <div class="rounded-xl border border-slate-300 dark:border-slate-700
+                        bg-white dark:bg-slate-800 shadow-md p-4">
+
+                <!-- Chart title -->
+                <h3 class="text-base font-semibold mb-3
+                        text-slate-800 dark:text-slate-100">
+                    {title}
+                </h3>
+
+                <!-- Inline chart container -->
+                <div class="w-full">
+                    {content}
+                </div>
+
+                <!-- Chart modal trigger -->
+                <button onclick="openChartModal('{uid}', '{plotly_var}')"
+                        class="mt-3 text-sm px-3 py-1.5 rounded
+                            bg-slate-600 text-white hover:bg-slate-700">
+                    View details
+                </button>
+
+                <!-- Modal chart template (used by global modal) -->
+                <template id="{uid}">
+                    <div id="{uid}_modal_chart"
+                        class="w-full"
+                        style="height: {modal_height}px;">
+                    </div>
+                </template>
+
+            </div>
+            <!-- ===================== End Chart Card: {title} ===================== -->
+            """
+
+    def chart_grid(self, cards: list[str]) -> str:
+        """
+        Render charts in a flexible grid with 2 items per row on medium+ screens.
+
+        - Mobile: 1 column
+        - Tablet/Desktop: 2 columns
+        - Unlimited number of items
         """
         return f"""
-<div class="rounded-xl border border-slate-300 dark:border-slate-700
-            bg-white dark:bg-slate-800 shadow-md p-4">
+            <!-- ======================= Chart Grid ======================= -->
+            <div class="grid gap-6 grid-cols-1 md:grid-cols-2 pt-6">
+                {''.join(cards)}
+            </div>
+            <!-- ===================== End Chart Grid ===================== -->
+            """
 
-    <h3 class="text-base font-semibold mb-3
-               text-slate-800 dark:text-slate-100">
-        {title}
-    </h3>
-
-    <div class="w-full h-full">
-        {content}
-    </div>
-</div>
-"""
-
-    def chart_grid_2x2(self, cards: list[str]) -> str:
+    def chart_full_width(self, title: str, content: str, height: int = 320) -> str:
         """
-        Create a responsive 2x2 layout for charts.
-
-        Args:
-            cards: List of chart card HTML strings
-
-        Returns:
-            Grid HTML
+        Render a full-width chart container with title and fixed height.
         """
         return f"""
-<div class="grid gap-6 grid-cols-1 md:grid-cols-2 pt-6">
-    {''.join(cards)}
-</div>
-"""
+            <!-- =================== Full Width Chart: {title} =================== -->
+            <section class="w-full rounded-xl border border-slate-300 dark:border-slate-700
+                        bg-white dark:bg-slate-800 shadow-md p-6 mb-6">
 
-    def chart_container(self, content: str, height: int = 300) -> str:
-        """
-        Wrap chart content with a fixed height container.
+                <!-- Full width chart title -->
+                <h2 class="text-lg font-semibold mb-4
+                        text-slate-800 dark:text-slate-100">
+                    {title}
+                </h2>
 
-        Args:
-            content: Chart content HTML
-            height: Container height in pixels (default 300)
+                <!-- Fixed height chart container -->
+                <div class="w-full" style="height: {height}px;">
+                    {content}
+                </div>
 
-        Returns:
-            Container HTML
-        """
-        return f"""
-<div class="w-full" style="height: {height}px;">
-    {content}
-</div>
-"""
+            </section>
+            <!-- ================= End Full Width Chart: {title} ================= -->
+            """
