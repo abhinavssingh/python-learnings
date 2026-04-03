@@ -29,239 +29,317 @@ class PageBuilder:
             Complete HTML page as string
         """
         return f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta charset="utf-8" />
-            <title>{title}</title>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>{title}</title>
 
-            <style>
-            {self.tailwind_css}
+<script src="https://cdn.plot.ly/plotly-3.4.0.min.js" charset="utf-8"></script>
 
-            /* Default theme (light) */
-            :root {{
-            color-scheme: light;
-            }}
+<style>
+{self.tailwind_css}
 
-            html.light {{
-            --bg-color: #f8fafc;
-            --fg-color: #0f172a;
-            }}
+/* Default theme (light) */
+:root {{
+color-scheme: light;
+}}
 
-            html.dark {{
-            --bg-color: #0f172a;
-            --fg-color: #e2e8f0;
-            }}
+html.light {{
+--bg-color: #f8fafc;
+--fg-color: #0f172a;
+}}
 
-            body {{
-            background-color: var(--bg-color);
-            color: var(--fg-color);
-            }}
+html.dark {{
+--bg-color: #0f172a;
+--fg-color: #e2e8f0;
+}}
+
+body {{
+background-color: var(--bg-color);
+color: var(--fg-color);
+}}
 
 
-            /* ---------- Enforce readable text in dark cards ---------- */
-            .dark .card,
-            .dark table,
-            .dark td,
-            .dark th,
-            .dark pre {{
-                    color: #e5e7eb; /* slate-200 */
-            }}
-            </style>
+/* ---------- Enforce readable text in dark cards ---------- */
+.dark .card,
+.dark table,
+.dark td,
+.dark th,
+.dark pre {{
+        color: #e5e7eb; /* slate-200 */
+}}
 
-            <script>
-            /* -------- Theme Toggle -------- */
-            function toggleTheme() {{
-                const html = document.documentElement;
-                const current = html.classList.contains("dark") ? "dark" : "light";
-                const next = current === "light" ? "dark" : "light";
-                html.classList.remove(current);
-                html.classList.add(next);
-                localStorage.setItem("report-theme", next);
-            }}
+/* ---------------- Lazy Loading and Animation ---------------*/
+.chart-card.hidden {{
+    display: none;
+}}
 
-            window.onload = () => {{
-                const saved = localStorage.getItem("report-theme") || "light";
-                document.documentElement.classList.add(saved);
-            }};
+.chart-card {{
+    animation: fadeIn 300ms ease-in;
+}}
 
-            /* -------- Row Toggle (DataFrame Collapsible) -------- */
-            function toggleRows(uid, showAll) {{
-                var rows = document.querySelectorAll("tr[data-row='" + uid + "']");
-                var visible = 0;
+@keyframes fadeIn {{
+    from {{opacity: 0; }}
+        to  {{opacity: 1; }}
+    }}
 
-                rows.forEach(function(row) {{
-                    var initiallyHidden = row.getAttribute("data-hidden") === "1";
+</style>
 
-                    if (!showAll && initiallyHidden) {{
-                        row.style.display = "none";
-                    }} else {{
-                        row.style.display = "table-row";
-                        visible++;
-                    }}
-                }});
+<script>
+/* -------- Theme Toggle -------- */
+function toggleTheme() {{
+    const html = document.documentElement;
+    const current = html.classList.contains("dark") ? "dark" : "light";
+    const next = current === "light" ? "dark" : "light";
+    html.classList.remove(current);
+    html.classList.add(next);
+    localStorage.setItem("report-theme", next);
+}}
 
-                var info = document.getElementById(uid + "-info");
-                if (info) {{
-                    info.textContent = showAll
-                        ? "Showing all " + rows.length + " rows"
-                        : "Showing " + visible + " of " + rows.length + " rows";
+window.onload = () => {{
+    const saved = localStorage.getItem("report-theme") || "light";
+    document.documentElement.classList.add(saved);
+}};
+
+/* -------- Row Toggle (DataFrame Collapsible) -------- */
+function toggleRows(uid, showAll) {{
+    var rows = document.querySelectorAll("tr[data-row='" + uid + "']");
+    var visible = 0;
+
+    rows.forEach(function(row) {{
+        var initiallyHidden = row.getAttribute("data-hidden") === "1";
+
+        if (!showAll && initiallyHidden) {{
+            row.style.display = "none";
+        }} else {{
+            row.style.display = "table-row";
+            visible++;
+        }}
+    }});
+
+    var info = document.getElementById(uid + "-info");
+    if (info) {{
+        info.textContent = showAll
+            ? "Showing all " + rows.length + " rows"
+            : "Showing " + visible + " of " + rows.length + " rows";
+    }}
+
+    var showLessBtn = document.getElementById(uid + "-showless");
+    if (showLessBtn) {{
+        showLessBtn.style.display = showAll ? "inline-flex" : "none";
+    }}
+
+    if (!showAll && info) {{
+        info.scrollIntoView({{ behavior: "smooth", block: "start" }});
+    }}
+}}
+
+
+/* -------- Optimized Filter Rows (Collapsible-safe & Debounced) -------- */
+let filterTimeout = null;
+
+function filterRows(uid, query) {{
+    if (filterTimeout) {{
+        clearTimeout(filterTimeout);
+    }}
+
+    filterTimeout = setTimeout(function () {{
+        const q = query.trim().toLowerCase();
+        const rows = document.querySelectorAll("tr[data-row='" + uid + "']");
+        let visible = 0;
+
+        rows.forEach(function(row) {{
+            const initiallyHidden = row.getAttribute("data-hidden") === "1";
+            const text = row.textContent.toLowerCase();
+
+            if (q) {{
+                // Filtering active → ignore collapsible state
+                if (text.includes(q)) {{
+                    row.style.display = "table-row";
+                    visible++;
+                }} else {{
+                    row.style.display = "none";
                 }}
-
-                var showLessBtn = document.getElementById(uid + "-showless");
-                if (showLessBtn) {{
-                    showLessBtn.style.display = showAll ? "inline-flex" : "none";
-                }}
-
-                if (!showAll && info) {{
-                    info.scrollIntoView({{ behavior: "smooth", block: "start" }});
+            }} else {{
+                // Filter cleared → restore collapsible default
+                if (initiallyHidden) {{
+                    row.style.display = "none";
+                }} else {{
+                    row.style.display = "table-row";
+                    visible++;
                 }}
             }}
+        }});
+
+        const info = document.getElementById(uid + "-info");
+        if (info) {{
+            info.textContent = q
+                ? "Filtered: " + visible + " of " + rows.length + " rows"
+                : "Showing first " + visible + " of " + rows.length + " rows";
+        }}
+
+        // Reset Show Less button when filter cleared
+        const showLessBtn = document.getElementById(uid + "-showless");
+        if (showLessBtn) {{
+            showLessBtn.style.display = q ? "inline-flex" : "none";
+        }}
+
+    }}, 150); // debounce
+}}
+
+/* -------- Modal Logic (Layout Stable) -------- */
+function openModalFromTemplate(templateId) {{
+    var tpl = document.getElementById(templateId);
+    if (!tpl) return;
+
+    document.getElementById("modal-content").innerHTML = tpl.innerHTML;
+    document.getElementById("global-modal").style.display = "flex";
+}}
+
+function closeModal() {{
+    document.getElementById("global-modal").style.display = "none";
+}}
+
+document.addEventListener("keydown", function(e) {{
+    if (e.key === "Escape") {{
+        closeModal();
+    }}
+}});
+
+/* -------- Plotly Chart Modal (multi-chart safe) -------- */
+
+function openChartModal(templateId, plotlyVar) {{
+    const tpl = document.getElementById(templateId);
+    if (!tpl) return;
+
+    document.getElementById("modal-content").innerHTML = tpl.innerHTML;
+    document.getElementById("global-modal").style.display = "flex";
+
+    const container = document.getElementById(templateId + "_modal_chart");
+    if (!container) return;
+
+    const store  = window.__PLOT_STORE__[plotlyVar];
+    if (!store ) {{
+    console.error("Plotly json not found:", plotlyVar);
+    return ;
+    }}
+
+    Plotly.newPlot(
+        container,
+        store .fig.data,
+        store .fig.layout,
+        store .fig.config || {{}}
+    );
+}}
 
 
-            /* -------- Optimized Filter Rows (Collapsible-safe & Debounced) -------- */
-            let filterTimeout = null;
 
-            function filterRows(uid, query) {{
-                if (filterTimeout) {{
-                    clearTimeout(filterTimeout);
-                }}
+/* -------- Chart Batch Loader -------- */
 
-                filterTimeout = setTimeout(function () {{
-                    const q = query.trim().toLowerCase();
-                    const rows = document.querySelectorAll("tr[data-row='" + uid + "']");
-                    let visible = 0;
 
-                    rows.forEach(function(row) {{
-                        const initiallyHidden = row.getAttribute("data-hidden") === "1";
-                        const text = row.textContent.toLowerCase();
+let CHART_BATCH_SIZE = 2;
+let currentChartIndex = 0;
 
-                        if (q) {{
-                            // Filtering active → ignore collapsible state
-                            if (text.includes(q)) {{
-                                row.style.display = "table-row";
-                                visible++;
-                            }} else {{
-                                row.style.display = "none";
-                            }}
-                        }} else {{
-                            // Filter cleared → restore collapsible default
-                            if (initiallyHidden) {{
-                                row.style.display = "none";
-                            }} else {{
-                                row.style.display = "table-row";
-                                visible++;
-                            }}
-                        }}
-                    }});
+function loadMoreCharts() {{
+    const cards = Array.from(document.querySelectorAll(".chart-card"))
+        .sort((a, b) => Number(a.dataset.chartIndex) - Number(b.dataset.chartIndex));
 
-                    const info = document.getElementById(uid + "-info");
-                    if (info) {{
-                        info.textContent = q
-                            ? "Filtered: " + visible + " of " + rows.length + " rows"
-                            : "Showing first " + visible + " of " + rows.length + " rows";
-                    }}
+    let shownNow = 0;
 
-                    // Reset Show Less button when filter cleared
-                    const showLessBtn = document.getElementById(uid + "-showless");
-                    if (showLessBtn) {{
-                        showLessBtn.style.display = q ? "inline-flex" : "none";
-                    }}
+    for (let i = currentChartIndex; i < cards.length && shownNow < CHART_BATCH_SIZE; i++) {{
+        const card = cards[i];
+        card.classList.remove("hidden");
 
-                }}, 150); // debounce
+        // ✅ Show parent wrapper div
+        const parentWrapper = card.parentElement;
+        if (parentWrapper) {{
+            parentWrapper.style.display = "block";
+        }}
+
+        // ✅ Render Plotly chart if not already rendered
+        const plotDiv = card.querySelector("[data-plotly-var]");
+        if (plotDiv && !plotDiv.dataset.rendered) {{
+            const plotId = plotDiv.id;
+            const store = window.__PLOT_STORE__[plotId];
+
+            if (store) {{
+                Plotly.newPlot(plotDiv, store.fig.data, store.fig.layout, store.fig.config || {{}});
+                plotDiv.dataset.rendered = "1";
             }}
+        }}
 
-            /* -------- Modal Logic (Layout Stable) -------- */
-            function openModalFromTemplate(templateId) {{
-                var tpl = document.getElementById(templateId);
-                if (!tpl) return;
+        shownNow++;
+    }}
 
-                document.getElementById("modal-content").innerHTML = tpl.innerHTML;
-                document.getElementById("global-modal").style.display = "flex";
-            }}
+    currentChartIndex += shownNow;
 
-            function closeModal() {{
-                document.getElementById("global-modal").style.display = "none";
-            }}
+    // ✅ Update counter
+    const status = document.getElementById("chart-status");
+    if (status) {{
+        status.textContent = "Showing " + currentChartIndex + " of " + cards.length + " charts";
+    }}
 
-            document.addEventListener("keydown", function(e) {{
-                if (e.key === "Escape") {{
-                    closeModal();
-                }}
-            }});
+    // ✅ Hide button if all charts loaded
+    if (currentChartIndex >= cards.length) {{
+        const btn = document.getElementById("load-more-btn");
+        if (btn) btn.style.display = "none";
+    }}
+}}
 
-            /* -------- Plotly Chart Modal (multi-chart safe) -------- */
-            function openChartModal(templateId, plotlyVarName) {{
-                        const tpl = document.getElementById(templateId);
-                        if (!tpl) return;
 
-                        document.getElementById("modal-content").innerHTML = tpl.innerHTML;
-                        document.getElementById("global-modal").style.display = "flex";
+document.addEventListener("DOMContentLoaded", () => {{
+            loadMoreCharts();
+        }});
 
-                        const container = document.getElementById(templateId + "_modal_chart");
-                        if (!container) return;
+</script>
 
-                        const fig = window[plotlyVarName];
-                        if (!fig) {{
-                        console.error("Plotly figure not found:", plotlyVarName);
-                        return ;
-                    }}
+</head>
 
-                        Plotly.newPlot(
-                            container,
-                            fig.data,
-                            fig.layout,
-                            fig.config || {{}}
-                        );
-                    }}
-            </script>
+<body class="p-6">
+<div class="max-w-screen-2xl mx-auto">
 
-            </head>
+    <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">{title}</h1>
 
-            <body class="p-6">
-            <div class="max-w-screen-2xl mx-auto">
+    <button onclick="toggleTheme()"
+        class="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-800 transition">
+        Toggle Theme
+    </button>
+    </div>
 
-                <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold">{title}</h1>
+    {body_html}
+</div>
 
-                <button onclick="toggleTheme()"
-                    class="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-800 transition">
-                    Toggle Theme
-                </button>
-                </div>
+<!-- -------- Global Modal (does NOT affect layout) -------- -->
+<div id="global-modal"
+    style="display:none"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
 
-                {body_html}
-            </div>
+    <div class="bg-white dark:bg-slate-800
+                max-w-6xl w-full mx-6
+                rounded-xl shadow-lg
+                max-h-[85vh] overflow-y-auto">
 
-            <!-- -------- Global Modal (does NOT affect layout) -------- -->
-            <div id="global-modal"
-                style="display:none"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="flex justify-between items-center
+                border-b border-slate-300 dark:border-slate-700
+                px-6 py-4">
 
-                <div class="bg-white dark:bg-slate-800
-                            max-w-6xl w-full mx-6
-                            rounded-xl shadow-lg
-                            max-h-[85vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            Details
+        </h3>
 
-                <div class="flex justify-between items-center
-                            border-b border-slate-300 dark:border-slate-700
-                            px-6 py-4">
+        <button onclick="closeModal()"
+                class="text-slate-500 hover:text-slate-900
+                    dark:text-slate-400 dark:hover:text-white text-2xl">
+        &times;
+        </button>
+    </div>
 
-                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                        Details
-                    </h3>
+    <div id="modal-content" class="p-6"></div>
+    </div>
+</div>
 
-                    <button onclick="closeModal()"
-                            class="text-slate-500 hover:text-slate-900
-                                dark:text-slate-400 dark:hover:text-white text-2xl">
-                    &times;
-                    </button>
-                </div>
-
-                <div id="modal-content" class="p-6"></div>
-                </div>
-            </div>
-
-            </body>
-            </html>
-            """
+</body>
+</html>
+"""

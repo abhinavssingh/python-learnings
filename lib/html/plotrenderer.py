@@ -41,8 +41,9 @@ class PlotRenderer:
     def __init__(self):
         """Initialize with ComponentsBuilder for styling."""
         self.components = ComponentsBuilder()
+        self._chart_index = 0
 
-    def plot_to_html(self, plot_obj):
+    def plot_to_html(self, plot_obj, index: int):
         """
         Convert supported plot objects to HTML.
 
@@ -55,12 +56,13 @@ class PlotRenderer:
         # ✅ Plotly (special handling)
         if hasattr(plot_obj, "to_html") and hasattr(plot_obj, "to_plotly_json"):
             plotly_var = f"fig_{uuid.uuid4().hex[:8]}"
-            div_id = f"plot_{plotly_var}"
+            div_id = f"{plotly_var}"
 
             # ✅ Inline chart (Plotly-native rendering)
+
             plot_html = plot_obj.to_html(
                 full_html=False,
-                include_plotlyjs=True,
+                include_plotlyjs=False,
                 div_id=div_id,
                 config={"responsive": True}
             )
@@ -69,11 +71,17 @@ class PlotRenderer:
             fig_json = plot_obj.to_plotly_json()
 
             # ✅ IMPORTANT: UNESCAPED <script> tag
+
             plot_html += f"""
-            <script>
-            var {plotly_var} = {json.dumps(fig_json, cls=PlotlyJSONEncoder)};
-            </script>
-            """
+    <script>
+    window.__PLOT_STORE__ = window.__PLOT_STORE__ || {{}};
+
+    window.__PLOT_STORE__["{div_id}"] = {{
+        fig: {json.dumps(fig_json, cls=PlotlyJSONEncoder)},
+        rendered: false
+    }};
+    </script>
+"""
             return plot_html, plotly_var
 
         # ✅ Other libraries (Bokeh, Altair, etc.)
@@ -127,5 +135,13 @@ class PlotRenderer:
         Returns:
             HTML string with plot wrapped in chart_card component
         """
-        plot_html, plotly_var = self.plot_to_html(plot_obj)
-        return self.components.chart_card(title, plot_html, plotly_var)
+
+        index = self._chart_index
+        self._chart_index += 1
+        plot_html, plotly_var = self.plot_to_html(plot_obj, index=index)
+        return self.components.chart_card(
+            title=title,
+            content=plot_html,
+            plotly_var=plotly_var,
+            index=index   # passed to component layer
+        )
