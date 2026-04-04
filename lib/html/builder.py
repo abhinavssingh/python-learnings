@@ -71,9 +71,9 @@ class HtmlBuilder:
         """Create a full-width card component."""
         return self.components.full_width_card(title, content)
 
-    def chart_card(self, title: str, content: str, plotly_var: str) -> str:
+    def chart_card(self, title: str, content: str, plotly_var: str, index: int) -> str:
         """Create a card optimized for charts."""
-        return self.components.chart_card(title, content, plotly_var)
+        return self.components.chart_card(title, content, plotly_var, index)
 
     def chart_grid(self, cards: list[str]) -> str:
         """Create a responsive 2x2 layout for charts."""

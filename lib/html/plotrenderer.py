@@ -145,3 +145,73 @@ class PlotRenderer:
             plotly_var=plotly_var,
             index=index   # passed to component layer
         )
+
+    def plot_to_html_full_width(self, plot_obj):
+        """
+        Convert plot object to HTML for full-width, immediate rendering.
+
+        This method is intended for report-style visualizations where:
+        - Charts render on page load
+        - No load-more / modal logic is used
+        - Plotly JS can be safely included (once or per chart)
+
+        Returns:
+            tuple[str, str | None]:
+                (html, plotly_var) for Plotly
+                (html, None) for other libraries
+        """
+
+        # ✅ Plotly
+        if hasattr(plot_obj, "to_html") and hasattr(plot_obj, "to_plotly_json"):
+            plotly_var = f"fig_{uuid.uuid4().hex[:8]}"
+            div_id = plotly_var
+
+            plot_html = plot_obj.to_html(
+                full_html=False,
+                include_plotlyjs=False,  # ✅ JS loaded globally in base template
+                div_id=div_id,
+                config={"responsive": True}
+            )
+
+            return plot_html, plotly_var
+
+        # ✅ Other libraries
+        if hasattr(plot_obj, "to_html"):
+            try:
+                return plot_obj.to_html(full_html=False), None
+            except TypeError:
+                return plot_obj.to_html(), None
+
+        # ✅ Matplotlib Figure
+        if isinstance(plot_obj, plt.Figure):
+            return self._matplotlib_figure_to_html(plot_obj), None
+
+        # ✅ Matplotlib Axes
+        if hasattr(plot_obj, "get_figure"):
+            return self._matplotlib_figure_to_html(plot_obj.get_figure()), None
+
+        raise TypeError(
+            f"Unsupported plot object type: {type(plot_obj).__name__}"
+        )
+
+    def plot_to_full_width_card(self, plot_obj, title: str = "") -> str:
+        """
+        Convert plot to HTML and wrap it in a full-width styled card component.
+
+        Uses ComponentsBuilder.chart_full_width() for consistent styling.
+
+        Args:
+            plot_obj: Any supported plot object (Plotly figure, etc.)
+            title (str): Card title
+
+        Returns:
+            str: HTML string with plot wrapped in a full-width chart card
+        """
+
+        plot_html, plotly_var = self.plot_to_full_width_card(plot_obj)
+
+        return self.components.chart_full_width(
+            title=title,
+            content=plot_html,
+            plotly_var=plotly_var,
+        )

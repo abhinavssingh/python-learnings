@@ -145,4 +145,3 @@ print(f"Wrote report to: {output_path}")
 
 if __name__ == "__main__":
     main()
-    main()
