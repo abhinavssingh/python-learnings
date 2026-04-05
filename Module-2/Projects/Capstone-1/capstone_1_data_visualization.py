@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.figure_factory as ff
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
@@ -265,8 +268,70 @@ bar_fig = px.bar(df, x='age', y='income', title="Bar chart to display Age vs Inc
                  hover_data=['region', 'married'], color='gender',
                  labels={'employed': 'employement status'}, height=400)
 
+
+bar_fig_age_income = px.bar(category_df, x="age category", y="count", color="income category", barmode="stack",
+                            title="Age Category vs Income Category", labels={"count": "Total Value"})
+
+
+bar_fig_region_gender = px.bar(category_df, x="region", y="count", color="gender", barmode="group", title="Region vs Gender",
+                               labels={"count": "Total Value"})
+
+
+histogram_fig_1 = px.histogram(category_df, x="count", marginal="rug", title="Distribution of Values", color='gender',
+                               hover_data=category_df.columns, labels={"count": "Value"})
+
+
+histogram_fig_2 = make_subplots(rows=3, cols=2,
+                                subplot_titles=["Region Distribution", "Age Category Distribution",
+                                                "Income Category Distribution",
+                                                "Health Distribution",
+                                                "Gender Distribution",])
+
+histogram_fig_2.add_trace(
+    go.Bar(x=category_df["region"], y=category_df["count"]),
+    row=1, col=1
+)
+
+
+histogram_fig_2.add_trace(
+    go.Bar(x=category_df["age category"], y=category_df["count"]),
+    row=1, col=2
+)
+
+
+histogram_fig_2.add_trace(
+    go.Bar(x=category_df["income category"], y=category_df["count"]),
+    row=2, col=1
+)
+
+
+histogram_fig_2.add_trace(
+    go.Bar(x=category_df["health"], y=category_df["count"]),
+    row=2, col=2
+)
+
+
+histogram_fig_2.add_trace(
+    go.Bar(x=category_df["gender"], y=category_df["count"]),
+    row=3, col=1
+)
+
+histogram_fig_2.update_layout(
+    height=500,
+    showlegend=True,
+    title_text="Categorical Distributions (Counts)",
+    template="plotly_white"
+)
+
+pie_fig = px.pie(category_df, values='count', names='region', title='Category',
+                 hover_data=['gender', 'age category', 'income category'])
+
+
 box_fig_1 = px.box(df, y=["visits", "nvisits", "ovisits", "novisits", "age"], color="region")
 box_fig_2 = px.box(df, y=["income"], color="region")
+
+violin_fig_1 = px.violin(df, y=["visits", "nvisits", "ovisits", "novisits", "age"], color="region")
+violin_fig_2 = px.violin(df, y=["income"], color="region")
 
 sunburst_fig = px.sunburst(df, path=['region', 'health', 'gender'], title="Sunburst plot to show the data region wise",
                            color='age', hover_data=['income'],
@@ -276,22 +341,15 @@ treemap_fig = px.treemap(df, path=['region', 'health', 'insurance', 'school', 'g
                          color='age', hover_data=['income'],
                          color_continuous_scale='Spectral')
 
-# parallel_fig = px.parallel_categories(df, dimensions=['region', 'gender', 'health'],
-#                                       color="age", color_continuous_scale=px.colors.sequential.Inferno,
-#                                       labels={'region': 'midwest', 'gender': 'male', 'health': 'average'})
+parallel_fig = px.parallel_categories(df, dimensions=['region', 'gender', 'health'],
+                                      color="age", color_continuous_scale=px.colors.sequential.Inferno,
+                                      labels={'region': 'midwest', 'gender': 'male', 'health': 'average'})
 
 heatmap_fig = px.density_heatmap(category_df, x="count", y="income category", facet_row="gender", facet_col="age category")
 
 # Returns a matrix of all numeric columns
 correlation_matrix = df.select_dtypes(include="number").corr()
-corr_fig = px.imshow(
-    correlation_matrix,
-    text_auto=True,              # show values in cells
-    color_continuous_scale="portland",
-    zmin=1,
-    zmax=1,
-    title="Correlation Plot"
-)
+corr_fig = px.imshow(correlation_matrix, text_auto=True, color_continuous_scale="portland", zmin=1, zmax=1, title="Correlation Plot")
 
 content.append(builder.chart_grid([
     plotRenderer.plot_to_card(age_gender_fig, "Age and Gender Distribution"),
@@ -305,11 +363,18 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(scatter_matrix_fig, " Scatter Matrix (Pair Plot) Plot"),
     plotRenderer.plot_to_card(scatter_matrix_fig_2, " Scatter Matrix Plot 2"),
     plotRenderer.plot_to_card(bar_fig, " Bar Graph"),
+    plotRenderer.plot_to_card(bar_fig_age_income, " Stacked Bar Graph"),
+    plotRenderer.plot_to_card(bar_fig_region_gender, " Grouped Bar Graph"),
+    plotRenderer.plot_to_card(histogram_fig_1, " Histogram Graph"),
+    plotRenderer.plot_to_card(histogram_fig_2, " Histogram Sub Graph"),
+    plotRenderer.plot_to_card(pie_fig, " Pie Graph"),
     plotRenderer.plot_to_card(box_fig_1, " Box Graph"),
     plotRenderer.plot_to_card(box_fig_2, " Box Graph"),
+    plotRenderer.plot_to_card(violin_fig_1, " Violin Graph"),
+    plotRenderer.plot_to_card(violin_fig_2, " Violin Graph"),
     plotRenderer.plot_to_card(sunburst_fig, " Sun Burst Plot"),
     plotRenderer.plot_to_card(treemap_fig, " Treemap Plot"),
-    # plotRenderer.plot_to_card(parallel_fig, " Parallel Plot"),
+    plotRenderer.plot_to_card(parallel_fig, " Parallel Plot"),
     plotRenderer.plot_to_card(heatmap_fig, " Density Heatmap Plot"),
     plotRenderer.plot_to_card(corr_fig, " Correlation Heatmap Plot"),
 ]))
