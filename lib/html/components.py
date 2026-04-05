@@ -162,7 +162,7 @@ class ComponentsBuilder:
         return f"""
 <!-- ======================= Chart Grid ======================= -->
 
-<div class="text-sm text-slate-500 dark:text-slate-400 mb-3 text-center"
+<div class="text-sm text-slate-500 dark:text-slate-400 mb-3 text-center pt-6"
     id="chart-status">
     Showing 0 of {len(cards)} charts
 </div>

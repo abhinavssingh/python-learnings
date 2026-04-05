@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Any, Callable, Literal, Union
+from typing import Any, Callable, Iterable, Literal, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -63,55 +63,134 @@ class DataFrameHelper:
         "Japan": 4,
     }
 
+    # ✅ Define all supported fields centrally
+    ALL_CALENDAR_FIELDS: Set[str] = {
+        "year",
+        "month",
+        "month_name",
+        "day_name",
+        "weekday",
+        "is_weekend",
+        "quarter",
+    }
+
+    ALL_FISCAL_FIELDS: Set[str] = {
+        "fiscal_year",
+        "fiscal_quarter",
+        "fy_label",
+        "fq_label",
+    }
+
     @staticmethod
     def add_fiscal_calendar(
         df: pd.DataFrame,
         date_col: str,
         country: str,
+        *,
+        calendar_fields: Iterable[str] | None = None,
+        fiscal_fields: Iterable[str] | None = None,
     ) -> pd.DataFrame:
         """
-        Adds calendar and fiscal fields based on country‑specific rules.
+        Add calendar and fiscal fields derived from a date column.
+
+        Behavior
+        --------
+        - If calendar_fields and fiscal_fields are None:
+            → add ALL supported fields
+        - If fields are provided:
+            → add ONLY the specified fields
         """
 
         if country not in DataFrameHelper.FISCAL_YEAR_START_MONTH:
             raise ValueError(f"Fiscal rules not defined for {country}")
 
+        # ✅ Resolve effective field sets
+        calendar_fields = (
+            DataFrameHelper.ALL_CALENDAR_FIELDS
+            if calendar_fields is None
+            else set(calendar_fields)
+        )
+
+        fiscal_fields = (
+            DataFrameHelper.ALL_FISCAL_FIELDS
+            if fiscal_fields is None
+            else set(fiscal_fields)
+        )
+
+        out = df.copy()
+        dt = out[date_col]
         fy_start = DataFrameHelper.FISCAL_YEAR_START_MONTH[country]
-        df = df.copy()
 
-        df["Year"] = df[date_col].dt.year
-        df["Month"] = df[date_col].dt.month
-        df["Day"] = df[date_col].dt.day_name()
-        df["Month_Name"] = df[date_col].dt.month_name()
-        df["Weekday"] = df[date_col].dt.weekday
-        df["IsWeekend"] = df["Weekday"].isin([5, 6])
-        df["Calendar_Quarter"] = df[date_col].dt.quarter
+        # ==========================
+        # Calendar fields
+        # ==========================
+        if "year" in calendar_fields:
+            out["Year"] = dt.dt.year
 
-        df["FY_Start"] = np.where(
-            df["Month"] >= fy_start,
-            df["Year"],
-            df["Year"] - 1,
+        if "month" in calendar_fields:
+            out["Month"] = dt.dt.month
+
+        if "month_name" in calendar_fields:
+            out["Month_Name"] = dt.dt.month_name()
+
+        if "day_name" in calendar_fields:
+            out["Day_Name"] = dt.dt.day_name()
+
+        if {"weekday", "is_weekend"} & calendar_fields:
+            out["_Weekday"] = dt.dt.weekday
+
+        if "weekday" in calendar_fields:
+            out["Weekday"] = out["_Weekday"]
+
+        if "is_weekend" in calendar_fields:
+            out["IsWeekend"] = out["_Weekday"].isin([5, 6])
+
+        if "quarter" in calendar_fields:
+            out["Calendar_Quarter"] = dt.dt.quarter
+
+        # ==========================
+        # Fiscal fields
+        # ==========================
+        if fiscal_fields:
+            month = dt.dt.month
+            year = dt.dt.year
+
+            out["_FY_Start"] = np.where(month >= fy_start, year, year - 1)
+            out["_FY_End"] = out["_FY_Start"] + 1
+            out["_Fiscal_Month"] = ((month - fy_start) % 12) + 1
+            out["_Fiscal_Quarter"] = ((out["_Fiscal_Month"] - 1) // 3) + 1
+
+        if "fiscal_year" in fiscal_fields:
+            out["Fiscal_Year"] = (
+                out["_FY_Start"].astype(str)
+                + "-"
+                + out["_FY_End"].astype(str).str[-2:]
+            )
+
+        if "fiscal_quarter" in fiscal_fields:
+            out["Fiscal_Quarter"] = out["_Fiscal_Quarter"]
+
+        if "fy_label" in fiscal_fields:
+            out["FY_Label"] = "FY " + out["Fiscal_Year"]
+
+        if "fq_label" in fiscal_fields:
+            out["FQ_Label"] = "Q" + out["_Fiscal_Quarter"].astype(str)
+
+        # ==========================
+        # Cleanup internal columns
+        # ==========================
+        out.drop(
+            columns=[c for c in out.columns if c.startswith("_")],
+            errors="ignore",
+            inplace=True,
         )
 
-        df["FY_End"] = df["FY_Start"] + 1
-
-        df["Fiscal_Month"] = ((df["Month"] - fy_start) % 12) + 1
-        df["Fiscal_Quarter"] = ((df["Fiscal_Month"] - 1) // 3) + 1
-
-        df["Fiscal_Year"] = (
-            df["FY_Start"].astype(str)
-            + "-"
-            + df["FY_End"].astype(str).str[-2:]
-        )
-
-        df["FY_Label"] = "FY " + df["Fiscal_Year"]
-        df["FQ_Label"] = "Q" + df["Fiscal_Quarter"].astype(str)
-
-        return df
+        return out
 
     # ===============================
     # Numeric dtype optimization
     # ===============================
+
     @staticmethod
     def optimize_numeric_dtypes(df: pd.DataFrame) -> pd.DataFrame:
         """

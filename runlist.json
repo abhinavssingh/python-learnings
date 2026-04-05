@@ -14,6 +14,8 @@
     { "module": "Module-2.Pandas.pandas_dataframe_dates", "function": "main" },
     { "module": "Module-2.Pandas.pandas_dataframe_plot", "function": "main" },
     { "module": "Module-2.Projects.Capstone-1.capstone_1_exercise", "function": "main" },
-    { "module": "Module-2.Projects.Capstone-1.capstone_1_data_visualization", "function": "main" }
+    { "module": "Module-2.Projects.Capstone-1.capstone_1_data_visualization", "function": "main" },
+    { "module": "Module-2.Projects.Capstone-1.sales_analysis", "function": "main" },
+    { "module": "Module-2.Projects.Capstone-1.marketing_campaign", "function": "main" }
   ]
 }
