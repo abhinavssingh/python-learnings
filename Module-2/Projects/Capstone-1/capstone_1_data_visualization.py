@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -51,12 +50,7 @@ df = dfh.insert_column_after(
     df, after_col="age", new_col="age category", values=age_category, inplace=False)
 df = dfh.insert_column_after(
     df, after_col="income", new_col="currency", values="USD", inplace=False)
-df = dfh.insert_column_after(
-    df,
-    after_col="currency",
-    new_col="income category",
-    values=income_category,
-    inplace=False)
+df = dfh.insert_column_after(df, after_col="currency", new_col="income category", values=income_category, inplace=False)
 
 age_income_df = df.groupby(
     ["age category", "income category"]).size().reset_index(name='count')
@@ -264,7 +258,7 @@ dims_2 = df[["visits", "nvisits", "ovisits", "novisits", "income"]]
 scatter_matrix_fig = px.scatter_matrix(df, dimensions=dims_1, color="region")
 scatter_matrix_fig_2 = px.scatter_matrix(df, dimensions=dims_2, color="region")
 
-bar_fig = px.bar(df, x='age', y='income', title="Bar chart to display Age vs Income Data using color map",
+bar_fig = px.bar(df, x='age', y='income', title="Bar chart to display Age vs Income Data",
                  hover_data=['region', 'married'], color='gender',
                  labels={'employed': 'employement status'}, height=400)
 
@@ -276,16 +270,18 @@ bar_fig_age_income = px.bar(category_df, x="age category", y="count", color="inc
 bar_fig_region_gender = px.bar(category_df, x="region", y="count", color="gender", barmode="group", title="Region vs Gender",
                                labels={"count": "Total Value"})
 
+histogram_fig_insurance = px.histogram(df, x="region", color="insurance", facet_col="gender", barmode="group", title="Region vs Insurance",)
+
+histogram_fig_medicaid = px.histogram(df, x="region", color="medicaid", facet_col="gender", barmode="group", title="Region vs Medical Aid",)
+
+histogram_fig_employed = px.histogram(df, x="region", color="employed", facet_col="gender", barmode="group", title="Region vs Employed",)
 
 histogram_fig_1 = px.histogram(category_df, x="count", marginal="rug", title="Distribution of Values", color='gender',
                                hover_data=category_df.columns, labels={"count": "Value"})
 
-
 histogram_fig_2 = make_subplots(rows=3, cols=2,
                                 subplot_titles=["Region Distribution", "Age Category Distribution",
-                                                "Income Category Distribution",
-                                                "Health Distribution",
-                                                "Gender Distribution",])
+                                                "Income Category Distribution", "Health Distribution", "Gender Distribution",])
 
 histogram_fig_2.add_trace(
     go.Bar(x=category_df["region"], y=category_df["count"]),
@@ -365,6 +361,9 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(bar_fig, " Bar Graph"),
     plotRenderer.plot_to_card(bar_fig_age_income, " Stacked Bar Graph"),
     plotRenderer.plot_to_card(bar_fig_region_gender, " Grouped Bar Graph"),
+    plotRenderer.plot_to_card(histogram_fig_insurance, " Region vs Insurance Histogram Graph"),
+    plotRenderer.plot_to_card(histogram_fig_medicaid, " Region vs Medical Aid Histogram Graph"),
+    plotRenderer.plot_to_card(histogram_fig_employed, " Region vs Employed Histogram Graph"),
     plotRenderer.plot_to_card(histogram_fig_1, " Histogram Graph"),
     plotRenderer.plot_to_card(histogram_fig_2, " Histogram Sub Graph"),
     plotRenderer.plot_to_card(pie_fig, " Pie Graph"),
@@ -380,14 +379,21 @@ content.append(builder.chart_grid([
 ]))
 
 capstone_1_insights = """
-- Data is divided into 4 major categories.
-- Categories are midwest, northwest, west and other.
+- Plotly is preferred to create the graph because this creates interactive plot.
+- We can see the data on hover also we can add category to filter the data.
+- Plotly feature is similar to PowerBI dashboard. So, I have preffered Plotly to create interactive digram.
+- Have used Scatter, Scatter Matrix, Bar, Box, Violin, Histrogram, Heatmap, Sunburst, Treemap, Parallel Categories plot to analyze the data.
+- Histogram chart is better for categorical column because it has built in count feature.
+- Data is divided into 4 major categories. Categories are midwest, northwest, west and other.
 - 13.44% memory optimized after assigning correct data type.
 - Given data set can be categorized into 3 age categories.Age Category: Senior (>60), Super Senior (>75), Ultra Senior (>100)
 - Salary data cane be categoriged into 3, Low (<40KUSD), Medium (<80KUSD) and High (>80KUSD).
 - 59.65% data from females and females health condition is poor than males.
 - Income of the females are less than male. This could also reason of not having good health.
-- Female health awareness program should be conducted.
+- Tailored Female health awareness program should be conducted.
+- Tailored Insurance program should be conducted for feamles across all the regions.
+- Tailored Employment awareness program should be conducted for feamles across all the regions.
+- Tailored Employment Medical Aid program should be conducted for females across all the regions.
 - Others are midwest are the region where we should conduct more health awareness program.
 ------------------------------------------------
 """
