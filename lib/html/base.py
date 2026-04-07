@@ -37,6 +37,22 @@ class PageBuilder:
 
 <script src="https://cdn.plot.ly/plotly-3.4.0.min.js" charset="utf-8"></script>
 
+
+<script>
+  window.MathJax = {{
+            tex: {{
+                inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']]
+    }},
+    svg: {{fontCache: 'global' }}
+  }};
+</script>
+
+<script async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+</script>
+
+
 <style>
 {self.tailwind_css}
 
@@ -83,6 +99,30 @@ color: var(--fg-color);
     from {{opacity: 0; }}
         to  {{opacity: 1; }}
     }}
+
+
+/* Math container fixes */
+.math-container {{
+            overflow - x: auto;
+  word-break: normal;
+}}
+
+/* Ensure math is visible in light theme */
+.math-container mjx-container {{
+            color: inherit !important;
+}}
+
+/* Prevent MathJax from shrinking matrices too hard */
+mjx-container[jax="CHTML"] {{
+            max - width: 100%;
+  overflow-x: auto;
+}}
+
+/* Optional: tighten vertical spacing */
+.math-container .my-4 {{
+            margin - top: 1rem;
+  margin-bottom: 1rem;
+}}
 
 </style>
 

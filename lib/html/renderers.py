@@ -9,6 +9,7 @@ import uuid
 
 import numpy as np
 import pandas as pd
+import sympy as sp
 
 try:
     _HAS_PANDAS = True
@@ -19,12 +20,14 @@ except Exception:
 class RenderersBuilder:
     """Builder class for rendering data as HTML (arrays, dataframes, dicts, etc.)."""
 
-    def render_array(self, arr: np.ndarray) -> str:
+    def render_array(self, arr: np.ndarray, display: bool = True) -> str:
         """
-        Render a NumPy array with shape and dtype information.
+        Render a NumPy array with optional shape and dtype information.
 
         Args:
             arr: NumPy array
+            display: If False, return only the <pre> block.
+                    If True (default), include metadata rows.
 
         Returns:
             Array rendering HTML
@@ -32,6 +35,19 @@ class RenderersBuilder:
         preview = html.escape(
             np.array2string(arr, threshold=40, max_line_width=80)
         )
+
+        pre_block = f"""
+    <pre class="rounded-lg overflow-x-auto text-xs leading-tight
+                p-4
+                bg-slate-900 text-slate-100
+                dark:bg-gray-200 dark:text-slate-900">
+    {preview}
+    </pre>
+    """
+
+        # ✅ If display=False → return ONLY the <pre>
+        if not display:
+            return pre_block
 
         rows = [
             ("Size (elements)", arr.size),
@@ -43,15 +59,10 @@ class RenderersBuilder:
         ]
 
         return f"""
-<pre class="rounded-lg overflow-x-auto text-xs leading-tight
-            p-4
-            bg-slate-900 text-slate-100
-            dark:bg-gray-200 dark:text-slate-900">
-{preview}
-</pre>
+    {pre_block}
 
-{self.render_kv(rows)}
-"""
+    {self.render_kv(rows)}
+    """
 
     def render_series(self, s, max_visible_rows: int = 5) -> str:
         """
@@ -606,3 +617,45 @@ border border-slate-300 dark:border-slate-700
 
 </div>
 """
+
+    def render_latex_block(self, latex: str, display: bool = True) -> str:
+        """
+        Render LaTeX safely for MathJax.
+
+        Args:
+            latex: Raw LaTeX string (no $)
+            display: True for block math, False for inline
+        """
+        if display:
+            return f"""
+        <div class='my-4'>{latex}</div>
+        """
+        return f"<span>\\({latex}\\)</span>"
+
+    def render_eigen_results(self, eigen_results):
+        blocks = []
+
+        for idx, item in enumerate(eigen_results, start=1):
+            λ = item["eigenvalue"]
+            vectors = item["eigenvectors"]
+
+            # Force safe matrix rendering (no \left / \right)
+            vectors_latex = [
+                sp.latex(v, mat_str="pmatrix", mat_delim=None)
+                for v in vectors
+            ]
+
+            # Build a single aligned block per eigenvalue
+            aligned = (
+                r"\begin{aligned}"
+                rf"\text{{Eigenvalue }} \lambda_{idx} & = {sp.latex(λ)}"
+            )
+
+            for v_idx, v_ltx in enumerate(vectors_latex, start=1):
+                aligned += rf" \\ \text{{Eigenvector }} {v_idx} & = {v_ltx}"
+
+            aligned += r"\end{aligned}"
+
+            blocks.append(self.render_latex_block(aligned))
+
+        return "\n".join(blocks)

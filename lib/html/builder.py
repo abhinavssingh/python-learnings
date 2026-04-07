@@ -83,13 +83,16 @@ class HtmlBuilder:
         """Wrap chart content with a fixed height container."""
         return self.components.chart_full_width(title, content)
 
+    def math_card(self, title, content: str) -> str:
+        """Wrap chart content with a fixed height container."""
+        return self.components.math_card(title, content)
     # ============================================================================
     # RENDERERS (delegate to RenderersBuilder)
     # ============================================================================
 
-    def render_array(self, arr) -> str:
+    def render_array(self, arr, display) -> str:
         """Render a NumPy array with shape and dtype information."""
-        return self.renderers.render_array(arr)
+        return self.renderers.render_array(arr, display)
 
     def render_series(self, s, max_visible_rows: int = 5) -> str:
         """Render a Pandas Series or list."""
@@ -114,3 +117,11 @@ class HtmlBuilder:
     def render_dataframe_collapsible(self, df, initial_rows: int = 15) -> str:
         """Render a DataFrame with "Show more" / "Show less" controls."""
         return self.renderers.render_dataframe_collapsible(df, initial_rows)
+
+    def render_latex_block(self, latex: str, display: bool) -> str:
+        """Wrap latex html."""
+        return self.renderers.render_latex_block(latex, display)
+
+    def render_eigen_results(self, eigen_results) -> str:
+        """Wrap eigen values and eigen vector."""
+        return self.renderers.render_eigen_results(eigen_results)

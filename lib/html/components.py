@@ -204,3 +204,42 @@ class ComponentsBuilder:
 </section>
 <!-- ================= End Full Width Chart: {title} ================= -->
 """
+
+    def math_card(self, title: str, content: str) -> str:
+        """
+        Specialized card for mathematical / matrix content.
+        Designed for MathJax output with controlled scrolling.
+        """
+        return f"""
+    <!-- ======================= Math Card: {title} ======================= -->
+    <div class="
+        rounded-xl
+        border border-slate-300 dark:border-slate-700
+        bg-slate-50 dark:bg-slate-900
+        shadow-md
+    ">
+
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                {title}
+            </h2>
+        </div>
+
+        <!-- Math content (scrollable) -->
+        <div class="
+            px-6 py-4
+            max-h-[400px]
+            overflow-y-auto
+            overflow-x-auto
+            max-w-full
+            math-container
+            text-slate-900 dark:text-slate-100
+            pr-2
+        ">
+            {content}
+        </div>
+
+    </div>
+    <!-- ===================== End Math Card: {title} ===================== -->
+    """
