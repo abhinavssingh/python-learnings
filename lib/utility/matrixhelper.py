@@ -1,7 +1,8 @@
-import sympy as sp
+from __future__ import annotations
 
 
 class MatrixHelper:
+    import sympy as sp
     """
     Stateless learner-friendly Matrix Helper.
 
@@ -13,22 +14,22 @@ class MatrixHelper:
     # Binary Operations
     # =============================
     def add(self, A, B):
-        A, B = sp.Matrix(A), sp.Matrix(B)
+        A, B = self.sp.Matrix(A), self.sp.Matrix(B)
         C = A + B
-        latex = f"{sp.latex(A)} + {sp.latex(B)} = {sp.latex(C)}"
+        latex = f"{self.sp.latex(A)} + {self.sp.latex(B)} = {self.sp.latex(C)}"
         return {"result": C, "latex": latex}
 
     def subtract(self, A, B):
-        A, B = sp.Matrix(A), sp.Matrix(B)
+        A, B = self.sp.Matrix(A), self.sp.Matrix(B)
         C = A - B
-        latex = f"{sp.latex(A)} - {sp.latex(B)} = {sp.latex(C)}"
+        latex = f"{self.sp.latex(A)} - {self.sp.latex(B)} = {self.sp.latex(C)}"
         return {"result": C, "latex": latex}
 
     # =============================
     # Matrix Multiplication (A × B)
     # =============================
     def dot_product(self, A, B):
-        A, B = sp.Matrix(A), sp.Matrix(B)
+        A, B = self.sp.Matrix(A), self.sp.Matrix(B)
         C = A * B
 
         steps_latex = []
@@ -40,21 +41,21 @@ class MatrixHelper:
 
                 for k in range(A.cols):
                     terms.append(
-                        f"({sp.latex(A[i, k])} \\times {sp.latex(B[k, j])})"
+                        f"({self.sp.latex(A[i, k])} \\times {self.sp.latex(B[k, j])})"
                     )
                     values.append(A[i, k] * B[k, j])
 
                 step = (
                     "\\begin{aligned}"
                     f"C_{{{i + 1}{j + 1}}} &= " + " + ".join(terms) + " \\\\ "
-                    f"&= " + " + ".join(sp.latex(v) for v in values) + " \\\\ "
-                    f"&= {sp.latex(sum(values))}"
+                    f"&= " + " + ".join(self.sp.latex(v) for v in values) + " \\\\ "
+                    f"&= {self.sp.latex(sum(values))}"
                     "\\end{aligned}"
                 )
 
                 steps_latex.append(step)
 
-        latex = f"{sp.latex(A)} \\times {sp.latex(B)} = {sp.latex(C)}"
+        latex = f"{self.sp.latex(A)} \\times {self.sp.latex(B)} = {self.sp.latex(C)}"
 
         return {
             "result": C,
@@ -63,14 +64,14 @@ class MatrixHelper:
         }
 
     def _latex_matrix(self, M):
-        return sp.latex(M, mat_str="pmatrix", mat_delim=None)
+        return self.sp.latex(M, mat_str="pmatrix", mat_delim=None)
 
     # =============================
     # Cross Product (3D vectors ONLY)
     # =============================
 
     def cross_product(self, u, v):
-        u, v = sp.Matrix(u), sp.Matrix(v)
+        u, v = self.sp.Matrix(u), self.sp.Matrix(v)
 
         if u.shape not in [(3, 1), (1, 3)] or v.shape not in [(3, 1), (1, 3)]:
             raise ValueError("Cross product requires 3D vectors")
@@ -112,7 +113,7 @@ class MatrixHelper:
     # =============================
 
     def determinant(self, A):
-        A = sp.Matrix(A)
+        A = self.sp.Matrix(A)
         detA = A.det()
 
         steps = []
@@ -129,11 +130,11 @@ class MatrixHelper:
                 rf" {a}({e}\times{i} - {f}\times{h})"
                 rf" - {b}({d}\times{i} - {f}\times{g})"
                 rf" + {c}({d}\times{h} - {e}\times{g}) \\[6pt]"
-                rf"&= {sp.latex(detA)}"
+                rf"&= {self.sp.latex(detA)}"
                 r"\end{aligned}"
             ]
 
-        latex = rf"\det(A) = {sp.latex(detA)}"
+        latex = rf"\det(A) = {self.sp.latex(detA)}"
 
         return {
             "result": detA,
@@ -142,7 +143,7 @@ class MatrixHelper:
         }
 
     def adjoint(self, A):
-        A = sp.Matrix(A)
+        A = self.sp.Matrix(A)
         adjA = A.adjugate()
 
         # Force MathJax-safe matrix rendering
@@ -151,7 +152,7 @@ class MatrixHelper:
 
         steps = [
             r"\begin{aligned}"
-            r"\text{The adjoint of a matrix is the transpose of its cofactor matrix} \\[6pt]"
+            r"\text{The adjoint of a matrix is the tranself.spose of its cofactor matrix} \\[6pt]"
             rf"\operatorname{{adj}}(A) & = (\text{{Cofactor}}(A))^T \\[6pt]"
             rf"A & = {A_ltx} \\[6pt]"
             rf"\operatorname{{adj}}(A) & = {adj_ltx}"
@@ -167,7 +168,7 @@ class MatrixHelper:
         }
 
     def inverse(self, A):
-        A = sp.Matrix(A)
+        A = self.sp.Matrix(A)
         detA = A.det()
         adjA = A.adjugate()
         invA = A.inv()
@@ -175,13 +176,13 @@ class MatrixHelper:
         steps = [
             r"\begin{aligned}"
             r"A^{-1} & = \frac{1}{\det(A)}\,\operatorname{adj}(A) \\[6pt]"
-            rf"\det(A) & = {sp.latex(detA)} \\[6pt]"
-            rf"\operatorname{{adj}}(A) & = {sp.latex(adjA)} \\[6pt]"
-            rf"A^{-1} & = {sp.latex(invA)}"
+            rf"\det(A) & = {self.sp.latex(detA)} \\[6pt]"
+            rf"\operatorname{{adj}}(A) & = {self.sp.latex(adjA)} \\[6pt]"
+            rf"A^{-1} & = {self.sp.latex(invA)}"
             r"\end{aligned}"
         ]
 
-        latex = rf"{sp.latex(A)}^{{-1}} = {sp.latex(invA)}"
+        latex = rf"{self.sp.latex(A)}^{{-1}} = {self.sp.latex(invA)}"
 
         return {
             "result": invA,
@@ -190,11 +191,11 @@ class MatrixHelper:
         }
 
     def rref(self, A):
-        A = sp.Matrix(A)
+        A = self.sp.Matrix(A)
         R, pivots = A.rref()
 
         # Force MathJax-safe matrix rendering
-        R_ltx = sp.latex(R, mat_str="pmatrix", mat_delim=None)
+        R_ltx = self.sp.latex(R, mat_str="pmatrix", mat_delim=None)
 
         steps = [
             r"\begin{aligned}"
@@ -211,7 +212,7 @@ class MatrixHelper:
         }
 
     def rank(self, A):
-        A = sp.Matrix(A)
+        A = self.sp.Matrix(A)
         R, pivots = A.rref()
 
         steps = [
@@ -222,7 +223,7 @@ class MatrixHelper:
             r"\end{aligned}"
         ]
 
-        latex = rf"\text{{rank}}({sp.latex(A)}) = {len(pivots)}"
+        latex = rf"\text{{rank}}({self.sp.latex(A)}) = {len(pivots)}"
 
         return {
             "result": len(pivots),
@@ -231,9 +232,9 @@ class MatrixHelper:
         }
 
     def eigen(self, A):
-        A = sp.Matrix(A)
-        λ = sp.symbols("λ")
-        char_poly = (A - λ * sp.eye(A.rows)).det()
+        A = self.sp.Matrix(A)
+        λ = self.sp.symbols("λ")
+        char_poly = (A - λ * self.sp.eye(A.rows)).det()
 
         results = []
         for val, mult, vecs in A.eigenvects():
@@ -246,7 +247,7 @@ class MatrixHelper:
         steps = [
             r"\begin{aligned}"
             r"\text{Solve the characteristic equation} \\[6pt]"
-            rf"\det(A - \lambda I) &= {sp.latex(char_poly)} = 0"
+            rf"\det(A - \lambda I) &= {self.sp.latex(char_poly)} = 0"
             r"\end{aligned}"
         ]
 

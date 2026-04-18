@@ -90,7 +90,7 @@ class HtmlBuilder:
     # RENDERERS (delegate to RenderersBuilder)
     # ============================================================================
 
-    def render_array(self, arr, display) -> str:
+    def render_array(self, arr, display: bool = True) -> str:
         """Render a NumPy array with shape and dtype information."""
         return self.renderers.render_array(arr, display)
 
@@ -125,3 +125,7 @@ class HtmlBuilder:
     def render_eigen_results(self, eigen_results) -> str:
         """Wrap eigen values and eigen vector."""
         return self.renderers.render_eigen_results(eigen_results)
+
+    def render_latex_formula(self, latex: str, display: bool) -> str:
+        """Wrap latex html."""
+        return self.renderers.render_latex_formula(latex, display)

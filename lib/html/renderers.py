@@ -9,7 +9,6 @@ import uuid
 
 import numpy as np
 import pandas as pd
-import sympy as sp
 
 try:
     _HAS_PANDAS = True
@@ -633,6 +632,7 @@ border border-slate-300 dark:border-slate-700
         return f"<span>\\({latex}\\)</span>"
 
     def render_eigen_results(self, eigen_results):
+        import sympy as sp
         blocks = []
 
         for idx, item in enumerate(eigen_results, start=1):
@@ -659,3 +659,17 @@ border border-slate-300 dark:border-slate-700
             blocks.append(self.render_latex_block(aligned))
 
         return "\n".join(blocks)
+
+    def render_latex_formula(self, latex: str, display: bool = True) -> str:
+        """
+        Render LaTeX safely for MathJax.
+
+        Args:
+            latex: Raw LaTeX string (no $)
+            display: True for block math, False for inline
+        """
+        if display:
+            return f"""
+        <div class='my-4'>[{latex}]</div>
+        """
+        return f"<span>\\({latex}\\)</span>"
