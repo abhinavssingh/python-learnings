@@ -4,6 +4,7 @@ from plotly.subplots import make_subplots
 from scipy.stats import gaussian_kde, kurtosis, skew
 
 from lib.html import HtmlBuilder, PlotRenderer
+from lib.mathshelper import FORMULA_REGISTRY
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -90,57 +91,31 @@ fig.update_layout(
     showlegend=False
 )
 
-
-mean_pop_ltx = r"\text{Population Mean: } \mu = \frac{1}{n}\sum_{i=1}^{n} x_i"
-mean_sam_ltx = r"\text{Sample Mean: } \bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i"
-median_ltx = r"\text{Median} = \begin{cases} x_{\frac{n+1}{2}}, & \text{if } n \text{ is odd} \\ \frac{x_{\frac{n}{2}} + x_{\frac{n}{2}+1}}{2}, & \text{if } n \text{ is even} \end{cases}"
-mode_ltx = r"\text{Mode} = \arg\max_x f(x)"
-var_pop_ltx = r"\text{Population Variance: } \sigma^2 = \frac{1}{n}\sum_{i=1}^{n} (x_i - \mu)^2"
-var_sam_ltx = r"\text{Sample Variance: } s^2 = \frac{1}{n-1}\sum_{i=1}^{n} (x_i - \bar{x})^2"
-std_pop_ltx = r"\text{Population Std Dev: } \sigma = \sqrt{\frac{1}{n}\sum_{i=1}^{n} (x_i - \mu)^2}"
-std_sam_ltx = r"\text{Sample Std Dev: } s = \sqrt{\frac{1}{n-1}\sum_{i=1}^{n} (x_i - \bar{x})^2}"
-cov_pop_ltx = r"\text{Population Covariance: } \operatorname{Cov}(X,Y) = \frac{1}{n}\sum_{i=1}^{n} (x_i - \mu_X)(y_i - \mu_Y)"
-cov_sam_ltx = r"\text{Sample Covariance: } s_{XY} = \frac{1}{n-1}\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})"
-corr_ltx = r"\rho = \frac{\sum_{i=1}^{n} \left( x_i - \bar{x} \right)\left( y_i - \bar{y} \right)}{\sqrt{\sum_{i=1}^{n} \left( x_i - \bar{x} \right)^2}\sqrt{\sum_{i=1}^{n} \left( y_i - \bar{y} \right)^2}}"
-skew_pop_ltx = r"\text{Population Skewness: } \gamma_1 = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \mu}{\sigma}\right)^3"
-skew_sam_ltx = r"\text{Sample Skewness: } g_1 = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \bar{x}}{s}\right)^3"
-kur_pop_ltx = r"\text{Population Kurtosis: } \gamma_2 = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \mu}{\sigma}\right)^4"
-kur_sam_ltx = r"\text{Sample Kurtosis: } g_2 = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \bar{x}}{s}\right)^4"
+content.append(
+    builder.grid([
+        formula.render(builder)
+        for formula in FORMULA_REGISTRY.by_category("Statistics")
+    ]
+    ))
 
 content.append(
     builder.grid(
         [
             builder.math_card("Dataset is:", builder.render_array(np.array(sample_data), display=False)),
-            builder.math_card("Population Mean formula:", builder.render_latex_formula(mean_pop_ltx, display=True)),
-            builder.math_card("Sample Mean formula:", builder.render_latex_formula(mean_sam_ltx, display=True)),
             builder.math_card("Population/Sample Mean for the data:", builder.render_array(np.mean(sample_data), display=False)),
-            builder.math_card("Median formula:", builder.render_latex_formula(median_ltx, display=True)),
             builder.math_card("Polulation/Sample Median:", builder.render_array(np.median(sample_data), display=False)),
-            builder.math_card("Mode formula:", builder.render_latex_formula(mode_ltx, display=True)),
-            builder.math_card("Population Variance Formula:", builder.render_latex_formula(var_pop_ltx, display=True)),
             builder.math_card("Population Variance:", builder.render_array(np.var(sample_data), display=False)),
-            builder.math_card("Sample Variance Formula:", builder.render_latex_formula(var_sam_ltx, display=True)),
             builder.math_card("Sample Variance:", builder.render_array(np.var(sample_data, ddof=1), display=False)),
-            builder.math_card("Polulation Standard Deviation formula:", builder.render_latex_formula(std_pop_ltx, display=True)),
             builder.math_card("Polulation Standard Deviation:", builder.render_array(np.std(sample_data), display=False)),
-            builder.math_card("Sample Standard Deviation formula:", builder.render_latex_formula(std_sam_ltx, display=True)),
             builder.math_card("Sample Standard Deviation:", builder.render_array(np.std(sample_data, ddof=1), display=False)),
             builder.math_card("Dataset X is:", builder.render_array(x, display=False)),
             builder.math_card("Dataset Y is:", builder.render_array(y, display=False)),
-            builder.math_card("Poulation Covariance formula:", builder.render_latex_formula(cov_pop_ltx, display=True)),
             builder.math_card("Poulation Covariance:", builder.render_array(np.mean((x - x.mean()) * (y - y.mean())), display=False)),
-            builder.math_card("Sample Covariance formula:", builder.render_latex_formula(cov_sam_ltx, display=True)),
             builder.math_card("Sample Covariance:", builder.render_array(np.cov(x, y, ddof=1)[0, 1], display=False)),
-            builder.math_card("Correlation formula:", builder.render_latex_formula(corr_ltx, display=True)),
             builder.math_card("Correlation:", builder.render_array(np.corrcoef(x, y)[0, 1], display=False)),
-            builder.math_card("Polulation Skewness formula:", builder.render_latex_formula(skew_pop_ltx, display=True)),
             builder.math_card("Polulation Skewness:", builder.render_array(skew(sample_data, bias=True), display=False)),
-            builder.math_card("Sample Skewness formula:", builder.render_latex_formula(skew_sam_ltx, display=True)),
             builder.math_card("Sample Skewness:", builder.render_array(skew(sample_data, bias=False), display=False)),
-            builder.math_card("Polulation Kurtosis formula:", builder.render_latex_formula(kur_pop_ltx, display=True)),
             builder.math_card("Polulation Kurtosis:", builder.render_array(kurtosis(sample_data, bias=True), display=False)),
-            builder.math_card("Sample Kurtosis formula:", builder.render_latex_formula(kur_sam_ltx, display=True)),
-            builder.math_card("Sample Kurtosis formula:", builder.render_array(kurtosis(sample_data, bias=False), display=False)),
         ]))
 
 content.append(builder.chart_grid([

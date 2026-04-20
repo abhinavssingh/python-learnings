@@ -5,6 +5,7 @@ from scipy import stats
 from scipy.stats import gaussian_kde
 
 from lib.html import HtmlBuilder, PlotRenderer
+from lib.mathshelper import FORMULA_REGISTRY
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -31,48 +32,6 @@ sample_data = pd.DataFrame({
     "Y_continuous": np.random.normal(50, 10, size=1000)  # Continuous variable
 })
 
-
-# SIMPLE PROBABILITY
-simple_prob_ltx = r"P(X = x) = p_X(x)"
-simple_prob_cont_ltx = r"P(a \le X \le b) = \int_a^b f(x)\,dx"
-joint_prob_ltx = r"P(X = x, Y = y) = p_{X,Y}(x,y)"
-joint_prob_cont_ltx = r"P(a \le X \le b,\, c \le Y \le d) = \int_a^b \int_c^d f(x,y)\,dy\,dx"
-independent_ltx = r"P(X = x, Y = y) = P(X = x)P(Y = y)"
-joint_pmf_ltx = r"P(X = x, Y = y) = p_{X,Y}(x,y)"
-marginal_disc_ltx = r"P(X = x) = \sum_y P(X = x, Y = y)"
-marginal_cont_ltx = r"f_X(x) = \int_{-\infty}^{\infty} f(x,y)\,dy"
-conditional_disc_ltx = r"P(X = x \mid Y = y) = \frac{P(X = x, Y = y)}{P(Y = y)}"
-conditional_cont_ltx = r"f_{X|Y}(x|y) = \frac{f(x,y)}{f_Y(y)}"
-joint_cdf_ltx = r"F_{X,Y}(x,y) = P(X \le x, Y \le y)"
-joint_cdf_cont_ltx = r"F_{X,Y}(x,y) = \int_{-\infty}^{x}\int_{-\infty}^{y} f_{X,Y}(u,v)\,dv\,du"
-
-# DISCRETE PROBABILITY DISTRIBUTIONS
-uniform_disc_ltx = r"P(X = x) = \frac{1}{n}, \quad x \in \{x_1, x_2, \dots, x_n\}"
-bernoulli_ltx = r"P(X = x) = p^x (1-p)^{1-x}, \quad x \in \{0,1\}"
-binom_ltx = r"\text{Binomial: } P(X=k) = \binom{n}{k} p^k (1-p)^{n-k}, \quad k=0,1,\dots,n"
-geom_ltx = r"\text{Geometric: } P(X=k) = (1-p)^{k-1}p, \quad k=1,2,\dots"
-neg_binom_ltx = r"\text{Negative Binomial: } P(X=k) = \binom{k-1}{r-1} p^r (1-p)^{k-r}, \quad k=r,r+1,\dots"
-poisson_ltx = r"\text{Poisson: } P(X=k) = \frac{\lambda^k e^{-\lambda}}{k!}, \quad k=0,1,2,\dots"
-cdf_disc_ltx = r"F_X(x) = P(X \le x) = \sum_{t \le x} P(X = t)"
-cdf_binomial_ltx = r"F_X(k) = \sum_{i=0}^{k} \binom{n}{i} p^i (1-p)^{n-i}"
-cdf_poisson_ltx = r"F_X(k) = \sum_{i=0}^{k} \frac{\lambda^i e^{-\lambda}}{i!}"
-
-# CONTINUOUS PROBABILITY DISTRIBUTIONS
-cu_ltx = r"\text{Continuous Uniform: } f(x)=\frac{1}{b-a}, \quad a \le x \le b"
-normal_ltx = r"f(x) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left( -\frac{(x-\mu)^2}{2\sigma^2} \right)"
-std_normal_ltx = r"f(z) = \frac{1}{\sqrt{2\pi}} e^{-\frac{z^2}{2}}"
-exp_ltx = r"\text{Exponential: } f(x)=\lambda e^{-\lambda x}, \quad x \ge 0"
-gamma_ltx = r"\text{Gamma: } f(x)=\frac{1}{\Gamma(k)\theta^k} x^{k-1} e^{-x/\theta}, \quad x \ge 0"
-beta_ltx = r"\text{Beta: } f(x)=\frac{1}{B(\alpha,\beta)} x^{\alpha-1}(1-x)^{\beta-1}, \quad 0 \le x \le 1"
-weibull_ltx = r"\text{Weibull: } f(x)=\frac{k}{\lambda}\left(\frac{x}{\lambda}\right)^{k-1} e^{-(x/\lambda)^k}, \quad x \ge 0"
-chisq_ltx = r"\text{Chi-Square: } f(x)=\frac{1}{2^{k/2}\Gamma(k/2)} x^{k/2-1} e^{-x/2}, \quad x \ge 0"
-t_ltx = r"\text{Student t: } f(x)=\frac{\Gamma\left(\frac{\nu+1}{2}\right)}{\sqrt{\nu\pi}\Gamma\left(\frac{\nu}{2}\right)} \left(1+\frac{x^2}{\nu}\right)^{-\frac{\nu+1}{2}}"
-lognorm_ltx = r"\text{Log-Normal: } f(x)=\frac{1}{x\sigma\sqrt{2\pi}} e^{-\frac{(\ln x - \mu)^2}{2\sigma^2}}, \quad x>0"
-cdf_cont_ltx = r"F_X(x) = P(X \le x) = \int_{-\infty}^{x} f_X(t)\,dt"
-cdf_uniform_cont_ltx = r"F_X(x) = \frac{x-a}{b-a}, \quad a \le x \le b"
-cdf_exponential_ltx = r"F_X(x) = 1 - e^{-\lambda x}, \quad x \ge 0"
-cdf_normal_ltx = r"F_X(x) = \int_{-\infty}^{x} \frac{1}{\sqrt{2\pi\sigma^2}} e^{-\frac{(t-\mu)^2}{2\sigma^2}}\,dt"
-cdf_std_normal_ltx = r"\Phi(z) = \int_{-\infty}^{z} \frac{1}{\sqrt{2\pi}} e^{-\frac{t^2}{2}}\,dt"
 
 discrete_pmf = sample_data["X_discrete"].value_counts(normalize=True).sort_index()
 
@@ -295,77 +254,57 @@ joint_cdf_val = (
 
 content.append(builder.full_width_card("Probability Sample Dataframe", builder.render_dataframe_collapsible(sample_data)))
 
+categories = ["Probability", "Distribution", "CDF"]
+content.append(
+    builder.grid([
+        formula.render(builder)
+        for category in categories
+        for formula in FORMULA_REGISTRY.by_category(category)
+    ]
+    ))
+
 content.append(
     builder.grid(
         [
-            builder.math_card("Simple Probability (Discrete):", builder.render_latex_formula(simple_prob_ltx, display=True)),
             builder.math_card(
                 "Simple Probability (Discrete) p_x_eq_3:",
                 builder.render_array(
                     (sample_data["X_discrete"] == 3).mean(),
                     display=False)),
-            builder.math_card("Simple Probability (Continuous):", builder.render_latex_formula(simple_prob_cont_ltx, display=True)),
             builder.math_card("Simple Probability (Continuous) P(45 ≤ Y ≤ 60):", builder.render_array(
                 ((sample_data["Y_continuous"] >= 45) & (sample_data["Y_continuous"] <= 60)).mean(), display=False)),
-            builder.math_card("Joint Probability (Discrete):", builder.render_latex_formula(joint_prob_ltx, display=True)),
             builder.math_card("Joint Probability (Discrete) P(X = 3 AND Y > 55):", builder.render_array(
                 ((sample_data["X_discrete"] == 3) & (sample_data["Y_continuous"] > 55)).mean(), display=False)),
-            builder.math_card("Joint Probability Mass Function:", builder.render_latex_formula(joint_pmf_ltx, display=True)),
-            builder.math_card("Joint Probability (Continuous):", builder.render_latex_formula(joint_prob_cont_ltx, display=True)),
-            builder.math_card("Independence of Random Variables:", builder.render_latex_formula(independent_ltx, display=True)),
-            builder.math_card("Marginal Distribution (Discrete):", builder.render_latex_formula(marginal_disc_ltx, display=True)),
             builder.math_card("Marginal Probability (Discrete) P(X=x):", builder.render_series(discrete_pmf)),
-            builder.math_card("Marginal Distribution (Continuous):", builder.render_latex_formula(marginal_cont_ltx, display=True)),
-            builder.math_card("Conditional Probability (Discrete):", builder.render_latex_formula(conditional_disc_ltx, display=True)),
             builder.math_card("Conditional Probability (Discrete) P(X=3∣Y>55):", builder.render_array((num / den), display=False)),
-            builder.math_card("Conditional Density (Continuous):", builder.render_latex_formula(conditional_cont_ltx, display=True)),
-            builder.math_card("Joint Cumulative Distribution Function (CDF):", builder.render_latex_formula(joint_cdf_ltx, display=True)),
-            builder.math_card("Joint CDF (Continuous Case):", builder.render_latex_formula(joint_cdf_cont_ltx, display=True)),
             builder.math_card("Joint CDF Example P(X ≤ 3, Y ≤ 55):", builder.render_array(joint_cdf_val, display=False)),
             builder.math_card(
                 "Empirical CDF at y = 60 (Continuous Case):",
                 builder.render_array(
                     (sample_data["Y_continuous"] <= 60).mean(),
                     display=False)),
-            builder.math_card("Discrete Uniform Distribution (PMF):", builder.render_latex_formula(uniform_disc_ltx, display=True)),
             builder.math_card(
                 "Discrete Uniform Distribution Example P(X = 4):",
                 builder.render_array(
                     (sample_data["X_discrete"] == 4).mean(),
                     display=False)),
-            builder.math_card("Bernoulli Distribution (PMF):", builder.render_latex_formula(bernoulli_ltx, display=True)),
             builder.math_card("Bernoulli Distribution Example P(X = 1):", builder.render_array(bernoulli_data.mean(), display=False)),
-            builder.math_card("Binomial Distribution (PMF):", builder.render_latex_formula(binom_ltx, display=True)),
             builder.math_card("Binomial Distribution Example P(X = 2):", builder.render_array(rv_binom.pmf(2), display=False)),
-            builder.math_card("Poisson Distribution (PMF):", builder.render_latex_formula(poisson_ltx, display=True)),
             builder.math_card("Poisson Distribution Example P(X = 1):", builder.render_array(rv_pois.pmf(1), display=False)),
-            builder.math_card("Cumulative Distribution Function Discrete:", builder.render_latex_formula(cdf_disc_ltx, display=True)),
-            builder.math_card("Binomial Distribution CDF:", builder.render_latex_formula(cdf_binomial_ltx, display=True)),
             builder.math_card("Binomial Distribution CDF Example F(2):", builder.render_array(rv_binom.cdf(2), display=False)),
-            builder.math_card("Poisson Distribution CDF:", builder.render_latex_formula(cdf_poisson_ltx, display=True)),
             builder.math_card("Poisson Distribution CDF Example F(1):", builder.render_array(rv_pois.cdf(1), display=False)),
-            builder.math_card("Continuous Uniform Distribution", builder.render_latex_formula(cu_ltx, display=True)),
+
             builder.math_card(
                 "Continuous Uniform Distribution Example P(45 ≤ Y ≤ 60):",
                 builder.render_array(
                     rv_uniform.cdf(60) -
                     rv_uniform.cdf(45),
                     display=False)),
-            builder.math_card("Exponential Distribution (PDF):", builder.render_latex_formula(exp_ltx, display=True)),
             builder.math_card("Exponential Distribution Example P(Y ≤ 60):", builder.render_array(rv_exp.cdf(60), display=False)),
-            builder.math_card("Normal Gaussian Distribution (PDF):", builder.render_latex_formula(normal_ltx, display=True)),
             builder.math_card("Normal Distribution Example P(45 ≤ Y ≤ 60):", builder.render_array(rv_norm.cdf(60) - rv_norm.cdf(45), display=False)),
-            builder.math_card("Standard Normal Distribution (PDF):", builder.render_latex_formula(std_normal_ltx, display=True)),
             builder.math_card("Standard Normal Distribution Example (z):", builder.render_array(stats.norm.cdf(z_60), display=False)),
-            builder.math_card("Gamma Distribution (PDF):", builder.render_latex_formula(gamma_ltx, display=True)),
-            builder.math_card("Chi Square Distribution (PDF):", builder.render_latex_formula(chisq_ltx, display=True)),
-            builder.math_card("Cumulative Distribution Function Continuous:", builder.render_latex_formula(cdf_cont_ltx, display=True)),
-            builder.math_card("Uniform Distribution (Continuous) CDF:", builder.render_latex_formula(cdf_uniform_cont_ltx, display=True)),
             builder.math_card("Continuous CDF (Empirical) F_Y(60):", builder.render_array((sample_data["Y_continuous"] <= 60).mean(), display=False)),
-            builder.math_card("Exponential Distribution CDF:", builder.render_latex_formula(cdf_exponential_ltx, display=True)),
-            builder.math_card("Normal Distribution CDF:", builder.render_latex_formula(cdf_normal_ltx, display=True)),
             builder.math_card("Continuous CDF (Normal Fit) F_Y(60):", builder.render_array(rv_norm.cdf(60), display=False)),
-            builder.math_card("Standard Normal Distribution CDF:", builder.render_latex_formula(cdf_std_normal_ltx, display=True))
         ]))
 
 content.append(builder.chart_grid([

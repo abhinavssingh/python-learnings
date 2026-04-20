@@ -1,7 +1,7 @@
 import numpy as np
 
 from lib.html import HtmlBuilder
-from lib.utility.matrixhelper import MatrixHelper as mh
+from lib.mathshelper.matrixhelper import MatrixHelper as mh
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
