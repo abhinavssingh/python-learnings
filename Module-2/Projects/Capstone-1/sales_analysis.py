@@ -19,7 +19,7 @@ builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 
 # read dataframe
-df = dl.read_dataset("AusApparalSales4thQrt2020.csv", handle_unnamed="drop")
+df, report = dl.read_dataset("AusApparalSales4thQrt2020.csv", optimize=True, handle_unnamed="drop", return_report=True)
 
 # convert date column to date time
 df['Date'] = pd.to_datetime(df['Date'])
@@ -29,7 +29,7 @@ df = dfh.add_fiscal_calendar(df, "Date", "Australia", calendar_fields={
     "year", "month_name", "day_name", "weekday", "is_weekend"}, fiscal_fields={"fiscal_year", "fiscal_quarter"},)
 
 # again optimize the column data type
-df = dfh.optimize_numeric_dtypes(df)
+df, changes = dfh.optimize_numeric_dtypes(df)
 
 # Get information about the DataFrame
 df_info_str = dfh.get_dataframe_info_str(df)
@@ -100,10 +100,9 @@ content.append(
 
 content.append(
     builder.grid([
-        builder.card("Information of the Sales Dataframe is:",
-                     builder.render_pre(df_info_str)),
-        builder.card("Description of the Sales Dataframe is:",
-                     builder.render_dict(df.select_dtypes(include="number").describe().to_dict()))
+        builder.card("Information of the Sales Dataframe is:", builder.render_pre(df_info_str)),
+        builder.card("Description of the Sales Dataframe is:", builder.render_dict(df.select_dtypes(include="number").describe().to_dict())),
+        builder.card("Optimized Dataframe report:", builder.render_pre(report)),
     ])
 )
 

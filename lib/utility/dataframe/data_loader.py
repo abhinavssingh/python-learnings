@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Literal, Union
+from typing import Any, Literal, Union, overload
 
 import pandas as pd
 
@@ -109,6 +109,34 @@ class DataLoader:
 
         return df
 
+    @overload
+    @classmethod
+    def read_dataset(
+        cls,
+        filename: str,
+        *,
+        optimize: bool = ...,
+        handle_unnamed: Literal["drop", "rename", "ignore"] = ...,
+        drop_rows_with_nulls: bool = ...,
+        fill_numeric_with: Literal["mean", "median", None] = ...,
+        return_report: Literal[True],
+    ) -> tuple[pd.DataFrame, str]:
+        ...
+
+    @overload
+    @classmethod
+    def read_dataset(
+        cls,
+        filename: str,
+        *,
+        optimize: bool = ...,
+        handle_unnamed: Literal["drop", "rename", "ignore"] = ...,
+        drop_rows_with_nulls: bool = ...,
+        fill_numeric_with: Literal["mean", "median", None] = ...,
+        return_report: Literal[False] = ...,
+    ) -> pd.DataFrame:
+        ...
+
     # ===============================
     # Dataset reading
     # ===============================
@@ -120,7 +148,10 @@ class DataLoader:
         *,
         optimize: bool = True,
         handle_unnamed: Literal["drop", "rename", "ignore"] = "drop",
-    ) -> Union[pd.DataFrame, Any]:
+        drop_rows_with_nulls: bool = False,
+        fill_numeric_with: Literal["mean", "median", None] = None,
+        return_report: bool = False,
+    ) -> Union[pd.DataFrame, tuple[pd.DataFrame, str], Any]:
         """
         Generic dataset reader.
 
@@ -128,11 +159,25 @@ class DataLoader:
         - CSV
         - Excel (.xls, .xlsx)
         - JSON (returns Python object)
+
+        Parameters
+        ----------
+        optimize : bool
+            Whether to run null check and numeric dtype optimization
+        drop_rows_with_nulls : bool
+            Drop rows containing nulls before optimization
+        fill_numeric_with : {'mean', 'median', None}
+            Strategy to fill numeric nulls
+        return_report : bool
+            If True, return (DataFrame, optimization_report)
         """
 
         path = cls.get_dataset_path(filename)
         ext = path.suffix.lower()
 
+        # ----------------------
+        # Load dataset
+        # ----------------------
         if ext == ".csv":
             df = pd.read_csv(path)
 
@@ -146,14 +191,27 @@ class DataLoader:
         else:
             raise ValueError(f"Unsupported dataset format: {ext}")
 
-        # ✅ Handle unnamed columns FIRST
+        # ----------------------
+        # Handle unnamed columns FIRST
+        # ----------------------
         df = cls._handle_unnamed_columns(
             df,
             action=handle_unnamed,
         )
 
-        # ✅ Optimize numeric dtypes
+        # ----------------------
+        # Null check & optimization
+        # ----------------------
         if optimize:
-            df = dfh.optimize_numeric_dtypes(df)
+            optimized_df, pre_text = dfh.null_check_and_optimize(
+                df,
+                drop_rows_with_nulls=drop_rows_with_nulls,
+                fill_numeric_with=fill_numeric_with,
+            )
+
+            if return_report:
+                return optimized_df, pre_text
+
+            return optimized_df
 
         return df

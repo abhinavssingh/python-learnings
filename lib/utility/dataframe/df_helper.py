@@ -192,15 +192,25 @@ class DataFrameHelper:
     # ===============================
 
     @staticmethod
-    def optimize_numeric_dtypes(df: pd.DataFrame) -> pd.DataFrame:
+    def optimize_numeric_dtypes(
+        df: pd.DataFrame,
+    ) -> tuple[pd.DataFrame, dict[str, tuple[str, str]]]:
         """
         Downcast integer and float columns to the smallest safe dtype
         based on value ranges.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            Optimized dataframe
+        changes : dict
+            Mapping of column -> (old_dtype, new_dtype)
         """
 
-        before = df.memory_usage(deep=True).sum()
+        changes: dict[str, tuple[str, str]] = {}
 
         for col in df.columns:
+            old_dtype = str(df[col].dtype)
             dtype = df[col].dtype
 
             # -------- INTEGER TYPES --------
@@ -215,11 +225,20 @@ class DataFrameHelper:
                     elif c_max <= np.iinfo(np.uint32).max:
                         df[col] = df[col].astype(np.uint32)
                 else:
-                    if c_min >= np.iinfo(np.int8).min and c_max <= np.iinfo(np.int8).max:
+                    if (
+                        c_min >= np.iinfo(np.int8).min
+                        and c_max <= np.iinfo(np.int8).max
+                    ):
                         df[col] = df[col].astype(np.int8)
-                    elif c_min >= np.iinfo(np.int16).min and c_max <= np.iinfo(np.int16).max:
+                    elif (
+                        c_min >= np.iinfo(np.int16).min
+                        and c_max <= np.iinfo(np.int16).max
+                    ):
                         df[col] = df[col].astype(np.int16)
-                    elif c_min >= np.iinfo(np.int32).min and c_max <= np.iinfo(np.int32).max:
+                    elif (
+                        c_min >= np.iinfo(np.int32).min
+                        and c_max <= np.iinfo(np.int32).max
+                    ):
                         df[col] = df[col].astype(np.int32)
 
             # -------- FLOAT TYPES --------
@@ -237,16 +256,12 @@ class DataFrameHelper:
                 ):
                     df[col] = df[col].astype(np.float32)
 
-        after = df.memory_usage(deep=True).sum()
+            new_dtype = str(df[col].dtype)
 
-        Logger.info(
-            f"Memory usage before optimization: {before / 1024**2:.2f} MB")
-        Logger.info(
-            f"Memory usage after optimization: {after / 1024**2:.2f} MB")
-        Logger.info(
-            f"Memory reduction: {(before - after) / before * 100:.2f}%")
+            if old_dtype != new_dtype:
+                changes[col] = (old_dtype, new_dtype)
 
-        return df
+        return df, changes
 
     # ===============================
     # DataFrame inspection
@@ -315,3 +330,115 @@ class DataFrameHelper:
             )
 
         return "\n\n".join(blocks)
+
+# ===============================
+    # Null check + optimization
+    # ===============================
+    @staticmethod
+    def null_check_and_optimize(
+        df: pd.DataFrame,
+        *,
+        drop_rows_with_nulls: bool = False,
+        fill_numeric_with: Literal["mean", "median", None] = None,
+    ) -> tuple[pd.DataFrame, str]:
+        """
+        Perform null inspection and numeric dtype optimization.
+
+        Returns
+        -------
+        optimized_df : pd.DataFrame
+            Optimized dataframe after null handling and dtype downcasting
+        pre_text : str
+            Human-readable summary of null counts and memory optimization
+        """
+
+        original_rows = len(df)
+        original_mem = df.memory_usage(deep=True).sum()
+
+        # ---------------------------
+        # Null inspection (before)
+        # ---------------------------
+        null_counts_before = df.isna().sum()
+        total_nulls_before = int(null_counts_before.sum())
+
+        # ---------------------------
+        # Null handling
+        # ---------------------------
+        working_df = df.copy()
+
+        if drop_rows_with_nulls:
+            working_df = working_df.dropna()
+
+        elif fill_numeric_with in {"mean", "median"}:
+            num_cols = working_df.select_dtypes(include=[np.number]).columns
+            for col in num_cols:
+                if working_df[col].isna().any():
+                    value = (
+                        working_df[col].mean()
+                        if fill_numeric_with == "mean"
+                        else working_df[col].median()
+                    )
+                    working_df[col] = working_df[col].fillna(value)
+
+        # ---------------------------
+        # Optimize numeric dtypes
+        # ---------------------------
+        optimized_df, dtype_changes = DataFrameHelper.optimize_numeric_dtypes(working_df)
+
+        optimized_rows = len(optimized_df)
+        optimized_mem = optimized_df.memory_usage(deep=True).sum()
+
+        # ---------------------------
+        # Null inspection (after)
+        # ---------------------------
+        null_counts_after = optimized_df.isna().sum()
+        total_nulls_after = int(null_counts_after.sum())
+
+        # ---------------------------
+        # Prepare preformatted text
+        # ---------------------------
+        memory_reduction_pct = (
+            (original_mem - optimized_mem) / original_mem * 100
+            if original_mem > 0
+            else 0.0
+        )
+
+        # ---------------------------
+        # Prepare dtype optimization report
+        # ---------------------------
+        if dtype_changes:
+            dtype_lines = [
+                f"{col}: {old} → {new}"
+                for col, (old, new) in dtype_changes.items()
+            ]
+            dtype_report = "\n".join(dtype_lines)
+        else:
+            dtype_report = "No dtype changes applied"
+
+        # ---------------------------
+        # Filter only columns with nulls
+        # ---------------------------
+        nulls_before_nonzero = null_counts_before[null_counts_before > 0]
+        nulls_after_nonzero = null_counts_after[null_counts_after > 0]
+
+        pre_text = (
+            "DataFrame Optimization Summary\n"
+            "----------------------------------------\n"
+            f"Rows before           : {original_rows}\n"
+            f"Rows after            : {optimized_rows}\n\n"
+            f"Memory before         : {original_mem / 1024**2:.2f} MB\n"
+            f"Memory after          : {optimized_mem / 1024**2:.2f} MB\n"
+            f"Memory reduced        : {memory_reduction_pct:.2f}%\n\n"
+            f"Total nulls before    : {total_nulls_before}\n"
+            f"Total nulls after     : {total_nulls_after}\n\n"
+            "Null count by column (before):\n"
+            f"{nulls_before_nonzero.to_string() if not nulls_before_nonzero.empty else 'No nulls found'}\n\n"
+            "Null count by column (after):\n"
+            f"{nulls_after_nonzero.to_string() if not nulls_after_nonzero.empty else 'No nulls found'}\n\n"
+            "Numeric dtype optimizations applied:\n"
+            f"{dtype_report}"
+        )
+
+        Logger.info("Null check and optimization completed")
+
+        return optimized_df, pre_text

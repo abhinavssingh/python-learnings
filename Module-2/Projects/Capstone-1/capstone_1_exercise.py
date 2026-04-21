@@ -16,7 +16,7 @@ def main():
 
 builder = HtmlBuilder()
 
-df = dl.read_dataset("NSMES1988.csv", handle_unnamed="drop")
+df, report = dl.read_dataset("NSMES1988.csv", optimize=True, handle_unnamed="drop", return_report=True)
 df_copy = df.copy()
 # float16 is fine for storage but not supported for Index / binning operations
 #  float16 is best for ML tensors, not analytics
@@ -67,10 +67,9 @@ df_info_str = dfh.get_dataframe_info_str(df)
 
 content.append(
     builder.grid([
-        builder.card("Information of the Capstone-1 Unmodified Dataframe is:",
-                     builder.render_pre(df_info_str)),
-        builder.card("Basic description of modified Dateframe:",
-                     builder.render_dict(df_copy.describe().to_dict()))
+        builder.card("Information of the Capstone-1 Unmodified Dataframe is:", builder.render_pre(df_info_str)),
+        builder.card("Basic description of modified Dateframe:", builder.render_dict(df_copy.describe().to_dict())),
+        builder.card("Optimized Dataframe report:", builder.render_pre(report)),
     ])
 )
 

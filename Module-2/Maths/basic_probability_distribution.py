@@ -73,6 +73,60 @@ bernoulli_fig.update_layout(
 
 
 # binomial distribution
+binomial_pretext = f"""
+📘 Binomial Distribution Understanding the Setup
+
+In this example, we construct a Binomial distribution using information
+estimated directly from the dataset.
+
+The Binomial distribution models:
+→ how many times a specific event (called a "success")
+→ occurs in a fixed number of independent trials
+→ when the probability of success remains constant.
+
+🔹 Defining the Success Event:
+We define a success as:
+    "X_discrete equals 3"
+
+Each observation is treated as one trial, where the outcome is either:
+- success (X = 3), or
+- failure (X ≠ 3)
+
+🔹 Estimating the Probability of Success (p̂):
+We calculate the proportion of times X_discrete equals 3 in the dataset.
+This gives us an empirical estimate of the success probability.
+
+Estimated probability of success:
+    p̂ ≈ {{p_hat:.4f}}
+
+🔹 Choosing the Number of Trials:
+We fix the number of trials per experiment as:
+    n = {{n_trials}}
+
+This means we are interested in how many successes occur
+out of {{n_trials}} independent trials.
+
+🔹 Creating the Binomial Model:
+Using the estimated probability p̂ and the fixed number of trials n,
+we create a Binomial random variable.
+
+This model describes the probability of observing:
+    0, 1, 2, ..., {{n_trials}} successes
+
+🔹 Evaluating the PMF:
+The Probability Mass Function (PMF) assigns a probability
+to each possible number of successes.
+
+This allows us to answer questions such as:
+- What is the probability of exactly 2 successes?
+- How likely are we to see no successes at all?
+
+Key takeaway:
+The Binomial distribution connects real data to probability theory
+by modeling repeated experiments with a fixed number of trials
+and a constant probability of success.
+"""
+
 p_hat = (sample_data["X_discrete"] == 3).mean()  # empirical success probability
 n_trials = 10                                    # fixed number of trials
 rv_binom = stats.binom(n=n_trials, p=p_hat)
@@ -93,6 +147,48 @@ fig_binom_pmf.update_layout(
 
 
 # poisson distribution
+
+poisson_pretext = f"""
+📘 Poisson Distribution Understanding the Setup
+
+In this example, we build a Poisson distribution directly from data.
+
+The Poisson distribution models how many times a specific event occurs
+within a fixed interval, assuming the event is relatively rare and
+happens independently.
+
+🔹 Event Definition:
+We define our event as:
+    "X_discrete equals 6"
+
+🔹 Estimating the Average Rate (λ):
+First, we compute how often this event occurs in the dataset.
+This gives us the probability of the event in one observation.
+
+We then scale this probability to represent an interval of 10 observations.
+This gives us the expected number of events per interval, called lambda (λ).
+
+Estimated value:
+    λ ≈ {{lambda_hat:.4f}}
+
+🔹 Creating the Poisson Model:
+Using this λ value, we create a Poisson random variable to model
+the probability of observing 0, 1, 2, … occurrences of the event
+within the chosen interval.
+
+🔹 Evaluating the PMF:
+We compute the Probability Mass Function (PMF) for small values of k,
+where k represents how many times the event occurs.
+
+This allows us to answer questions like:
+- What is the probability that the event happens exactly once?
+- How likely is it that the event does not occur at all?
+
+Key takeaway:
+We did not assume the Poisson distribution — we estimated it
+using real data, which mirrors real-world statistical modeling.
+"""
+
 lambda_hat = (sample_data["X_discrete"] == 6).mean() * 10
 rv_pois = stats.poisson(mu=lambda_hat)
 
@@ -116,6 +212,39 @@ fig_poisson_pmf.update_layout(
 a, b = sample_data["Y_continuous"].min(), sample_data["Y_continuous"].max()
 rv_uniform = stats.uniform(loc=a, scale=b - a)
 
+
+# x-grid for PDF
+x = np.linspace(a, b, 400)
+pdf_uniform = rv_uniform.pdf(x)
+
+# Plot
+fig_uniform = go.Figure()
+
+# Empirical histogram (density)
+fig_uniform.add_histogram(
+    x=sample_data["Y_continuous"],
+    histnorm="probability density",
+    nbinsx=40,
+    name="Empirical Density",
+    opacity=0.6
+)
+
+# Uniform PDF line
+fig_uniform.add_scatter(
+    x=x,
+    y=pdf_uniform,
+    mode="lines",
+    name="Uniform PDF",
+    line=dict(width=3)
+)
+
+fig_uniform.update_layout(
+    title="Continuous Uniform Distribution (Empirical Data + Uniform PDF)",
+    xaxis_title="Y_continuous",
+    yaxis_title="Density",
+    bargap=0.05
+)
+
 # exponential distribution
 y = sample_data["Y_continuous"]
 rv_exp = stats.expon(scale=y.mean())
@@ -138,6 +267,58 @@ expo_fig.update_layout(
 
 
 # normal distribution
+normal_pretext = f"""
+📘 Normal Distribution – Understanding the Setup
+
+In this example, we model a continuous variable using the Normal
+(Gaussian) distribution based on observed data.
+
+The Normal distribution is one of the most important distributions
+in statistics because many real‑world measurements naturally follow
+its bell‑shaped pattern.
+
+Examples include:
+- heights of people,
+- test scores,
+- measurement errors,
+- natural variations in data.
+
+🔹 Working with Continuous Data:
+Here, we focus on the continuous variable:
+    Y_continuous
+
+This variable takes a wide range of values and is suitable for
+modeling with a continuous probability distribution.
+
+🔹 Estimating the Parameters (μ and σ):
+The Normal distribution is fully described by two parameters:
+- μ (mu): the mean, which controls the center of the distribution
+- σ (sigma): the standard deviation, which controls the spread
+
+Instead of assuming these values, we estimate them directly from data.
+
+Estimated values from the dataset:
+    μ̂ (mean)  ≈ {{mu_hat:.4f}}
+    σ̂ (std)   ≈ {{sigma_hat:.4f}}
+
+These estimates summarize the central tendency and variability
+present in the observed data.
+
+🔹 Creating the Normal Model:
+Using the estimated parameters μ̂ and σ̂, we construct a Normal
+random variable that represents the probability distribution
+of Y_continuous.
+
+This model can now be used to:
+- calculate probabilities,
+- compute percentiles,
+- compare empirical data with theoretical expectations.
+
+Key takeaway:
+The Normal distribution provides a smooth, mathematical description
+of real data by capturing its average behavior and natural variation.
+"""
+
 y = sample_data["Y_continuous"]
 mu_hat, sigma_hat = stats.norm.fit(y)
 rv_norm = stats.norm(mu_hat, sigma_hat)
@@ -289,10 +470,13 @@ content.append(
                     (sample_data["X_discrete"] == 4).mean(),
                     display=False)),
             builder.math_card("Bernoulli Distribution Example P(X = 1):", builder.render_array(bernoulli_data.mean(), display=False)),
-            builder.math_card("Binomial Distribution Example P(X = 2):", builder.render_array(rv_binom.pmf(2), display=False)),
-            builder.math_card("Poisson Distribution Example P(X = 1):", builder.render_array(rv_pois.pmf(1), display=False)),
-            builder.math_card("Binomial Distribution CDF Example F(2):", builder.render_array(rv_binom.cdf(2), display=False)),
-            builder.math_card("Poisson Distribution CDF Example F(1):", builder.render_array(rv_pois.cdf(1), display=False)),
+            builder.card("Noraml Distribution Understanding:", builder.render_pre(normal_pretext)),
+            builder.card("Binomial Distribution Understanding:", builder.render_pre(binomial_pretext)),
+            builder.card("Poisson Distribution Understanding:", builder.render_pre(poisson_pretext)),
+            builder.math_card("Binomial Distribution Example P(X = 3):", builder.render_array(rv_binom.pmf(3), display=False)),
+            builder.math_card("Poisson Distribution Example P(X = 6):", builder.render_array(rv_pois.pmf(6), display=False)),
+            builder.math_card("Binomial Distribution CDF Example F(3):", builder.render_array(rv_binom.cdf(3), display=False)),
+            builder.math_card("Poisson Distribution CDF Example F(6):", builder.render_array(rv_pois.cdf(6), display=False)),
 
             builder.math_card(
                 "Continuous Uniform Distribution Example P(45 ≤ Y ≤ 60):",
@@ -317,6 +501,7 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(standard_normal_dist_fig, "Standard Normal Distribution (PDF + KDE)"),
     plotRenderer.plot_to_card(expo_fig, " Exponential Continuous Distribution (PDF + KDE)"),
     plotRenderer.plot_to_card(joint_prob_fig, " Joint Probability Heatmap"),
+    plotRenderer.plot_to_card(fig_uniform, " Continuous Uniform Distribution (Empirical Data + Uniform PDF)"),
 ]))
 
 html_doc = builder.build_page(

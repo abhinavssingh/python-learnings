@@ -21,7 +21,7 @@ builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 content = []
 
-df = dl.read_dataset("NSMES1988.csv", handle_unnamed="drop")
+df, report = dl.read_dataset("NSMES1988.csv", optimize=True, handle_unnamed="drop", return_report=True)
 # float16 is fine for storage but not supported for Index / binning operations
 #  float16 is best for ML tensors, not analytics
 df["age"] = np.floor(df["age"].mul(10, fill_value=1)).astype("float32")
@@ -397,7 +397,10 @@ capstone_1_insights = """
 - Others are midwest are the region where we should conduct more health awareness program.
 ------------------------------------------------
 """
-content.append(builder.card("Inights after Data Visulaization", builder.render_pre(capstone_1_insights)))
+content.append(builder.grid([
+    builder.card("Optimized Dataframe report:", builder.render_pre(report)),
+    builder.card("Inights after Data Visulaization", builder.render_pre(capstone_1_insights))
+]))
 
 html_doc = builder.build_page("Capstone-1 Data Visualization", "\n".join(content))
 

@@ -10,7 +10,7 @@ def main():
     # ...
 
 
-df = dl.read_dataset("marketing_data.csv", handle_unnamed="drop")
+df, report = dl.read_dataset("marketing_data.csv", optimize=True, handle_unnamed="drop", return_report=True)
 
 content = []
 builder = HtmlBuilder()
@@ -28,8 +28,8 @@ content.append(
 
 content.append(
     builder.grid([
-        builder.card("Information of the Marketing Dataframe is:",
-                     builder.render_pre(df_info_str))
+        builder.card("Information of the Marketing Dataframe is:", builder.render_pre(df_info_str)),
+        builder.card("Optimized Dataframe report:", builder.render_pre(report)),
     ])
 )
 

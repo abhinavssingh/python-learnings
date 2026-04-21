@@ -45,9 +45,8 @@ Axis | Direction    | Operation
 
 builder = HtmlBuilder()
 
-df = dl.read_dataset("housing_data.csv", handle_unnamed="drop")
-df[['YearBuilt', 'YearRemodAdd']] = df[['YearBuilt',
-                                        'YearRemodAdd']].apply(pd.to_datetime, format='%Y')
+df, report = dl.read_dataset("housing_data.csv", optimize=True, handle_unnamed="drop", return_report=True)
+df[['YearBuilt', 'YearRemodAdd']] = df[['YearBuilt', 'YearRemodAdd']].apply(pd.to_datetime, format='%Y')
 diff = df["YearRemodAdd"].dt.year - df["YearBuilt"].dt.year
 
 # Create category using vectorized logic
@@ -172,6 +171,8 @@ content.append(
         builder.card("DataFrame Basics:", builder.render_pre(df_basics)),
         builder.card("Information of the Housing Dataframe is:",
                      builder.render_pre(df_info_str)),
+        builder.card("Optimized Dataframe report:",
+                     builder.render_pre(report)),
         builder.card("Shape of the Housing DataFrame is:",
                      builder.render_dict({"Shape": df.shape})),
         builder.card("Dataframe description are:",
