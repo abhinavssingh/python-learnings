@@ -1,6 +1,6 @@
 # lib/mathshelper/__init__.py
 
-from . import probability_formulas, statistics_formulas
+from . import hypothesis_testing_formulas, probability_formulas, statistics_formulas
 from .autoload import auto_register_formulas
 from .formularegistry import FormulaRegistry
 
@@ -13,6 +13,7 @@ auto_register_formulas(
     constants_modules=[
         probability_formulas,
         statistics_formulas,
+        hypothesis_testing_formulas,
     ]
 )
 

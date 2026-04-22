@@ -271,13 +271,13 @@ uniform_fig.update_layout(
 
 
 content.append(builder.full_width_card(
-    "Numeric DataFrame",
+    "Retail Store DataFrame",
     builder.render_dataframe_collapsible(df, initial_rows=10)
 ))
 
 content.append(
     builder.grid([
-        builder.card("dataframe Description:",
+        builder.card("Retail Dataframe Description:",
                      builder.render_dict(df.describe().to_dict())),
         builder.card("Information of the Housing Dataframe is:",
                      builder.render_pre(df_info_str)),
