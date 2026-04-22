@@ -1,11 +1,105 @@
 
-# NumPy — Module 2
+# Module 2 – NumPy
 
-This module contains hands‑on exercises and helper utilities to learn **NumPy fundamentals**—array creation & attributes, indexing/slicing, axis manipulation (transpose), and rendering results as **HTML**.
+This module contains **hands‑on Python scripts for learning NumPy**, focusing on **array creation, reshaping, transpose operations, mathematical computations, and statistical analysis**.
 
-> NumPy is the fundamental package for scientific computing in Python. If you’re new, start with the official quickstart and user guide, then return here to practice.  
-> Sources: [NumPy Quickstart](https://numpy.org/doc/stable/user/quickstart.html), [NumPy Tutorials repo](https://github.com/numpy/numpy-tutorials)
+Each script generates a **self‑documenting HTML report**, making it easier to understand and verify NumPy operations visually.
 
+---
+
+## 📌 Objective of This Module
+
+The goals of this NumPy module are to:
+
+- Build a strong foundation in **NumPy array mechanics**
+- Understand how NumPy handles **multi‑dimensional data (0D → 4D)**
+- Perform **mathematical and statistical operations** efficiently
+- Learn **axis‑based transformations** such as transpose
+- Present numerical results through **structured HTML reports**
+
+---
+
+## 📂 Folder Structure
+
+This folder contains multiple Python scripts, each focused on a specific NumPy concept:
+
+### 🧮 1. NumPy Basics
+**What it covers:**
+- Array creation with different data types (int, float, string)
+- `reshape()` operations
+- `transpose()` operations
+- Understanding shape preservation vs structural change
+
+**Key Learnings:**
+- NumPy arrays are type‑agnostic in structure
+- Reshape changes dimensions, not values
+- Transpose reorders axes
+
+---
+
+### ➕ 2. NumPy Mathematical Operations
+**What it covers:**
+- Element‑wise arithmetic:
+  - Addition
+  - Subtraction
+  - Multiplication
+  - Division
+  - Power
+- Operations on **2D and 3D arrays**
+- Rounding and safe numeric calculations
+
+**Key Learnings:**
+- NumPy performs vectorized operations efficiently
+- Broadcasting works when shapes are compatible
+- Mathematical logic scales naturally to higher dimensions
+
+---
+
+### 📊 3. NumPy Statistical Operations
+**What it covers:**
+- Mean
+- Median
+- Standard deviation
+- Variance
+- Percentiles (80th, 90th)
+
+Applied to:
+- 2D arrays
+- 3D arrays
+
+**Key Learnings:**
+- Statistical functions behave consistently across dimensions
+- Understanding data spread and distribution is essential for data science
+
+---
+
+### 🔄 4. NumPy Transpose Operations
+**What it covers:**
+- Transpose behavior for:
+  - 0D arrays (scalars)
+  - 1D arrays (vectors)
+  - 2D arrays (matrices)
+  - 3D and 4D tensors
+- Axis‑based transpose using custom index orders
+
+**Key Learnings:**
+- Transpose has no effect on 0D and 1D arrays
+- Higher‑dimensional transpose is **axis reordering**
+- Critical for:
+  - Machine learning
+  - Image processing
+  - Tensor manipulation
+
+---
+
+## 🖥 HTML Reporting Pattern
+
+All scripts follow a **consistent reporting architecture**:
+
+- NumPy computation logic
+- Structured HTML output using reusable utilities
+- Card‑based visual layout for clarity
+- Automatic browser opening after report generation
 
 ---
 
@@ -17,148 +111,6 @@ py -m Module-2.NumPy.numpy_mathematical_report
 py -m Module-2.NumPy.numpy_indexing_slicing
 py -m Module-2.NumPy.numpy_transpose_report
 ```
-
----
-
-## 🔹 Array Basics & Attributes (0D–4D)
-
-Below are minimal examples that mirror the ndarray model—`ndim`, `shape`, `size`, `dtype`, `itemsize`. *(See NumPy docs for definitions and more examples.)*  
-Docs: [Quickstart → The basics](https://numpy.org/doc/stable/user/quickstart.html#the-basics)
-
-```python
-import numpy as np
-
-# 0D (scalar)
-a0 = np.array(42)
-print(a0, a0.ndim, a0.shape)   # 42, 0, ()
-
-# 1D (vector)
-a1 = np.array([1, 2, 3, 4])
-print(a1, a1.ndim, a1.shape)   # [1 2 3 4], 1, (4,)
-
-# 2D (matrix)
-a2 = np.array([[1, 2, 3],
-               [4, 5, 6]])
-print(a2, a2.ndim, a2.shape)   # 2, (2, 3)
-
-# 3D (stack of matrices)
-a3 = np.arange(2*2*3).reshape(2, 2, 3)
-print(a3.shape)                # (2, 2, 3)
-
-# 4D (batch of 3D tensors)
-a4 = np.arange(2*3*2*2).reshape(2, 3, 2, 2)
-print(a4.shape)                # (2, 3, 2, 2)
-```
-
-> `ndim`, `shape`, `size`, `dtype`, `itemsize` are the core ndarray attributes you’ll use most frequently.  
-> Source: NumPy Quickstart (attributes overview). 
-
----
-
-## 🔹 Indexing & Slicing — Basic Examples
-
-Indexing and slicing work along each axis. Here are examples including **negative indexing** and **slice ranges**.  
-Docs: [Quickstart → Indexing, slicing and iterating](https://numpy.org/doc/stable/user/quickstart.html#basic-operations)
-
-```python
-import numpy as np
-
-array_1d = np.array([1, 2, 3, 4, 5, 6])
-print(array_1d[3])      # 4 (value at index 3)
-print(array_1d[-4])     # 3 (4th from end)
-print(array_1d[1:5])    # [2 3 4 5]
-
-array_2d = np.array([[1, 2, 3],
-                     [4, 5, 6]])
-print(array_2d[0, 2])   # 3 (third element first row)
-print(array_2d[1, 1])   # 5 (second element second row)
-print(array_2d[1, -1])  # 6 (last element second row)
-
-array_3d = np.array([[[1,2,3],[4,5,6]],
-                     [[7,8,9],[10,11,12]]])
-print(array_3d[1, 0, 0])  # 7 (first elem, first row, second 2D slice)
-print(array_3d[1, 1, -1]) # 12 (last elem, last row, last 2D slice)
-```
-
----
-
-## 🔹 Transpose / Axis Permutations — Basic Examples
-
-- **2D**: `a.T` swaps rows and columns: shape `(m, n) → (n, m)`.
-- **N‑D**: `np.transpose(a, axes=...)` gives full control over axis order.  
-Docs: [ndarray transpose & moveaxis](https://numpy.org/doc/stable/reference/generated/numpy.transpose.html)
-
-```python
-import numpy as np
-
-# 2D transpose
-A = np.array([[1,2,3], [4,5,6]])
-print(A.T.shape)  # (3, 2)
-
-# 3D transpose: (D,H,W) -> (H,W,D)
-a3 = np.arange(2*2*3).reshape(2,2,3)
-B = np.transpose(a3, (1, 2, 0))
-print(a3.shape, '->', B.shape)  # (2, 2, 3) -> (2, 3, 2)
-
-# 4D (N,C,H,W) -> (N,H,W,C)
-a4 = np.arange(2*3*2*2).reshape(2,3,2,2)
-NHWC = np.transpose(a4, (0, 2, 3, 1))
-print(a4.shape, '->', NHWC.shape)  # (2,3,2,2)->(2,2,2,3)
-```
-
----
-
-## 🔹 HTML Rendering Helper — `arrays_html.py`
-
-This helper renders arrays and results to a **styled HTML** page or fragment.
-
-### 1) Column‑wise cards for arrays
-
-```python
-import numpy as np
-from arrays_html import arrays_report_html
-
-arr1 = np.array([[1,2,3,4],[5,6,7,8]])
-arr2 = np.array([[1.,2.,3.,4.],[5.,6.,7.,8.],[9.,10.,11.,12.]])
-arr3 = np.array([['1','2','3','4'],['5','6','7','8']], dtype=str)
-
-doc = arrays_report_html([
-    ("Original array (int)", arr1),
-    ("Original array (float)", arr2),
-    ("Original array (str)", arr3),
-], page_title="Array Details (Column-wise)")
-
-with open("arrays_report.html", "w", encoding="utf-8") as f:
-    f.write(doc)
-```
-
-### 2) (label, array) pairs — statements + values as HTML
-
-```python
-import numpy as np
-from arrays_html import pairs_table_html, pairs_report_html
-
-pairs = [
-  ("value at index 3 of the 1D NumPy array", np.array([4])),
-  ("Employee rating (1:7)", np.array([4,3,5,6,8,9])),
-]
-
-# Fragment (embed in notebook or an existing page)
-fragment = pairs_table_html(pairs)
-
-# Full page
-page = pairs_report_html(pairs, page_title="Indexing & Slicing — Results")
-open("pairs_results.html","w",encoding="utf-8").write(page)
-```
-
----
-
-## 🧭 Tips
-
-- Prefer **vectorized operations** over Python loops for speed & clarity.  
-- Keep an eye on **shapes** when transposing or stacking—mismatch is a common source of bugs.  
-- For reporting, HTML helpers are great to snapshot results for reviews or PRs.
-
 ---
 
 ## 📚 References
