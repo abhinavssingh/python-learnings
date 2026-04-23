@@ -275,24 +275,37 @@ class RenderersBuilder:
         has_scroll = row_count > max_visible_rows
 
         def clean_value(v):
-            # NumPy scalar → Python scalar
-            if isinstance(v, (np.generic,)):
+            # ✅ NumPy scalar → Python scalar
+            if isinstance(v, np.generic):
                 return v.item()
 
-            # Plain Python scalar
+            # ✅ Pandas DataFrame → render as table
+            if isinstance(v, pd.DataFrame):
+                return self.render_dataframe(v)
+
+            # ✅ Pandas Series → render as 1‑column table
+            if isinstance(v, pd.Series):
+                return self.render_dataframe(v.to_frame())
+
+            # ✅ 2‑D NumPy array → convert to DataFrame first
+            if isinstance(v, np.ndarray) and v.ndim == 2:
+                df = pd.DataFrame(v)
+                return self.render_dataframe(df)
+
+            # ✅ Plain Python scalar
             if isinstance(v, (int, float, bool, str)):
                 return v
 
-            # Lists / arrays
+            # ✅ Lists / 1‑D arrays
             if isinstance(v, (list, tuple, np.ndarray)):
                 return ", ".join(str(clean_value(x)) for x in v)
 
-            # Nested dict → render recursively
+            # ✅ Nested dict → recursive render
             if isinstance(v, dict):
                 return self.render_dict(v)
 
-            # Fallback
-            return str(v)
+            # ✅ Fallback
+            return html.escape(str(v))
 
         rows = "\n".join(
             f"""

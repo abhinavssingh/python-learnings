@@ -2,13 +2,16 @@ import math
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 from numpy.random import randn
 from scipy import stats
-from scipy.stats import chi2, ttest_1samp
+from scipy.stats import chi2, f_oneway, ttest_1samp
+from statsmodels.formula.api import ols
 from statsmodels.stats.weightstats import ztest
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.mathshelper import FORMULA_REGISTRY
+from lib.plothelper.PlotHelper import DistributionPlotHelper as dph
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.reports.report_utils import ReportUtils as ru
 
@@ -23,7 +26,14 @@ builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 content = []
 
-hypothesis_testing_steps = f"""
+df_pairs = [
+    (1, 12),     # Cutlets
+    (2, 27),     # Plant Weights
+    (3, 16),     # Crop Yield
+]
+dof_list = [1, 2, 5, 10]
+
+hypothesis_testing_steps = """
 1. Create a null hypothesis (H₀) and an alternative hypothesis (H₁).
 
 2. Decide on the level of significance (α), commonly:
@@ -216,7 +226,43 @@ if chi_p_value <= alpha:
 else:
     chi_result["hypothesis testing result based on p value"] = "Retain Ho, There is no relationship between 2 categorical variables"
 
+
+chi_test_fig = dph.plot_chi_square_distribution(
+    observed_chi2=chi_square_statistic,
+    dof=ddof,
+    title="Chi‑Square Distribution: Chi‑Test Dataset"
+)
+
+multi_chi_fig = dph.plot_multiple_chi_square_distributions(
+    dof_list=dof_list,
+    observed_chi2=chi_square_statistic,
+    title="Chi‑Square Distribution: Chi‑Test Dataset"
+)
+
+
+anova_summary = """
+1. Statistical tests such as the T-Test and Z-Test are suitable
+ for univariate analysis, whereas ANOVA is used to compare the means
+ of multiple groups in multivariate scenarios.
+
+2. ANOVA is widely used in bio-chemical, pharmaceutical,
+and scientific research to study the effect of multiple independent
+variables on a dependent variable.
+
+3. In a medical experiment, such as testing different hypertension
+medicines, the sample population is divided into groups, each receiving
+a specific treatment. After measuring the outcome (e.g., blood pressure),
+ANOVA compares group means to determine whether they are statistically different.
+
+4. ANOVA evaluates sample means and the grand mean, examines dependent
+and independent variables (factors and their levels), and produces an F-Statistic.
+This ratio compares intergroup and intragroup variation to decide whether to accept
+or reject the null hypothesis.
+"""
+
 # One Way Anova Test
+# Three different categories of plants can be differentiated on the basis of their weights. A dataset with various plants and
+# their weights is given. Construct a hypothetical test to determine the category of a plant at a significance level of 0.05.
 plant_df = plant_df[['weight', 'group']]
 groups = pd.unique(plant_df.group.values)
 data = {grp: plant_df['weight'][plant_df.group == grp] for grp in groups}
@@ -224,13 +270,235 @@ data = {grp: plant_df['weight'][plant_df.group == grp] for grp in groups}
 F, p = stats.f_oneway(data['ctrl'], data['trt1'], data['trt2'])
 one_way_anova_result = {}
 one_way_anova_result["f_stats"] = F
-one_way_anova_result["p_value"] = p
+one_way_anova_result["p_value"] = np.round(p, decimals=4)
 one_way_anova_result["alpha"] = alpha
 one_way_anova_result["criteria"] = "if alpha < .05 then reject the Ho else Failed to reject the Ho"
-if p < 0.05:
+if np.round(p, decimals=4) < 0.05:
     one_way_anova_result["hypothesis testing result"] = "Reject Null Hypothesis."
 else:
     one_way_anova_result["hypothesis testing result"] = "Accept Null Hypothesis."
+
+# F-Distribution Plot for One-Way ANOVA
+groups = plant_df["group"].nunique()
+total_samples = len(plant_df)
+
+dfn = groups - 1
+dfd = total_samples - groups
+
+plant_f_fig = dph.plot_f_distribution(
+    observed_f=F,
+    dfn=dfn,
+    dfd=dfd,
+    title="F‑Distribution: Plant Weights ANOVA"
+)
+
+multi_plant_f_fig = dph.plot_multiple_f_distributions(
+    df_pairs=df_pairs,
+    observed_f=F,
+    title="F‑Distribution Comparison Across ANOVA Tests for Plant Weights"
+)
+
+# Two Way Anova Test
+# The crop yield of a particular region is affected by the amount of fertilizer used and the type of crop.
+# A dataset with various crops, the amount of fertilizer used, and their corresponding yields is given.
+
+# Fit the model
+model = ols('Yield ~ C(Fert)*C(Water)', crop_yield_df).fit()
+
+# Perform ANOVA and print the table
+res = sm.stats.anova_lm(model, typ=2)
+
+model_summary = """
+The overall model result, F(3, 16) = 4.112, p = 0.0243, tells you about the fit of the entire model,
+including all the predictors (Fert, Water, and the interaction term). An F-statistic of 4.112 and p-value of 0.0243
+(which is less than the usual significance level of 0.05) indicates that the model as a whole is statistically significant,
+ meaning there is evidence that at least one of the predictors has a non-zero effect.
+"""
+anova_table = {}
+anova_table["Fertilizer"] = """
+The p-value for Fert is 0.028847, which is less than 0.05. This indicate that there is a statistically
+significant difference in crop yield between the different types of fertilizer.
+"""
+anova_table["Water"] = """
+The p-value for Water is 0.035386, which is also less than 0.05. This indicates that there is a statistically
+significant difference in crop yield between different water levels.
+"""
+anova_table["Interaction between Fertilizer and Water"] = """
+The p-value for the interaction is 0.272656, which is greater than 0.05. This suggests that there is no statistically significant interaction between Fert and Water.
+In other words, the effect of the type of fertilizer on crop yield does not depend on the level of water, and vice versa.
+"""
+anova_table["*Residual"] = """
+The Residual row provides the sum of squares of the residuals, which are the differences between the observed and predicted values.
+This row does not provide an F-statistic or p-value.
+"""
+anova_table["Final Result"] = """
+These results suggest that both types of fertilizer and water levels have a significant effect on crop yield when considered individually,
+but there's no evidence to suggest that the effect of one depends on the level of the other.
+"""
+
+two_way_anova_result = {}
+two_way_anova_result["Overall model"] = np.round(model.df_model, decimals=0)
+two_way_anova_result["Overall Residuals"] = np.round(model.df_resid, decimals=0)
+two_way_anova_result["F-Statistic"] = np.round(model.fvalue, decimals=3)
+two_way_anova_result["p_value"] = np.round(model.f_pvalue, decimals=4)
+two_way_anova_result["Residuals"] = res
+two_way_anova_result["Observation"] = model_summary
+two_way_anova_result["Anova table"] = anova_table
+
+# F-Distribution Plot for Two-Way ANOVA
+dfn = int(model.df_model)
+dfd = int(model.df_resid)
+
+crop_yield_f_fig = dph.plot_f_distribution(
+    observed_f=model.fvalue,
+    dfn=dfn,
+    dfd=dfd,
+    title="F‑Distribution: Crop Yield Two‑Way ANOVA"
+)
+
+multi_crop_f_fig = dph.plot_multiple_f_distributions(
+    df_pairs=df_pairs,
+    observed_f=model.fvalue,
+    title="F‑Distribution Comparison Across ANOVA Tests for Crop Yield"
+)
+
+
+# F-Test
+f_test_notes = """
+The F-test is a statistical method used to compare the variances of two or more groups to determine
+whether they are significantly different. It is most commonly applied in ANOVA (Analysis of Variance)
+to evaluate whether differences in group means are statistically significant.
+
+The test computes an F-statistic, defined as the ratio of variance between groups to variance within groups.
+A larger F-statistic indicates greater evidence against the null hypothesis that all group means are equal.
+If the p-value associated with the F-statistic is less than the chosen significance level (commonly α = 0.05),
+the null hypothesis is rejected.
+
+Key assumptions and guidelines for the F-test include:
+1. The population should be approximately normally distributed.
+2. Samples must be independent.
+3. The larger variance is placed in the numerator, making the test right-tailed.
+4. For two-tailed tests, the significance level α is split between both tails.
+5. Variances are obtained by squaring standard deviations when necessary.
+6. If degrees of freedom are not available in the F-table, the larger critical value is used to reduce Type I error.
+
+Steps to perform an F-test:
+1. State the null hypothesis (equal variances) and the alternative hypothesis.
+2. Select a significance level (α).
+3. Compute the F-statistic: F = Variance between groups / Variance within groups.
+4. Compare the calculated F-statistic to the critical value from the F-distribution to make a decision.
+
+The F-test is widely used in fields such as biology, psychology, and social sciences for analyzing
+experimental data and drawing conclusions about group variabilit
+
+"""
+
+# TeleCall uses four centers around the globe to process customer order forms. They audit a certain percentage of the
+# customer order forms. Any error in the order form renders it defective and has to be reworked before processing. The manager
+# wants to check whether the defective percentage varies by center. Analyze the data at the 5 % significance level and help
+# the manager draw appropriate inferences.
+# Given dataset is categorical in nature, so we will perform the chi-square test for independence to determine
+# if there is a relationship between the center and the defective percentage.
+
+# Recommended: Chi - Square Test
+customer_contingency = pd.DataFrame({
+    "Phillippines": customer_orderForm_df["Phillippines"].value_counts(),
+    "Indonesia": customer_orderForm_df["Indonesia"].value_counts(),
+    "Malta": customer_orderForm_df["Malta"].value_counts(),
+    "India": customer_orderForm_df["India"].value_counts()
+}).fillna(0)
+b = stats.chi2_contingency(customer_contingency)
+customer_chi_square_statistic = b[0]
+customer_chi_p_value = b[1]
+customer_ddof = b[2]
+customer_expected_values = b[3]
+customer_chi_result = {}
+customer_chi_result["null hypothesis"] = "Ho = There is no relationship between center and defective percentage."
+customer_chi_result["alternate hypothesis"] = "Ha = There is a relationship between center and defective percentage."
+customer_chi_result["contingency_table"] = customer_contingency
+customer_chi_result["F-statistic"] = customer_chi_square_statistic
+customer_chi_result["p_value"] = customer_chi_p_value
+customer_chi_result["degrees_of_freedom"] = customer_ddof
+customer_chi_result["expected_values"] = customer_expected_values
+customer_chi_result["alpha"] = alpha
+customer_chi_result["criteria"] = "if alpha < .05 then reject the Ho else Failed to reject the Ho"
+if customer_chi_p_value < alpha:
+    customer_chi_result["hypothesis testing result"] = "Reject the null hypothesis."
+else:
+    customer_chi_result["hypothesis testing result"] = "Fail to reject the null hypothesis."
+
+# Charts for chi-square distribution
+customer_chi_fig = dph.plot_chi_square_distribution(
+    observed_chi2=customer_chi_square_statistic,
+    dof=customer_ddof,
+    title="Chi‑Square Distribution: Customer Order Form"
+)
+
+multi_customer_chi_fig = dph.plot_multiple_chi_square_distributions(
+    dof_list=dof_list,
+    observed_chi2=customer_chi_square_statistic,
+    title="Chi‑Square Distribution: Customer Order Form"
+)
+
+# Alternatively, One-Way ANOVA (F-Test) across countries
+co_mapped_df = customer_orderForm_df.replace(
+    {
+        "Phillippines": {
+            "Error Free": 1, "Defective": 0}, "Indonesia": {
+                "Error Free": 1, "Defective": 0}, "Malta": {
+                    "Error Free": 1, "Defective": 0}, "India": {
+                        "Error Free": 1, "Defective": 0}})
+
+
+f_stat, f_p_value = f_oneway(co_mapped_df["Phillippines"], co_mapped_df["Indonesia"], co_mapped_df["Malta"], co_mapped_df["India"])
+f_test_result = {}
+f_test_result["null hypothesis"] = "Ho = There is no relationship between center and defective percentage."
+f_test_result["alternate hypothesis"] = "Ha = There is a relationship between center and defective percentage."
+f_test_result["F-statistic"] = f_stat
+f_test_result["p_value"] = f_p_value
+f_test_result["alpha"] = alpha
+f_test_result["criteria"] = "if alpha < .05 then reject the Ho else Failed to reject the Ho"
+if f_p_value < alpha:
+    f_test_result["hypothesis testing result"] = "Reject the null hypothesis."
+else:
+    f_test_result["hypothesis testing result"] = "Fail to reject the null hypothesis."
+
+# An administrator wants to determine whether there is any significant
+# difference in the diameter of cutlets between two units. A randomly
+# selected sample of cutlets was collected from both units and measured.
+# Analyze the data and draw inferences at a 5% significance level.
+
+
+# One-way ANOVA
+cutlest_f_stat, cutlest_p_value = f_oneway(cutlets_df["Unit A"], cutlets_df["Unit B"])
+cutlet_anova_result = {}
+cutlet_anova_result["null hypothesis"] = "Ho = There is no significant difference in the diameter of cutlets between two units."
+cutlet_anova_result["alternate hypothesis"] = "Ha = There is a significant difference in the diameter of cutlets between two units."
+cutlet_anova_result["F-statistic"] = cutlest_f_stat
+cutlet_anova_result["p_value"] = cutlest_p_value
+cutlet_anova_result["alpha"] = alpha
+cutlet_anova_result["criteria"] = "if alpha < .05 then reject the Ho else Failed to reject the Ho"
+if cutlest_p_value < alpha:
+    cutlet_anova_result["hypothesis testing result"] = "Reject the null hypothesis."
+else:
+    cutlet_anova_result["hypothesis testing result"] = "Fail to reject the null hypothesis."
+
+# F-Distribution Plot for Cutlets Diameter ANOVA
+dfn = 1  # number of groups - 1
+dfd = len(cutlets_df) * 2 - 2  # total samples - number of groups
+
+cutlets_f_fig = dph.plot_f_distribution(
+    observed_f=cutlest_f_stat,
+    dfn=dfn,
+    dfd=dfd,
+    title="F‑Distribution: Cutlets Diameter ANOVA"
+)
+
+multi_cutlets_f_fig = dph.plot_multiple_f_distributions(
+    df_pairs=df_pairs,
+    observed_f=cutlest_f_stat,
+    title="F‑Distribution Comparison Across ANOVA Tests for Cutlets Diameter"
+)
 
 
 content.append(
@@ -255,10 +523,29 @@ content.append(
         builder.card("Paired T-Test result for Blood Pressure", builder.render_dict(t_p_result)),
         builder.card("Two T-Test Sample result for Employee Satisfaction", builder.render_dict(t_2s_result)),
         builder.card("Z-Test result", builder.render_dict(z_result)),
-        builder.card("Chi-Test result", builder.render_dict(chi_result)),
-        builder.card("One Way Anova result", builder.render_dict(one_way_anova_result)),
+        builder.card("Chi-Test for Categorical Column result", builder.render_dict(chi_result)),
+        builder.card("ANOVA Summary", builder.render_pre(anova_summary)),
+        builder.card("One Way Anova Test for Plant", builder.render_dict(one_way_anova_result)),
+        builder.card("Two Way Anova Test for Fertilizer and Water", builder.render_dict(two_way_anova_result)),
+        builder.card("F-Test Notes", builder.render_pre(f_test_notes)),
+        builder.card("Chi-Square Test for Customer Order Form", builder.render_dict(customer_chi_result)),
+        builder.card("F-Test for Customer Order Form", builder.render_dict(f_test_result)),
+        builder.card("Cutlets One-Way ANOVA Test", builder.render_dict(cutlet_anova_result)),
     ])
 )
+
+content.append(builder.chart_grid([
+    plotRenderer.plot_to_card(cutlets_f_fig, "F-Distribution Plot for Cutlets Diameter ANOVA"),
+    plotRenderer.plot_to_card(plant_f_fig, "F-Distribution Plot for Plant Weights ANOVA"),
+    plotRenderer.plot_to_card(crop_yield_f_fig, "F-Distribution Plot for Crop Yield Two-Way ANOVA"),
+    plotRenderer.plot_to_card(chi_test_fig, "Chi-Square Distribution Plot for Customer Order Form Chi-Test"),
+    plotRenderer.plot_to_card(customer_chi_fig, "Chi-Square Distribution Plot for Customer Order Form Chi-Test"),
+    plotRenderer.plot_to_card(multi_cutlets_f_fig, "F-Distribution Comparison Across ANOVA Tests for Cutlets Diameter"),
+    plotRenderer.plot_to_card(multi_plant_f_fig, "F-Distribution Comparison Across ANOVA Tests for Plant Weights"),
+    plotRenderer.plot_to_card(multi_crop_f_fig, "F-Distribution Comparison Across ANOVA Tests for Crop Yield"),
+    plotRenderer.plot_to_card(multi_customer_chi_fig, "Chi-Square Distribution Comparison Across ANOVA Tests for Customer Order Form Chi-Test"),
+    plotRenderer.plot_to_card(multi_chi_fig, "Chi-Square Distribution Comparison Across Chi-Test Datasets"),
+]))
 
 html_doc = builder.build_page(
     "Advance Statistics Operation  Report",
@@ -276,7 +563,4 @@ output_path = ru.save_html_report(
 print(f"Wrote report to: {output_path}")
 
 if __name__ == "__main__":
-    main()
-    main()
-    main()
     main()
