@@ -69,12 +69,12 @@ treemap_fig = px.treemap(df, path=['State', 'Month_Name', 'Group'], title="Tree 
 corr_fig = px.imshow(correlation_matrix, text_auto=True, color_continuous_scale="portland", zmin=1, zmax=1, title="Correlation Plot")
 
 state_group_fig = px.imshow(state_group_pct.round(1), text_auto=".1f", color_continuous_scale="Blues",
-                            labels={"x": "Customer Group", "y": "State", "color": "Sales %"
+                            labels={"x": "State", "y": "Customer Group", "color": "Sales %"
                                     }, title="Sales Distribution (%) by State & Customer Group")
 
 
 state_month_fig = px.imshow(state_month_matrix, text_auto=True, color_continuous_scale="Oxy",
-                            labels={"x": "Customer Group", "y": "Month", "color": "Sales"
+                            labels={"x": "State", "y": "Month", "color": "Sales"
                                     }, title="Sales Distribution by State & Month")
 
 time_group_fig = px.imshow(time_group_matrix, text_auto=True, color_continuous_scale="Viridis",
@@ -86,7 +86,7 @@ month_time_fig = px.imshow(month_time_matrix, text_auto=True, color_continuous_s
                                    }, title="Sales Heatmap: Month vs Time of Day")
 
 weekday_units_fig = px.imshow(weekday_state_matrix, text_auto=True, color_continuous_scale="Plasma",
-                              labels={"x": "Sate", "y": "Day Name", "color": "Total Sales"
+                              labels={"x": "Day Name", "y": "State", "color": "Total Sales"
                                       }, title="Sales Heatmap: Weekday vs State")
 
 

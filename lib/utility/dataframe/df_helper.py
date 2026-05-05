@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Any, Callable, Iterable, Literal, Set, Union
+from typing import Any, Callable, Iterable, Literal, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -72,6 +72,9 @@ class DataFrameHelper:
         "weekday",
         "is_weekend",
         "quarter",
+        "week_of_month",
+        "week_of_year",
+
     }
 
     ALL_FISCAL_FIELDS: Set[str] = {
@@ -79,6 +82,7 @@ class DataFrameHelper:
         "fiscal_quarter",
         "fy_label",
         "fq_label",
+        "fq_month_range",
     }
 
     @staticmethod
@@ -149,6 +153,19 @@ class DataFrameHelper:
             out["Calendar_Quarter"] = dt.dt.quarter
 
         # ==========================
+        # Week features
+        # ==========================
+
+        if "week_of_year" in calendar_fields:
+            # ISO week number (1–53)
+            out["Week_Of_Year"] = dt.dt.isocalendar().week.astype(int)
+
+        if "week_of_month" in calendar_fields:
+            # Business-friendly Week1–Week4
+            out["_Week_Of_Month"] = ((dt.dt.day - 1) // 7) + 1
+            out["Week_Of_Month"] = "Week" + out["_Week_Of_Month"].astype(str)
+
+        # ==========================
         # Fiscal fields
         # ==========================
         if fiscal_fields:
@@ -175,6 +192,37 @@ class DataFrameHelper:
 
         if "fq_label" in fiscal_fields:
             out["FQ_Label"] = "Q" + out["_Fiscal_Quarter"].astype(str)
+
+        if "fq_month_range" in fiscal_fields:
+            fy_start = DataFrameHelper.FISCAL_YEAR_START_MONTH[country]
+
+            # Build ordered fiscal months based on FY start
+            fiscal_month_sequence = [
+                ((fy_start - 1 + i) % 12) + 1
+                for i in range(12)
+            ]
+
+            # Split into quarters (3 months each)
+            fiscal_quarter_months = {
+                q + 1: fiscal_month_sequence[q * 3: (q + 1) * 3]
+                for q in range(4)
+            }
+
+            # Month number → short name
+            month_name_map = {
+                1: "Jan", 2: "Feb", 3: "Mar",
+                4: "Apr", 5: "May", 6: "Jun",
+                7: "Jul", 8: "Aug", 9: "Sep",
+                10: "Oct", 11: "Nov", 12: "Dec",
+            }
+
+            out["FQ_Month_Range"] = out["_Fiscal_Quarter"].map(
+                lambda q: (
+                    f"{month_name_map[fiscal_quarter_months[q][0]]}"
+                    f"-"
+                    f"{month_name_map[fiscal_quarter_months[q][-1]]}"
+                )
+            )
 
         # ==========================
         # Cleanup internal columns
@@ -442,3 +490,109 @@ class DataFrameHelper:
         Logger.info("Null check and optimization completed")
 
         return optimized_df, pre_text
+
+    @staticmethod
+    def find_iqr_outliers(
+        df: pd.DataFrame,
+        columns: Iterable[str],
+        *,
+        groupby: Optional[str] = None,
+        iqr_multiplier: float = 1.5,
+        suffix: str = "_outlier",
+    ) -> pd.DataFrame:
+        """
+        Detect IQR-based outliers for multiple columns,
+        with optional group-wise detection.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Input DataFrame
+        columns : iterable[str]
+            Numeric columns to check
+        groupby : str, optional
+            Column to group by (e.g. 'State')
+        iqr_multiplier : float
+            IQR multiplier (default 1.5)
+        suffix : str
+            Suffix for outlier flag columns
+
+        Returns
+        -------
+        pd.DataFrame
+            Original DataFrame with boolean outlier flags
+        """
+
+        result = df.copy()
+
+        for col in columns:
+            if groupby:
+                result[f"{col}{suffix}"] = (
+                    result.groupby(groupby)[col]
+                    .transform(
+                        lambda x: ~x.between(
+                            x.quantile(0.25) - iqr_multiplier * (x.quantile(0.75) - x.quantile(0.25)),
+                            x.quantile(0.75) + iqr_multiplier * (x.quantile(0.75) - x.quantile(0.25)),
+                        )
+                    )
+                )
+            else:
+                q1 = result[col].quantile(0.25)
+                q3 = result[col].quantile(0.75)
+                iqr = q3 - q1
+                lower = q1 - iqr_multiplier * iqr
+                upper = q3 + iqr_multiplier * iqr
+
+                result[f"{col}{suffix}"] = ~result[col].between(lower, upper)
+
+        return result
+
+    @staticmethod
+    def remove_outliers(
+        df_outliers: pd.DataFrame,
+        *,
+        outlier_suffix: str = "_outlier",
+        columns: Optional[Iterable[str]] = None,
+        how: str = "any",
+    ) -> pd.DataFrame:
+        """
+            Remove rows flagged as outliers.
+
+            Parameters
+            ----------
+            df_outliers : pd.DataFrame
+                DataFrame containing outlier flag columns
+            outlier_suffix : str
+                Suffix used for outlier columns (default: "_outlier")
+            columns : iterable[str], optional
+                Base column names to consider (e.g. ["Sales", "Unit"]).
+                If None, all *_outlier columns are used.
+            how : {"any", "all"}
+                - "any": remove row if ANY column is an outlier
+                - "all": remove row only if ALL specified columns are outliers
+
+            Returns
+            -------
+            pd.DataFrame
+                DataFrame with outlier rows removed
+            """
+
+        # Identify outlier flag columns
+        if columns:
+            outlier_cols = [f"{c}{outlier_suffix}" for c in columns]
+        else:
+            outlier_cols = [
+                c for c in df_outliers.columns if c.endswith(outlier_suffix)
+            ]
+
+        if not outlier_cols:
+            raise ValueError("No outlier flag columns found")
+
+        mask = (
+            df_outliers[outlier_cols].any(axis=1)
+            if how == "any"
+            else df_outliers[outlier_cols].all(axis=1)
+        )
+
+        # Keep non-outlier rows
+        return df_outliers.loc[~mask].copy()
