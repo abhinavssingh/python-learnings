@@ -144,8 +144,17 @@ sunburst_fig.update_traces(textinfo="label+percent parent", hovertemplate="<b>%{
                            "Sales: %{value}<br>" + "Parent %: %{percentParent:.1%}<br>" + "Total %: %{percentRoot:.1%}"
                            )
 
-monthly_sales_pie = px.pie(df_clean, values="Sales", names="Month_Name", title="Monthly Sales Distribution",
-                           hover_data=['Unit'])
+sunburst_monthly_df = (
+    df_clean.groupby(["Month_Name", "Group"], as_index=False)
+    .agg(Total_Sales=("Sales", "sum"))
+)
+
+monthly_sales_sunburst = px.sunburst(sunburst_monthly_df, path=["Month_Name", "Group"], values="Total_Sales",
+                                     title="Monthly Sales Distribution by Customer Group")
+
+monthly_sales_sunburst.update_traces(textinfo="label+percent parent", hovertemplate="<b>%{label}</b><br>" +
+                                     "Sales: %{value}<br>" + "Parent %: %{percentParent:.1%}<br>" + "Total %: %{percentRoot:.1%}"
+                                     )
 
 sales_histogram_fig_monthly = px.histogram(df_copy, x="Month_Name", color="Sales Category", facet_col="State",
                                            barmode="group", labels={"Month_Name": "Month"}, title="Monthly Sales Analysis using Histogram",)
@@ -166,23 +175,23 @@ day_histogram_clean_fig_fq = px.histogram(df_clean, x="Day_Name", color="Group",
 time_histogram_clean_fig_fq = px.histogram(df_clean, x="Time", color="Group", facet_col="State",
                                            barmode="group", title="Time-based Sales Analysis using Histogram",)
 
-state_group_df = (df_clean.groupby(["State", "Group"], as_index=False)["Sales"].sum())
-state_group_matrix = state_group_df.pivot(index="Group", columns="State", values="Sales").fillna(0)
+state_group_df = (df_clean.groupby(["Group", "State"], as_index=False)["Sales"].sum())
+state_group_matrix = state_group_df.pivot(index="State", columns="Group", values="Sales").fillna(0)
 state_group_pct = state_group_matrix.div(state_group_matrix.sum(axis=1), axis=0,) * 100
 
 state_group_fig = px.imshow(state_group_pct.round(1), text_auto=".1f", color_continuous_scale="Blues",
-                            labels={"x": "State", "y": "Customer Group", "color": "Sales %"
+                            labels={"x": "Customer Group", "y": "State", "color": "Sales %"
                                     }, title="Sales Distribution (%) by State & Customer Group")
 
-state_month_df = (df_clean.groupby(["State", "Month_Name"], as_index=False)["Sales"].sum())
-state_month_matrix = state_month_df.pivot(index="Month_Name", columns="State", values="Sales").fillna(0)
+state_month_df = (df_clean.groupby(["Month_Name", "State"], as_index=False)["Sales"].sum())
+state_month_matrix = state_month_df.pivot(index="State", columns="Month_Name", values="Sales").fillna(0)
 state_month_matrix_pct = state_month_matrix.div(state_month_matrix.sum(axis=1), axis=0,) * 100
 
 state_month_fig = px.imshow(state_month_matrix_pct, text_auto=True, color_continuous_scale="Oxy",
-                            labels={"x": "State", "y": "Month", "color": "Sales %"
+                            labels={"x": "Month", "y": "State", "color": "Sales %"
                                     }, title="Sales Distribution (%) by State & Month")
 
-time_group_df = (df_clean.groupby(["Time", "Group"], as_index=False)["Sales"].sum())
+time_group_df = (df_clean.groupby(["Group", "Time"], as_index=False)["Sales"].sum())
 time_group_matrix = (time_group_df.pivot(index="Time", columns="Group", values="Sales").fillna(0))
 time_group_matrix_pct = time_group_matrix.div(time_group_matrix.sum(axis=1), axis=0,) * 100
 
@@ -191,11 +200,11 @@ time_group_fig = px.imshow(time_group_matrix_pct, text_auto=True, color_continuo
                                    }, title="Sales Heatmap: Time of Day vs Customer Group")
 
 month_time_df = (df_clean.groupby(["Month_Name", "Time"], as_index=False)["Sales"].sum())
-month_time_matrix = month_time_df.pivot(index="Month_Name", columns="Time", values="Sales").fillna(0)
+month_time_matrix = month_time_df.pivot(index="Time", columns="Month_Name", values="Sales").fillna(0)
 month_time_matrix_pct = month_time_matrix.div(month_time_matrix.sum(axis=1), axis=0,) * 100
 
 month_time_fig = px.imshow(month_time_matrix_pct, text_auto=True, color_continuous_scale="YlOrRd",
-                           labels={"x": "Time of Day", "y": "Month", "color": "Sales %"
+                           labels={"x": "Month", "y": "Time of Day", "color": "Sales %"
                                    }, title="Sales Heatmap: Month vs Time of Day")
 
 weekday_state_df = (df_clean.groupby(["Day_Name", "State"], as_index=False)["Sales"].sum())
@@ -210,10 +219,36 @@ weekly_state_df = (df_clean.groupby(["Week_Of_Month", "State"], as_index=False)[
 weekly_state_matrix = weekly_state_df.pivot(index="State", columns="Week_Of_Month", values="Sales").fillna(0)
 weekly_state_matrix_pct = weekly_state_matrix.div(weekly_state_matrix.sum(axis=1), axis=0,) * 100
 
-weekly_state_fig = px.imshow(weekly_state_matrix_pct, text_auto=True, color_continuous_scale="Bluered_r",
+weekly_state_fig = px.imshow(weekly_state_matrix_pct, text_auto=True, color_continuous_scale="Geyser",
                              labels={"x": "Week of Month", "y": "State", "color": "Sales %"
                                      }, title="Sales Heatmap: Week of Month vs State")
 
+insights_pre = """
+### Key Insights from Sales Analysis:
+1. **Outliers Impact**: The box plots revealed significant outliers in both Units and Sales across multiple states.
+These outliers skewed the distribution and could potentially mislead analysis if not addressed.
+2. So, I have removed the outliers using IQR method and applied log transformation to handle skewness, which resulted in a more normalized distribution,
+making it easier to identify trends and patterns in the data.
+3. **State-wise Sales Distribution**: The pie charts showed that certain states contributed very low to total sales. Except NSW, VIC and SA,
+all other states had a very small share of sales. As head of sales, we can execure some marketing campaigns in those states to increase the sales.
+4. Pie charts also highlighted that October and December were the top performing months in terms of sales, while November had a significantly lower sales volume.
+This suggests that there may be seasonal factors influencing sales, and we can plan promotions or inventory accordingly.
+5. The sunburst chart clearly illustrated the sales distribution across different dimensions (State → Month → Week → Day),
+ highlighting specific periods and locations that contributed most to sales.
+ 6. The Sunburst chart also reveales that December had the highest sales, followed by October, while November had the lowest sales.
+ This seasonal trend can be crucial for inventory management and marketing strategies.
+7. **Customer Group Analysis**: The heatmaps indicated that certain  Men customer groups had higher sales in WA state while lowest
+sales in WA state for woemen customer groups. This insight can help in, for targeted marketing strategies.
+8. **Monthly and Time-based Trends**: The heatmaps indicated that for October month, the sales were low in the afternoon time,
+for November and December months sales were low in the evening. This suggests that customer purchasing behavior may vary based on the time of day and month,
+which can be useful for scheduling promotions and staffing.
+9. **Weekday vs State Analysis**: The heatmap revealed that sales were generally higher on weekdays (Tuesdays, Wednesdays and Thursdays) compared to weekends across most states, with some exceptions.
+This insight can help in optimizing staffing and promotional efforts based on expected customer traffic.
+10. All data from single quarter (4th quarter of 2020) and the analysis is based on that data, so the insights may not be applicable to other quarters
+or years without further analysis.
+11. There is not significant difference in the weekly (excpet alst week of the month) sales distribution across different states, which suggests that the sales performance is relatively consistent
+across the regions.
+"""
 # use for the large dataset
 content.append(
     builder.full_width_card(
@@ -270,7 +305,7 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(pie_fig, " State Wise Sales Data with Outliers"),
     plotRenderer.plot_to_card(clean_pie_fig, " State Wise Sales Data without Outliers (Cleaned)"),
     plotRenderer.plot_to_card(sunburst_fig, " Sales Distribution (%) by State → Month → Week → Day"),
-    plotRenderer.plot_to_card(monthly_sales_pie, " Monthly Sales Distribution"),
+    plotRenderer.plot_to_card(monthly_sales_sunburst, " Monthly Sales Distribution"),
     plotRenderer.plot_to_card(sales_histogram_clean_fig_monthly, " Monthly Sales Analysis using Histogram (Cleaned)"),
     plotRenderer.plot_to_card(fq_histogram_clean_fig_fq, " Fiscal Quarterly Sales Analysis using Histogram (Cleaned)"),
     plotRenderer.plot_to_card(day_histogram_clean_fig_fq, " Daily Sales Analysis using Histogram"),
