@@ -296,6 +296,7 @@ content.append(
         builder.card("Month vs Time data:", builder.render_dataframe(month_time_df)),
         builder.card("Weekday vs State data:", builder.render_dataframe(weekday_state_df)),
         builder.card("Week of Month vs State data:", builder.render_dataframe(weekly_state_df)),
+        builder.card("Data Insights from the analysis:", builder.render_pre(insights_pre)),
     ])
 )
 
