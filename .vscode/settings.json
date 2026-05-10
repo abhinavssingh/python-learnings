@@ -1,28 +1,24 @@
 {
-    "python-envs.pythonProjects": [
-        {
-            "path": "python-learnings",
-            "envManager": "ms-python.python:venv",
-            "packageManager": "ms-python.python:pip"
-        }
-    ],
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.autopep8",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
-    "isort.args":["--profile", "black"],
-    "autopep8.args": [
-        "--max-line-length=150",
-        "--aggressive",
-        "--aggressive"
-    ],
-    "python.linting.flake8Enabled": true,
-    "flake8.args": [
-        "--max-line-length=150",
-        "--extend-ignore=E203,W503"
-    ]
+  "python-envs.pythonProjects": [
+    {
+      "path": "python-learnings",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ],
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+
+    // IMPORTANT: prevent VS Code from interfering
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  "isort.args": ["--profile", "black"],
+  "autopep8.args": ["--max-line-length=150", "--aggressive", "--aggressive"],
+  "flake8.args": ["--max-line-length=150", "--extend-ignore=E203,W503"]
 }

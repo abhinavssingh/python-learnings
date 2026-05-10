@@ -1,15 +1,13 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from plotly.subplots import make_subplots
 from scipy.stats.mstats import winsorize
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.reports.report_utils import ReportUtils as ru
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 
 def main():

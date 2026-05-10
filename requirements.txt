@@ -13,3 +13,5 @@ plotly>=6.5.2
 pytailwindcss>=0.3.0
 editorconfig-checker>=3.6.1
 sympy>=1.14.0
+flake8>=7.3.0
+isort>=7.3.0
