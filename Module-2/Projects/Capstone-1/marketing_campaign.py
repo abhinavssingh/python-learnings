@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import statsmodels.api as sm
 from scipy import stats
 from scipy.stats import spearmanr
@@ -22,6 +23,7 @@ def main():
 
 # initialization and set variable
 content = []
+dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 alpha = .05
@@ -43,6 +45,7 @@ df_copy = dfh.insert_column_after(
     df_copy, after_col="Income", new_col="Log_Income", values=log_income, inplace=True)
 
 df_copy['Dt_Customer'] = pd.to_datetime(df_copy['Dt_Customer'])
+df_copy["ISO3"] = df_copy["Country"].apply(dfh.country_to_iso3)
 
 # Create variables to represent the total number of children, age, and total spending.
 df_copy = dfh.insert_column_after(
@@ -136,6 +139,94 @@ education_complaints = (df_clean.loc[df_clean['Complain'] == 1, education_cols]
 
 education_complaints['Education'] = (education_complaints['Education'].str.replace('Education_', '', regex=False))
 
+country_revenue_df = (df_clean.groupby("ISO3", as_index=False).agg(Total_Revenue=("TotalSpend", "sum")))
+
+campaign_cols = ["AcceptedCmp1", "AcceptedCmp2", "AcceptedCmp3", "AcceptedCmp4", "AcceptedCmp5"]
+
+df_clean["AcceptedAny"] = df_clean[campaign_cols].sum(axis=1).gt(0)
+
+campaign_country_df = (df_clean.groupby("ISO3", as_index=False).agg(Acceptance_Rate=("AcceptedAny", "mean")))
+
+campaign_country_df["Acceptance_Rate"] *= 100
+
+visual_recommednation = """
+    Plotly was chosen over Seaborn because:
+    - Interactive dashboards improve decision-making
+    - Executives can drill down by State, Group, Time
+    - Suitable for large datasets (7478 rows)
+    - Only those countries are mapped on plot whose ISO
+      Code is correct.
+    """
+
+marketing_kpi_df = pd.DataFrame([
+    {
+        "KPI": "Total Customers",
+        "Value": f"{len(df_clean):,}",
+        "Business Meaning": "Number of customers included after data cleaning"
+    },
+    {
+        "KPI": "Average Customer Income",
+        "Value": f"${df_clean['Income'].mean():,.0f}",
+        "Business Meaning": "Mean household income used for customer segmentation"
+    },
+    {
+        "KPI": "Average Total Spend per Customer",
+        "Value": f"${df_clean['TotalSpend'].mean():,.0f}",
+        "Business Meaning": "Average total customer lifetime spending during analysis period"
+    },
+    {
+        "KPI": "Average Purchases per Customer",
+        "Value": f"{df_clean['TotPurchase'].mean():.1f}",
+        "Business Meaning": "Overall customer purchasing engagement"
+    },
+    {
+        "KPI": "Campaign Acceptance Rate",
+        "Value": f"{(df_clean[['AcceptedCmp1', 'AcceptedCmp2', 'AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5']]
+                     .sum(axis=1).gt(0).mean() * 100):.1f}%",
+        "Business Meaning": "Percentage of customers who accepted at least one marketing campaign"
+    },
+    {
+        "KPI": "Top Revenue Product",
+        "Value": product_revenue.iloc[0]['Product'],
+        "Business Meaning": "Product category generating the highest total revenue"
+    },
+    {
+        "KPI": "Most Effective Sales Channel",
+        "Value": total_purchases_by_channel_without_outliers
+        .idxmax().replace('Num', '').replace('Purchases', ''),
+        "Business Meaning": "Channel contributing the highest share of total purchases"
+    },
+    {
+        "KPI": "Age-Based Store Purchasing Impact",
+        "Value": "Significant",
+        "Business Meaning": "Older customers make significantly more in-store purchases than younger customers"
+    },
+    {
+        "KPI": "Family Status vs Online Purchases",
+        "Value": "Significant",
+        "Business Meaning": "Customers with children purchase less via web, indicating convenience constraints"
+    },
+    {
+        "KPI": "Channel Interaction Effect (Age × Channel)",
+        "Value": "Not Significant",
+        "Business Meaning": "No interaction effect found; channel preference does not significantly differ by age"
+    },
+    {
+        "KPI": "Store vs Alternate Channel Relationship",
+        "Value": "Strong Positive",
+        "Business Meaning": "Web and catalog channels complement rather than cannibalize in-store purchases"
+    },
+    {
+        "KPI": "US vs Non‑US Purchase Performance",
+        "Value": "Inconclusive",
+        "Business Meaning": "Sample size insufficient to confirm higher purchase volume in the US market"
+    },
+    {
+        "KPI": "Outliers Removed (%)",
+        "Value": f"{round(100 * (1 - len(df_clean) / len(df_copy)), 2)}%",
+        "Business Meaning": "Data cleaned to improve statistical reliability and modeling accuracy"
+    }
+])
 
 # t and ANOVA Test | Older individuals may not possess the same level
 # of technological proficiency and may, therefore, lean toward traditional
@@ -285,7 +376,6 @@ corr_without_ouliers_fig = px.imshow(df_clean[corr_columns].corr(), text_auto='.
 corr_age_acceptance_fig = px.imshow(df_clean[['Age', 'AcceptedCmp1', 'AcceptedCmp2', 'AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5']].corr(),
                                     text_auto='.2f', color_continuous_scale='viridis', title='Correlation Matrix Age vs Campaign Acceptance')
 
-
 revenue_bar_fig = px.bar(product_revenue, x='Product', y='Revenue', color='Revenue', text='Revenue',
                          title='Product-wise Revenue Performance', color_continuous_scale='Viridis')
 
@@ -304,77 +394,91 @@ children_spend_fig.update_layout(xaxis_title='Number of Children at Home', yaxis
 
 
 complaint_edu_fig = px.bar(education_complaints, x='Education', y='Complaint_Count',
-                           title='Complaint Count by Education Level', text='Complaint Count')
+                           title='Complaint Count by Education Level', text='Complaint_Count')
+
+marketing_kpi_fig = go.Figure(data=[go.Table(
+    columnwidth=[0.25, 0.15, 0.60],
+    header=dict(
+        values=marketing_kpi_df.columns.tolist(),
+        fill_color="#1f3d4f", font=dict(color="white", size=13), align="left", height=38
+    ),
+    cells=dict(
+        values=[marketing_kpi_df[col].tolist() for col in marketing_kpi_df.columns],
+        fill_color=[["#f7f9fb", "#ffffff"] * len(marketing_kpi_df)],
+        font=dict(color="#1f2933", size=12), align="left", height=34
+    ))])
+
+marketing_kpi_fig.update_layout(
+    title="Marketing Campaign – Key Performance Indicators", margin=dict(l=10, r=10, t=30, b=10), height=450)
+
+country_revenue_map = px.choropleth(country_revenue_df, locations="ISO3", locationmode="ISO-3", color="Total_Revenue",
+                                    color_continuous_scale="Viridis", title="Total Revenue by Country", labels={"Total_Revenue": "Total Revenue"})
+
+country_revenue_map.update_layout(template="none", geo=dict(showframe=False, showcoastlines=True)
+                                  )
+
+campaign_map = px.choropleth(campaign_country_df, locations="ISO3", locationmode="ISO-3",
+                             color="Acceptance_Rate", color_continuous_scale="Plasma", title="Campaign Acceptance Rate (%) by Country",
+                             labels={"Acceptance_Rate": "Acceptance Rate (%)"})
+
+campaign_map.update_layout(template="none")
 
 
-insights_pre = """
-1. During the dataframe read only, i have optimized the dataframe
-means changing the datatype.
-2. There was an empty space in the Income column that i removed.
-3. Removed $ and comma from Income column value.
-4. Converted Dt_Customer column to datetime.
-5. There were 24 places where Income vale was missing. So, I have
-updated as per their education/marital_status groups average.
-6. Performed Outlier techniques and removed outliears.
-7. Visualize the data with and without outliers
-8. All Hypothesis test results are published as PRE-TEXT into report.
-9. For last hypothesis testing data is insufficient that's why NAN in
-the report. We are getting SmallSampleWarning: One or more sample arguments
-is too small; all returned values will be NaN. See documentation for sample
-size requirements.
-10. All required visualization is in the HTML report.
-"""
+country_purchase_map = px.choropleth(df_clean.groupby("ISO3", as_index=False).agg(Total_Purchases=("TotPurchase", "sum")),
+                                     locations="ISO3", locationmode="ISO-3", color="Total_Purchases", color_continuous_scale="Blues",
+                                     title="Total Purchases by Country")
 
 # use for the large dataset
 content.append(
-    builder.full_width_card(
-        "Original Marketing Campaign Interactive Preview",
-        builder.render_dataframe_collapsible(df, initial_rows=15)
-    )
-)
+    builder.full_width_card("Original Marketing Campaign Interactive Preview", builder.render_dataframe_collapsible(df, initial_rows=15)
+                            ))
 
 content.append(
-    builder.full_width_card(
-        "Modified Marketing Campaign Interactive Preview",
-        builder.render_dataframe_collapsible(df_copy, initial_rows=15)
-    )
-)
+    builder.full_width_card("Modified Marketing Campaign Interactive Preview", builder.render_dataframe_collapsible(df_copy, initial_rows=15)
+                            ))
+
+content.append(builder.full_width_card("Outliers Dataframe", builder.render_dataframe_collapsible(df_outliers, initial_rows=15)
+                                       ))
 
 content.append(
-    builder.full_width_card(
-        "Outliers Dataframe",
-        builder.render_dataframe_collapsible(df_outliers, initial_rows=15)
-    )
-)
+    builder.full_width_card("Cleaned Dataframe after feature engineering operations", builder.render_dataframe_collapsible(df_clean, initial_rows=15)
+                            ))
 
 content.append(
-    builder.full_width_card(
-        "Cleaned Dataframe after feature engineering operations",
-        builder.render_dataframe_collapsible(df_clean, initial_rows=15)
-    )
+    builder.grid([
+        builder.card("Information of the Original Marketing Dataframe is:", builder.render_pre(df_info_str)),
+        builder.card("Optimized Dataframe report:", builder.render_pre(report)),
+        builder.card("Information of the Modified Marketing Dataframe is:", builder.render_pre(df_copy_info_str)),
+        builder.card("Description of the Modified Marketing Dataframe is:", builder.render_dict(df_copy.select_dtypes(
+            include=["number"]).describe().to_dict())),
+        builder.card("Total Spend channel wise with outliers", builder.render_series(total_purchases_by_channel)),
+        builder.card("Description of the Cleaned Marketing Dataframe is:", builder.render_dict(df_clean.select_dtypes(
+            include=["number"]).describe().to_dict())),
+        builder.card("Total Spend channel wise without outliers", builder.render_series(total_purchases_by_channel_without_outliers)),
+        builder.card("Dashboard Navigation",
+                     """<a href="marketing_campaign_executive_dashboard.html" target="_blank" style="display:inline-block;padding:12px 18px;background:#1f3b4d;color:white;
+               text-decoration:none;border-radius:6px;font-weight:600;">📈 View Interactive Marketing Executive Dashboard
+        </a>""")
+    ])
 )
 
-
-content.append(
-    builder.grid(
-        [
-            builder.card("Information of the Original Marketing Dataframe is:", builder.render_pre(df_info_str)),
-            builder.card("Optimized Dataframe report:", builder.render_pre(report)),
-            builder.card("Information of the Modified Marketing Dataframe is:", builder.render_pre(df_copy_info_str)),
-            builder.card("Description of the Modified Marketing Dataframe is:", builder.render_dict(df_copy.select_dtypes(
-                include=["number"]).describe().to_dict())),
-            builder.card("Total Spend channel wise with outliers", builder.render_series(total_purchases_by_channel)),
-            builder.card("Description of the Cleaned Marketing Dataframe is:", builder.render_dict(df_clean.select_dtypes(
-                include=["number"]).describe().to_dict())),
-            builder.card("Total Spend channel wise without outliers", builder.render_series(total_purchases_by_channel_without_outliers)),
-            builder.card("Data Insights after analysis of the Marketing campaign data", builder.render_pre(insights_pre)),
-            builder.card("T-Test result for Age vs Store", builder.render_dict(t_result)),
-            builder.card("Two Way Anova Test Result for Age vs Store", builder.render_dict(two_way_anova_result)),
-            builder.card("T-Test Result for Children vs Web", builder.render_dict(t_child_result)),
-            builder.card("Correlation Test Result for Store vs Alternate Channel", builder.render_dict(corr_result_alt_store)),
-            builder.card("T-Test Result for US vs Non-US", builder.render_dict(country_stat_result)),
-        ])
+dashboard.append(
+    builder.full_width_card("Execute Summary of the Marketing Campaign Analysis", builder.render_dataframe_collapsible(marketing_kpi_df, 10))
 )
+
+dashboard.append(
+    builder.grid([
+        builder.card("T-Test result for Age vs Store", builder.render_dict(t_result)),
+        builder.card("Two Way Anova Test Result for Age vs Store", builder.render_dict(two_way_anova_result)),
+        builder.card("T-Test Result for Children vs Web", builder.render_dict(t_child_result)),
+        builder.card("Correlation Test Result for Store vs Alternate Channel", builder.render_dict(corr_result_alt_store)),
+        builder.card("T-Test Result for US vs Non-US", builder.render_dict(country_stat_result)),
+        builder.card("Visualization Recommendation", builder.render_pre(visual_recommednation)),
+        builder.card("Dashboard Navigation",
+                     """<a href="marketing_campaign_report.html" target="_blank" style="display:inline-block;padding:12px 18px;background:#1f3b4d;color:white;
+               text-decoration:none;border-radius:6px;font-weight:600;">📈 View Interactive Marketing Dashboard
+        </a>""")
+    ]))
 
 content.append(builder.chart_grid([
     plotRenderer.plot_to_card(hist_box_fig_1, " Histogram Box Graph Country as category with Outliers"),
@@ -383,20 +487,33 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(hist_box_fig_4, " Histogram Box Graph Age as category without Outliers"),
     plotRenderer.plot_to_card(corr_with_outliers_fig, " Correlation Heatmap with Outliers"),
     plotRenderer.plot_to_card(corr_without_ouliers_fig, " Correlation Heatmap without Outliers"),
-    plotRenderer.plot_to_card(anova_line_fig, " Two Way ANOVA test Line Graph"),
-    plotRenderer.plot_to_card(anova_f_fig, " Two Way ANOVA F-Distribution"),
-    plotRenderer.plot_to_card(revenue_bar_fig, " Top Revenue Products vs lowest Revenue products"),
-    plotRenderer.plot_to_card(corr_age_acceptance_fig, " Correlation Heatmap Age vs Camapiagn Acceptance"),
-    plotRenderer.plot_to_card(campaign_accepted_fig, " Customers Who Accepted the Last Campaign by Country"),
-    plotRenderer.plot_to_card(children_spend_fig, " Average Total Expenditure vs Number of Children at Home"),
-    plotRenderer.plot_to_card(complaint_edu_fig, " Complaint Count by Education Level"),
 ]))
+
+dashboard.append(
+    builder.chart_grid([
+        plotRenderer.plot_to_card(country_revenue_map, "Total Revenue by Country"),
+        plotRenderer.plot_to_card(campaign_map, "Campaign Acceptance Rate by Country"),
+        plotRenderer.plot_to_card(country_purchase_map, "Total Purchases by Country"),
+        plotRenderer.plot_to_card(revenue_bar_fig, " Top Revenue Products vs lowest Revenue products"),
+        plotRenderer.plot_to_card(corr_age_acceptance_fig, " Correlation Heatmap Age vs Camapiagn Acceptance"),
+        plotRenderer.plot_to_card(campaign_accepted_fig, " Customers Who Accepted the Last Campaign by Country"),
+        plotRenderer.plot_to_card(children_spend_fig, " Average Total Expenditure vs Number of Children at Home"),
+        plotRenderer.plot_to_card(complaint_edu_fig, " Complaint Count by Education Level"),
+        plotRenderer.plot_to_card(anova_line_fig, " Two Way ANOVA test Line Graph"),
+        plotRenderer.plot_to_card(anova_f_fig, " Two Way ANOVA F-Distribution"),
+        plotRenderer.plot_to_card(marketing_kpi_fig, " Marketing Campaign – Key Performance Indicator"),
+    ])
+)
 
 html_doc = builder.build_page(
     "Marketing Campaign  Report",
     "\n".join(content)
 )
 
+dashboard_doc = builder.build_page(
+    "Marketing Campaign Execute  Dashboard",
+    "\n".join(dashboard)
+)
 
 # html_doc is the string you already have
 output_path = ru.save_html_report(
@@ -406,8 +523,17 @@ output_path = ru.save_html_report(
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True
 )
-print(f"Wrote report to: {output_path}")
 
+dashboard_path = ru.save_html_report(
+    __file__,
+    "marketing_campaign_executive_dashboard.html",   # file name
+    dashboard_doc,
+    subfolder="reports",                # or 'reports' to keep files in a subdir
+    open_in_browser=False
+)
+
+print(f"Wrote report to: {output_path}")
+print(f"Wrote report to: {dashboard_path}")
 
 if __name__ == "__main__":
     main()

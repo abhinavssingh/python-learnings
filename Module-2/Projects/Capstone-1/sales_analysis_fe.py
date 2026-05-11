@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.stats.mstats import winsorize
 
@@ -18,6 +19,7 @@ def main():
 
 # initialization and set variable
 content = []
+dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 
@@ -181,6 +183,9 @@ state_group_fig = px.imshow(state_group_pct.round(1), text_auto=".1f", color_con
                             labels={"x": "Customer Group", "y": "State", "color": "Sales %"
                                     }, title="Sales Distribution (%) by State & Customer Group")
 
+state_group_bar = px.bar(state_group_df, x="State", y="Sales", color="Group",
+                         barmode="stack", title="State-wise Sales by Customer Group", labels={"Sales": "Sales (AUD)"})
+
 state_month_df = (df_clean.groupby(["Month_Name", "State"], as_index=False)["Sales"].sum())
 state_month_matrix = state_month_df.pivot(index="State", columns="Month_Name", values="Sales").fillna(0)
 state_month_matrix_pct = state_month_matrix.div(state_month_matrix.sum(axis=1), axis=0,) * 100
@@ -221,64 +226,93 @@ weekly_state_fig = px.imshow(weekly_state_matrix_pct, text_auto=True, color_cont
                              labels={"x": "Week of Month", "y": "State", "color": "Sales %"
                                      }, title="Sales Heatmap: Week of Month vs State")
 
-insights_pre = """
-### Key Insights from Sales Analysis:
-1. **Outliers Impact**: The box plots revealed significant outliers in both Units and Sales across multiple states.
-These outliers skewed the distribution and could potentially mislead analysis if not addressed.
-2. So, I have removed the outliers using IQR method and applied log transformation to handle skewness, which resulted in a more normalized distribution,
-making it easier to identify trends and patterns in the data.
-3. **State-wise Sales Distribution**: The pie charts showed that certain states contributed very low to total sales. Except NSW, VIC and SA,
-all other states had a very small share of sales. As head of sales, we can execure some marketing campaigns in those states to increase the sales.
-4. Pie charts also highlighted that October and December were the top performing months in terms of sales, while November had a significantly lower sales volume.
-This suggests that there may be seasonal factors influencing sales, and we can plan promotions or inventory accordingly.
-5. The sunburst chart clearly illustrated the sales distribution across different dimensions (State → Month → Week → Day),
- highlighting specific periods and locations that contributed most to sales.
- 6. The Sunburst chart also reveales that December had the highest sales, followed by October, while November had the lowest sales.
- This seasonal trend can be crucial for inventory management and marketing strategies.
-7. **Customer Group Analysis**: The heatmaps indicated that certain  Men customer groups had higher sales in WA state while lowest
-sales in WA state for woemen customer groups. This insight can help in, for targeted marketing strategies.
-8. **Monthly and Time-based Trends**: The heatmaps indicated that for October month, the sales were low in the afternoon time,
-for November and December months sales were low in the evening. This suggests that customer purchasing behavior may vary based on the time of day and month,
-which can be useful for scheduling promotions and staffing.
-9. **Weekday vs State Analysis**: The heatmap revealed that sales were generally higher on weekdays (Tuesdays, Wednesdays and Thursdays) compared to weekends across most states, with some exceptions.
-This insight can help in optimizing staffing and promotional efforts based on expected customer traffic.
-10. All data from single quarter (4th quarter of 2020) and the analysis is based on that data, so the insights may not be applicable to other quarters
-or years without further analysis.
-11. There is not significant difference in the weekly (excpet alst week of the month) sales distribution across different states, which suggests that the sales performance is relatively consistent
-across the regions.
-"""
+visual_recommednation = """
+    Plotly was chosen over Seaborn because:
+    - Interactive dashboards improve decision-making
+    - Executives can drill down by State, Group, Time
+    - Suitable for large datasets (7478 rows)
+    """
+
+kpi_df = pd.DataFrame([
+    {
+        "KPI": "Total Sales (AUD)",
+        "Value": f"{df_clean['Sales'].sum():,.0f}",
+        "Business Meaning": "Total revenue generated during Q4 2020"
+    },
+    {
+        "KPI": "Total Units Sold",
+        "Value": f"{df_clean['Unit'].sum():,.0f}",
+        "Business Meaning": "Total number of units sold across all transactions"
+    },
+    {
+        "KPI": "Average Sales per Transaction",
+        "Value": f"{df_clean['Sales'].mean():,.0f}",
+        "Business Meaning": "Average order value per transaction"
+    },
+    {
+        "KPI": "Median Sales Value",
+        "Value": f"{df_clean['Sales'].median():,.0f}",
+        "Business Meaning": "Typical transaction size excluding skew from outliers"
+    },
+    {
+        "KPI": "Sales Standard Deviation",
+        "Value": f"{df_clean['Sales'].std():,.0f}",
+        "Business Meaning": "Sales variability indicating consistency of revenue"
+    },
+    {
+        "KPI": "Outliers Removed (%)",
+        "Value": f"{round(100 * (1 - len(df_clean) / len(df_copy)), 2)}%",
+        "Business Meaning": "Data cleaned to improve statistical reliability"
+    }
+])
+
+kpi_table_fig = go.Figure(
+    data=[
+        go.Table(
+            columnwidth=[0.25, 0.15, 0.60],   # control column widths
+            header=dict(values=["<b>KPI</b>", "<b>Value</b>", "<b>Business Meaning</b>"],
+                        fill_color="#1f3d4f", font=dict(color="white", size=13), align="left", height=38
+                        ),
+            cells=dict(
+                values=[kpi_df["KPI"], kpi_df["Value"], kpi_df["Business Meaning"]],
+                fill_color=[["#f7f9fb", "#ffffff"] * len(kpi_df)],
+                font=dict(color="#1f2933", size=12), align="left", height=34
+            ))
+    ])
+
+kpi_table_fig.update_layout(title="Key Performance Indicators – Sales Summary",
+                            margin=dict(l=10, r=10, t=30, b=10))
+
+group_sales = (df_clean.groupby("Group", as_index=False).agg(Total_Sales=("Sales", "sum"))
+               .sort_values("Total_Sales", ascending=False))
+
+group_sales_fig = px.bar(group_sales, x="Group", y="Total_Sales", text_auto=".2s", title="Total Sales by Customer Group",
+                         labels={"Total_Sales": "Sales (AUD)", "Group": "Customer Group"},)
+
+group_sales_fig.update_layout(yaxis_tickformat=",", height=400)
+
+time_sales = (df_clean.groupby("Time", as_index=False).agg(Total_Sales=("Sales", "sum")).sort_values("Total_Sales", ascending=False))
+
+time_sales_fig = px.bar(time_sales, x="Time", y="Total_Sales", text_auto=".2s", title="Sales by Time of Day",
+                        labels={"Time": "Time of Day", "Total_Sales": "Sales (AUD)"},)
+
+time_sales_fig.update_layout(yaxis_tickformat=",", height=450)
+
 # use for the large dataset
-content.append(
-    builder.full_width_card(
-        "Original Sales Analysis for AAL Interactive Preview",
-        builder.render_dataframe_collapsible(df, initial_rows=15)
-    )
-)
+content.append(builder.full_width_card("Original Sales Analysis for AAL Interactive Preview",
+                                       builder.render_dataframe_collapsible(df, initial_rows=15)))
 
 outlier_rows = df_outliers[
     df_outliers.filter(like="_outlier").any(axis=1)
 ]
 
-content.append(
-    builder.full_width_card(
-        "Modified Dataframe with Log Transformations and Outliers:",
-        builder.render_dataframe_collapsible(df_outliers, initial_rows=15)
-    )
-)
+content.append(builder.full_width_card("Modified Dataframe with Log Transformations and Outliers:",
+                                       builder.render_dataframe_collapsible(df_outliers, initial_rows=15)))
 
-content.append(
-    builder.full_width_card(
-        "Winsorized Dataframe:",
-        builder.render_dataframe_collapsible(df_winsorized, initial_rows=15)
-    )
-)
-
-content.append(
-    builder.full_width_card(
-        "Cleaned Dataframe after removing Outliers and Adding Fiscal Fields:",
-        builder.render_dataframe_collapsible(df_clean, initial_rows=15)
-    )
-)
+content.append(builder.full_width_card("Winsorized Dataframe:",
+                                       builder.render_dataframe_collapsible(df_winsorized, initial_rows=15)))
+content.append(builder.full_width_card("Cleaned Dataframe after removing Outliers and Adding Fiscal Fields:",
+                                       builder.render_dataframe_collapsible(df_clean, initial_rows=15)))
 
 content.append(
     builder.grid([
@@ -287,6 +321,7 @@ content.append(
         builder.card("Unique Value for Unit:", builder.render_series(sorted(df["Unit"].unique()))),
         builder.card("Unique Value for Sales:", builder.render_series(sorted(df["Sales"].unique()))),
         builder.card("Removed Outliers:", builder.render_dataframe(outlier_rows)),
+        builder.card("Cleaned Dataframe description report:", builder.render_dict(df_clean.select_dtypes(include="number").describe().to_dict())),
         builder.card("Sunburst data:", builder.render_dataframe(sunburst_df)),
         builder.card("State vs Customer Group data:", builder.render_dataframe(state_group_df)),
         builder.card("State vs Month data:", builder.render_dataframe(state_month_df)),
@@ -294,9 +329,24 @@ content.append(
         builder.card("Month vs Time data:", builder.render_dataframe(month_time_df)),
         builder.card("Weekday vs State data:", builder.render_dataframe(weekday_state_df)),
         builder.card("Week of Month vs State data:", builder.render_dataframe(weekly_state_df)),
-        builder.card("Data Insights from the analysis:", builder.render_pre(insights_pre)),
-    ])
+        builder.card("Dashboard Navigation",
+                     """<a href="ceo_head_of_sales_dashboard.html" target="_blank" style="display:inline-block;padding:12px 18px;background:#1f3b4d;color:white;
+               text-decoration:none;border-radius:6px;font-weight:600;">📈 View Interactive Sales Executive Dashboard
+        </a>""")
+    ]))
+
+dashboard.append(
+    builder.full_width_card("Key Performance Indicators – Sales Summary", builder.render_dataframe_collapsible(kpi_df, 5))
 )
+
+dashboard.append(
+    builder.grid([
+        builder.card("Visualization Recommendation", builder.render_pre(visual_recommednation)),
+        builder.card("Dashboard Navigation",
+                     """<a href="sales_analysis_report_fe.html" target="_blank" style="display:inline-block;padding:12px 18px;background:#1f3b4d;color:white;
+               text-decoration:none;border-radius:6px;font-weight:600;">📈 View Interactive Sales Dashboard
+        </a>""")
+    ]))
 
 content.append(builder.chart_grid([
     plotRenderer.plot_to_card(unit_box_fig, " Units Box Graph comparison with and without outliers"),
@@ -309,18 +359,29 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(fq_histogram_clean_fig_fq, " Fiscal Quarterly Sales Analysis using Histogram (Cleaned)"),
     plotRenderer.plot_to_card(day_histogram_clean_fig_fq, " Daily Sales Analysis using Histogram"),
     plotRenderer.plot_to_card(time_histogram_clean_fig_fq, " Time-based Sales Analysis using Histogram"),
-    plotRenderer.plot_to_card(state_group_fig, " Sales Distribution (%) by State & Customer Group"),
-    plotRenderer.plot_to_card(state_month_fig, " Sales Distribution (%) by State & Month"),
-    plotRenderer.plot_to_card(time_group_fig, " Sales Heatmap: Time of Day vs Customer Group"),
-    plotRenderer.plot_to_card(month_time_fig, " Sales Heatmap: Month vs Time of Day"),
-    plotRenderer.plot_to_card(weekday_units_fig, " Sales Heatmap: Weekday vs State"),
-    plotRenderer.plot_to_card(weekly_state_fig, " Sales Heatmap: Week of Month vs State"),
 ]))
+
+dashboard.append(
+    builder.chart_grid([
+        plotRenderer.plot_to_card(group_sales_fig, " Total Sales by Customer Group"),
+        plotRenderer.plot_to_card(time_sales_fig, " Sales by Time of Day"),
+        plotRenderer.plot_to_card(state_group_fig, " Sales Distribution (%) by State & Customer Group"),
+        plotRenderer.plot_to_card(state_group_bar, " Sales Distribution (%) by State & Customer Group"),
+        plotRenderer.plot_to_card(state_month_fig, " Sales Distribution (%) by State & Month"),
+        plotRenderer.plot_to_card(time_group_fig, " Sales Heatmap: Time of Day vs Customer Group"),
+        plotRenderer.plot_to_card(month_time_fig, " Sales Heatmap: Month vs Time of Day"),
+        plotRenderer.plot_to_card(weekday_units_fig, " Sales Heatmap: Weekday vs State"),
+        plotRenderer.plot_to_card(weekly_state_fig, " Sales Heatmap: Week of Month vs State"),
+        plotRenderer.plot_to_card(kpi_table_fig, "Key Performance Indicators – Sales Summary"),
+    ]))
 
 html_doc = builder.build_page(
     "Sales Analysis  Report",
-    "\n".join(content)
-)
+    "\n".join(content))
+
+dashboard_doc = builder.build_page(
+    "CEO Head of Sales Dashboard",
+    "\n".join(dashboard))
 
 # html_doc is the string you already have
 output_path = ru.save_html_report(
@@ -330,7 +391,16 @@ output_path = ru.save_html_report(
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True
 )
+
+dashboard_path = ru.save_html_report(
+    __file__,
+    "ceo_head_of_sales_dashboard.html",   # file name
+    dashboard_doc,
+    subfolder="reports",                # or 'reports' to keep files in a subdir
+    open_in_browser=False
+)
 print(f"Wrote report to: {output_path}")
+print(f"Wrote report to: {dashboard_path}")
 
 if __name__ == "__main__":
     main()

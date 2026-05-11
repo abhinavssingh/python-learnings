@@ -149,6 +149,9 @@ Generated interactive charts include:
 - Campaign acceptance by country
 - Children vs total spend trends
 - Complaint count by education
+- Total Revenue by Country through Map Plot
+- Campaign Acceptance Rate by Country through Map Plot
+- Total Purchases by Country through Map Plot
 
 All plots are embedded into the **HTML report**.
 
@@ -169,6 +172,8 @@ All plots are embedded into the **HTML report**.
 ## 📄 Report Output
 
 The script generates an **interactive HTML report**: `reports/marketing_campaign_report.html`
+
+- `reports/marketing_campaign_executive_dashboard.html`
 
 Features:
 

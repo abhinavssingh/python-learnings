@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Literal, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
+import pycountry
 
 from lib.utility.logger import Logger
 
@@ -596,3 +597,10 @@ class DataFrameHelper:
 
         # Keep non-outlier rows
         return df_outliers.loc[~mask].copy()
+
+    @staticmethod
+    def country_to_iso3(country_name):
+        try:
+            return pycountry.countries.lookup(country_name).alpha_3
+        except LookupError:
+            return None

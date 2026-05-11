@@ -194,6 +194,7 @@ ru.save_html_report(
 ## 📁 Output
 
 - **HTML Report:** `reports/sales_analysis_report_fe.html`
+- `reports/ceo_head_of_sales_dashboard.html`
 - Opens automatically in the browser
 - Fully interactive (no server required)
 
