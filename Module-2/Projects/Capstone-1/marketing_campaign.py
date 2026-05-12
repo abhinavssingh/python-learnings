@@ -31,8 +31,6 @@ alpha = .05
 # read daraframe
 df, report = dl.read_dataset("marketing_data.csv", optimize=True, handle_unnamed="drop", return_report=True)
 
-# Income column has white space to trim the white space
-df.columns = df.columns.str.strip()
 df_copy = df.copy()
 
 # Ensure Income is numeric (remove $ and commas if needed)

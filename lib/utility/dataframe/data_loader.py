@@ -55,59 +55,88 @@ class DataLoader:
         *,
         action: Literal["drop", "rename", "ignore"] = "drop",
         rename_prefix: str = "col",
-    ) -> pd.DataFrame:
+    ) -> tuple[pd.DataFrame, str]:
         """
-            Handle unnamed columns in a DataFrame.
+        Handle unnamed columns in a DataFrame and trim whitespace
+        from column names. Returns a report string.
+        """
 
-            Parameters
-            ----------
-            df : pd.DataFrame
-                Input DataFrame
-            action : {"drop", "rename", "ignore"}, default "drop"
-                How to handle unnamed columns.
-            rename_prefix : str, default "col"
-                Prefix to use when renaming unnamed columns.
+        pre_text_lines: list[str] = []
 
-            Returns
-            -------
-            pd.DataFrame
-                Cleaned DataFrame
-            """
+        # ---------------------------------
+        # Trim leading/trailing whitespace
+        # ---------------------------------
 
+        renamed_columns: dict[str, str] = {}
+
+        for col in df.columns:
+            if isinstance(col, str):
+                stripped = col.strip()
+                if col != stripped:
+                    renamed_columns[col] = stripped
+
+        if renamed_columns:
+            df = df.rename(columns=renamed_columns)
+
+            msg = (
+                "Trimmed leading/trailing whitespace from column names:\n"
+                + "\n".join(
+                    f"  '{old}' -> '{new}'"
+                    for old, new in renamed_columns.items()
+                )
+            )
+
+            Logger.info(msg)
+            pre_text_lines.append(msg)
+
+        # ---------------------------------
+        # Detect unnamed columns
+        # ---------------------------------
         unnamed_cols = [
             col
             for col in df.columns
             if col is None
-            or (isinstance(col, str) and col.strip() == "")
+            or (isinstance(col, str) and col == "")
             or (isinstance(col, str) and col.startswith("Unnamed"))
         ]
 
         if not unnamed_cols:
-            return df  # ✅ Nothing to do
+            return df, "\n".join(pre_text_lines)
 
-        Logger.warn(f"Detected unnamed columns: {unnamed_cols}")
+        detected_msg = f"Detected unnamed columns: {unnamed_cols}"
+        Logger.warn(detected_msg)
+        pre_text_lines.append(detected_msg)
 
+        # ---------------------------------
+        # Handle unnamed columns
+        # ---------------------------------
         if action == "drop":
             df = df.drop(columns=unnamed_cols)
-            Logger.info("Unnamed columns dropped")
+            msg = f"Dropped unnamed columns ({len(unnamed_cols)} columns)."
+            Logger.info(msg)
+            pre_text_lines.append(msg)
 
         elif action == "rename":
-            new_names = {}
-            for i, col in enumerate(unnamed_cols, start=1):
-                new_names[col] = f"{rename_prefix}_{i}"
-
+            new_names = {
+                col: f"{rename_prefix}_{i}"
+                for i, col in enumerate(unnamed_cols, start=1)
+            }
             df = df.rename(columns=new_names)
-            Logger.info(f"Unnamed columns renamed: {new_names}")
+            msg = f"Renamed unnamed columns: {new_names}"
+            Logger.info(msg)
+            pre_text_lines.append(msg)
 
         elif action == "ignore":
-            pass
+            msg = "Unnamed columns ignored."
+            Logger.info(msg)
+            pre_text_lines.append(msg)
 
         else:
             raise ValueError(
                 "Invalid action. Use 'drop', 'rename', or 'ignore'."
             )
 
-        return df
+        return df, "\n".join(pre_text_lines)
 
     @overload
     @classmethod
@@ -194,10 +223,15 @@ class DataLoader:
         # ----------------------
         # Handle unnamed columns FIRST
         # ----------------------
-        df = cls._handle_unnamed_columns(
+        df, unnamed_report = cls._handle_unnamed_columns(
             df,
             action=handle_unnamed,
         )
+
+        reports: list[str] = []
+
+        if unnamed_report:
+            reports.append(unnamed_report)
 
         # ----------------------
         # Null check & optimization
@@ -209,9 +243,18 @@ class DataLoader:
                 fill_numeric_with=fill_numeric_with,
             )
 
+            if pre_text:
+                reports.append(pre_text)
+
+            final_report = "\n\n".join(reports)
+
             if return_report:
-                return optimized_df, pre_text
+                return optimized_df, final_report
 
             return optimized_df
+
+        # No optimization case
+        if return_report:
+            return df, "\n\n".join(reports)
 
         return df
