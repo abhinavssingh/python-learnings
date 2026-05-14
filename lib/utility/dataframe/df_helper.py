@@ -62,6 +62,7 @@ class DataFrameHelper:
         "UK": 4,
         "Australia": 7,
         "Japan": 4,
+        "Hungary": 1,
     }
 
     # ✅ Define all supported fields centrally
@@ -604,3 +605,28 @@ class DataFrameHelper:
             return pycountry.countries.lookup(country_name).alpha_3
         except LookupError:
             return None
+
+    @staticmethod
+    def check_nan_inf(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a DataFrame with NaN_count, Inf_count, and Total_issues per column.
+        """
+
+        # Count NaN values
+        nan_count = df.isna().sum()
+
+        # Count Inf values (only numeric columns)
+        numeric_df = df.select_dtypes(include=[np.number])
+        inf_count = pd.Series(0, index=df.columns)
+        inf_count[numeric_df.columns] = np.isinf(numeric_df).sum()
+
+        # Combine results
+        result = pd.DataFrame({
+            "NaN_count": nan_count,
+            "Inf_count": inf_count
+        })
+
+        # Total issues
+        result["Total_issues"] = result["NaN_count"] + result["Inf_count"]
+
+        return result
