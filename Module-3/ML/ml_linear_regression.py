@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
@@ -19,11 +23,13 @@ content = []
 dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
+model = LinearRegression()
 
 df, report = dl.read_dataset("weatherHistory.csv", optimize=False, handle_unnamed="drop", return_report=True)
 
 # convert Formatted Date column to date time
 df['Formatted Date'] = pd.to_datetime(df['Formatted Date'], utc=True)
+df_info = dfh.get_dataframe_info_str(df)
 
 # add calendar and fiscal year columns as per country
 df = dfh.add_fiscal_calendar(df, "Formatted Date", country="Hungary", calendar_fields={
@@ -40,11 +46,48 @@ num_columns = ["Temperature (C)", "Apparent Temperature (C)", "Humidity", "Wind 
                "Wind Bearing (degrees)", "Visibility (km)", "Pressure (millibars)"]
 df_outliers = dfh.find_iqr_outliers(df, columns=num_columns)
 df_clean = dfh.remove_outliers(df_outliers)
+df_clean = df_clean.drop('Loud Cover', axis=1)
+
+# model training
+# testing temperature = w*humidity + b
+
+X = df_clean[['Humidity']]
+y = df_clean[['Temperature (C)']]
+
+# testing data required so split the original data into training and testing data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, shuffle=True, random_state=0)
+
+model.fit(X_train, y_train)
+temp_ls_result = {}
+predicted_temp = model.predict(X_test)
+rmse = mean_squared_error(y_test, predicted_temp)
+r2 = r2_score(y_test, predicted_temp)
+temp_ls_result["Predicted Temperature"] = predicted_temp
+temp_ls_result["Weight"] = model.coef_
+temp_ls_result["Bias"] = model.intercept_
+temp_ls_result["Root Mean Square Error"] = rmse
+temp_ls_result["R Square"] = r2
+
+inputs = df_clean[['Temperature (C)']]
+targets = df_clean[['Humidity']]
+
+inputs_train, inputs_test, targets_train, targets_test = train_test_split(inputs, targets, test_size=0.33, shuffle=True, random_state=42)
+
+model.fit(inputs_train, targets_train)
+humidity_ls_result = {}
+predicted_humidity = model.predict(inputs_test)
+rmse = mean_squared_error(targets_test, predicted_humidity)
+r2 = r2_score(targets_test, predicted_humidity)
+humidity_ls_result["Predicted Humidity"] = predicted_humidity
+humidity_ls_result["Weight"] = model.coef_
+humidity_ls_result["Bias"] = model.intercept_
+humidity_ls_result["Root Mean Square Error"] = rmse
+humidity_ls_result["R Square"] = r2
 
 hist_box_fig_1 = px.histogram(df, x="Temperature (C)", marginal="box", opacity=0.7, barmode="overlay",
                               title="Temperature (C) Histogram Box Graph", hover_data=df.columns)
 hist_box_fig_1_clean = px.histogram(df_clean, x="Temperature (C)", marginal="box", opacity=0.7, barmode="overlay",
-                                    title="Temperature (C) Histogram Box Graph without outliers", hover_data=df.columns)
+                                    title="Temperature (C) Histogram Box Graph without outliers", hover_data=df_clean.columns)
 hist_box_fig_2 = px.histogram(df, x="Apparent Temperature (C)", marginal="box", opacity=0.7, barmode="overlay",
                               title="Apparent Temperature (C) Histogram Box Graph",)
 hist_box_fig_2_clean = px.histogram(df_clean, x="Apparent Temperature (C)", marginal="box", opacity=0.7, barmode="overlay",
@@ -52,7 +95,7 @@ hist_box_fig_2_clean = px.histogram(df_clean, x="Apparent Temperature (C)", marg
 hist_box_fig_3 = px.histogram(df, x="Humidity", marginal="box", opacity=0.7, barmode="overlay",
                               title="Humidity Histogram Box Graph", hover_data=df.columns)
 hist_box_fig_3_clean = px.histogram(df_clean, x="Humidity", marginal="box", opacity=0.7, barmode="overlay",
-                                    title="Humidity Histogram Box Graph without outliers", hover_data=df.columns)
+                                    title="Humidity Histogram Box Graph without outliers", hover_data=df_clean.columns)
 hist_box_fig_4 = px.histogram(df, x="Wind Speed (km/h)", marginal="box", opacity=0.7, barmode="overlay",
                               title="Wind Speed (km/h) Histogram Box Graph")
 hist_box_fig_4_clean = px.histogram(df_clean, x="Wind Speed (km/h)", marginal="box", opacity=0.7, barmode="overlay",
@@ -60,7 +103,7 @@ hist_box_fig_4_clean = px.histogram(df_clean, x="Wind Speed (km/h)", marginal="b
 hist_box_fig_5 = px.histogram(df, x="Wind Bearing (degrees)", marginal="box", opacity=0.7, barmode="overlay",
                               title="Wind Bearing (degrees) Histogram Box Graph", hover_data=df.columns)
 hist_box_fig_5_clean = px.histogram(df_clean, x="Wind Bearing (degrees)", marginal="box", opacity=0.7, barmode="overlay",
-                                    title="Wind Bearing (degrees) Histogram Box Graph without outliers", hover_data=df.columns)
+                                    title="Wind Bearing (degrees) Histogram Box Graph without outliers", hover_data=df_clean.columns)
 hist_box_fig_6 = px.histogram(df, x="Visibility (km)", marginal="box", opacity=0.7, barmode="overlay",
                               title="Visibility (km) Histogram Box Graph",)
 hist_box_fig_6_clean = px.histogram(df_clean, x="Visibility (km)", marginal="box", opacity=0.7, barmode="overlay",
@@ -75,16 +118,29 @@ corr_fig_clean = px.imshow(df_clean[num_columns].corr(), text_auto='.2f',
                            color_continuous_scale='viridis', title='Correlation Matrix without Outliers')
 pair_plot_fig = px.scatter_matrix(df_clean[["Temperature (C)", "Apparent Temperature (C)", "Visibility (km)"]])
 
+fig = go.Figure()
+
+# Add Training Line
+fig.add_trace(go.Scatter(x=X_train, y=y_train, mode='lines+markers', name='Train'))
+
+# Add Testing Line
+fig.add_trace(go.Scatter(x=X_test, y=predicted_temp, mode='lines+markers', name='Test'))
+
+fig.update_layout(title='Model Performance', xaxis_title='Epoch', yaxis_title='Accuracy')
+
 # use for the large dataset
 content.append(builder.full_width_card("Original Weather History Data",
                                        builder.render_dataframe_collapsible(df, initial_rows=15)))
 content.append(
     builder.grid([
+        builder.card("Dataframe Information:", builder.render_pre(df_info)),
         builder.card("Dataframe Null report:", builder.render_dataframe(result)),
         builder.card("Dataframe description report:", builder.render_dict(df.select_dtypes(include="number").describe().to_dict())),
         builder.card("Dataframe Null report after filling null value:", builder.render_dataframe(result_after_fillna)),
         builder.card("Dataframe description report after removing outliers:", builder.render_dict
                      (df_clean.select_dtypes(include="number").describe().to_dict())),
+        builder.card("Temperature vs Humidity Linear Regression Analysis:", builder.render_dict(temp_ls_result)),
+        builder.card("Humidity vs Temperature Linear Regression Analysis:", builder.render_dict(humidity_ls_result)),
     ]))
 
 content.append(builder.chart_grid([
@@ -105,6 +161,7 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(corr_fig_original, " Correlation matrix with Outliers"),
     plotRenderer.plot_to_card(corr_fig_clean, " Correlation matrix without Outliers"),
     plotRenderer.plot_to_card(pair_plot_fig, " Pair Plot"),
+    plotRenderer.plot_to_card(fig, " Train vs test Data Plot"),
 
 ]))
 
