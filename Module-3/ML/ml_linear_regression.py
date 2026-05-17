@@ -35,7 +35,7 @@ df_info = dfh.get_dataframe_info_str(df)
 df = dfh.add_fiscal_calendar(df, "Formatted Date", country="Hungary", calendar_fields={
     "week_of_year", "year"}, fiscal_fields={"fiscal_year", "fiscal_quarter", })
 
-# as optimization is not done so checkinh is contains null
+# as optimization is not done so checking is contains null
 result = dfh.check_nan_inf(df)
 
 df['Precip Type'] = df.groupby(['Year', 'Week_Of_Year'])['Precip Type'].transform(lambda x: x.fillna(x.mode()[0] if not x.mode().empty else np.nan))
