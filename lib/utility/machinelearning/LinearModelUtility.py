@@ -179,6 +179,10 @@ class LinearModelUtility:
             "model": str(model),
             "pipeline": pipeline,
             "description": self.get_description(model_name),
+            # ✅ STORE DATA FOR PLOTTING
+            "y_true": self.y_test,
+            "y_pred": y_pred,
+
             "metrics": {
                 "MSE": mean_squared_error(self.y_test, y_pred),
                 "R2": r2_score(self.y_test, y_pred)

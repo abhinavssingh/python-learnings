@@ -43,9 +43,9 @@ ml = lmu(df, target_col="TotalSpend")
 imputer = CustomImputer(num_strategy="mean", groupby_cols=["Education", "Marital_Status"])
 outlier = OutlierHandler(method="iqr", factor=1.5)
 ml_results = ml.train_all(imputer=imputer, outlier_handler=outlier)
-ml_kfold_results = ml.train_all(imputer=imputer, k_fold=5, outlier_handler=outlier)
+# ml_kfold_results = ml.train_all(imputer=imputer, k_fold=5, outlier_handler=outlier)
 mlplot = mpv(ml_results)
-mlplot_kfold = mpv(ml_kfold_results)
+# mlplot_kfold = mpv(ml_kfold_results)
 
 # use for the large dataset
 content.append(builder.full_width_card("Original Marketing Data",
@@ -57,8 +57,20 @@ content.append(
     ]))
 
 content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(mlplot.plot_model_comparison(), " Liner Regression Model Performances"),
-    # plotRenderer.plot_to_card(mlplot_kfold.plot_model_comparison(), " Liner Regression Model Performances with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot.plot_model_comparison(["Ridge", "Lasso"]), " Ridge vs Lasso Model Performances"),
+    plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(), " All Liner Regression Model Performances"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error_all(mode="squared"), " Total Error for all Models"),
+    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("LinearRegression"), "LinearRegression Actual vs Predicted Performance"),
+    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("SGDRegressor"), "SGDRegressor Actual vs Predicted Performance"),
+    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Ridge"), "Ridge Actual vs Predicted Performance"),
+    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Lasso"), "Lasso Actual vs Predicted Performance"),
+    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("ElasticNet"), "ElasticNet Actual vs Predicted Performance"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error("LinearRegression", mode="squared"), "LinearRegression Total Error"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error("SGDRegressor"), "SGDRegressor Absolute Error"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error("Ridge", mode="squared"), "Ridge Total Error"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error("Lasso"), "Lasso Absolute Error"),
+    plotRenderer.plot_to_card(mlplot.plot_total_error("ElasticNet", mode="squared"), "ElasticNet Total Error"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted(), " Liner Regression Model Performances with K-fold=5"),
 ]))
 
 html_doc = builder.build_page(
