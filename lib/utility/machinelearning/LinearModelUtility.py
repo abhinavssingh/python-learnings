@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge, SGDRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import GridSearchCV, KFold, cross_val_score, train_test_split
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -131,7 +131,8 @@ class LinearModelUtility:
 
             grid.fit(self.X_train, self.y_train)
 
-            self.results[f"{model_name}_GridSearch"] = {
+            key = f"{model_name}_grid"
+            self.results[key] = {
                 "mode": "gridsearch",
                 "description": self.get_description(model_name) + "\n(GridSearchCV applied)",
                 "best_params": grid.best_params_,
@@ -148,22 +149,32 @@ class LinearModelUtility:
 
             kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
 
-            scores = cross_val_score(
+            # ✅ Get predictions for each sample (out-of-fold)
+            y_pred = cross_val_predict(
                 pipeline,
                 self.X_train,
                 self.y_train,
                 cv=kf,
-                scoring='r2',
                 n_jobs=-1
             )
 
-            self.results[model_name] = {
+            y_true = self.y_train  # ✅ important: predictions correspond to training se
+
+            scores = cross_val_score(pipeline, self.X_train, self.y_train, cv=kf, scoring='r2', n_jobs=-1)
+            scores_mse = cross_val_score(pipeline, self.X_train, self.y_train, cv=kf, scoring='neg_mean_squared_error', n_jobs=-1)
+            key = f"{model_name}_k{k_fold}"
+            self.results[key] = {
                 "mode": "k-fold",
                 "k": k_fold,
                 "description": self.get_description(model_name),
-                "fold_scores": scores.tolist(),
-                "mean_score": np.mean(scores),
-                "std_dev": np.std(scores)
+                "y_true": y_true,
+                "y_pred": y_pred,
+                "metrics": {
+                    "R2": float(np.mean(scores)),
+                    "R2_std": float(np.std(scores)),
+                    "MSE": -np.mean(scores_mse)   # negate sklearn convention
+                },
+                "fold_scores": scores.tolist()
             }
 
             return
@@ -326,3 +337,7 @@ Balances feature selection and stability."""
         }
 
         return descriptions.get(model_name, "No description available")
+
+    def clear_results(self):
+        """Manually clear stored results"""
+        self.results = {}

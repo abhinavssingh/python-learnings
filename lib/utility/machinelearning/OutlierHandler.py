@@ -23,7 +23,7 @@ class OutlierHandler(BaseEstimator, TransformerMixin):
         return {
             "method": self.method,
             "factor": self.factor,
-            "threshold": self.z_thresh
+            "z_thresh": self.z_thresh
         }
 
     # ---------------------------------------------------

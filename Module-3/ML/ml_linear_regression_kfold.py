@@ -12,7 +12,7 @@ from lib.utility.reports.report_utils import ReportUtils as ru
 
 def main():
     # your current script code goes here
-    print("Running ml linear regression pipeline report...")
+    print("Running ml linear regression k-fold pipeline report...")
     # ...
 
 
@@ -42,8 +42,8 @@ df_info = dfh.get_dataframe_info_str(df)
 ml = lmu(df, target_col="TotalSpend")
 imputer = CustomImputer(num_strategy="mean", groupby_cols=["Education", "Marital_Status"])
 outlier = OutlierHandler(method="iqr", factor=1.5)
-ml_results = ml.train_all(imputer=imputer, outlier_handler=outlier)
-mlplot = mpv(ml_results)
+ml_kfold_results = ml.train_all(imputer=imputer, k_fold=5, outlier_handler=outlier)
+mlplot_kfold = mpv(ml_kfold_results)
 
 # use for the large dataset
 content.append(builder.full_width_card("Original Marketing Data",
@@ -51,28 +51,28 @@ content.append(builder.full_width_card("Original Marketing Data",
 content.append(
     builder.grid([
         builder.card("Dataframe Information:", builder.render_pre(df_info)),
-        builder.card("Machine learning report:", builder.render_dict(ml_results)),]))
+        builder.card("Machine learning report with K-fold:", builder.render_dict(ml_kfold_results)),
+    ]))
 
 content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(mlplot.plot_model_comparison(["Ridge", "Lasso"]), " Ridge vs Lasso Model Performances"),
-    plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(), " All Liner Regression Model Performances"),
-    plotRenderer.plot_to_card(mlplot.plot_total_error_all(mode="squared"), " Total Error for all Models"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("LinearRegression"), "LinearRegression Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("SGDRegressor"), "SGDRegressor Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Ridge"), "Ridge Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Lasso"), "Lasso Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("ElasticNet"), "ElasticNet Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_total_error("LinearRegression", mode="squared"), "LinearRegression Total Error"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_model_comparison(["Ridge_k5", "Lasso_k5"]), " Ridge vs Lasso Model Performances with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_all_model_comparison(), " All Liner Regression Model Performances with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_total_error_all(mode="squared"), " Total Error for all Models with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_actual_vs_predicted("LinearRegression_k5"), "LinearRegression Actual vs Predicted Performance with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_actual_vs_predicted("SGDRegressor_k5"), "SGDRegressor Actual vs Predicted Performance with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_actual_vs_predicted("Ridge_k5"), "Ridge Actual vs Predicted Performance with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_actual_vs_predicted("Lasso_k5"), "Lasso Actual vs Predicted Performance with K-fold=5"),
+    plotRenderer.plot_to_card(mlplot_kfold.plot_actual_vs_predicted("ElasticNet_k5"), "ElasticNet Actual vs Predicted Performance with K-fold=5"),
 ]))
 
 html_doc = builder.build_page(
-    "ML Linear Regression Pipeline Report",
+    "ML Linear Regression K-FoldPipeline Report",
     "\n".join(content))
 
 # html_doc is the string you already have
 output_path = ru.save_html_report(
     __file__,
-    "ml_linear_regression_pipeline_report.html",   # file name
+    "ml_linear_regression__kfold_pipeline_report.html",   # file name
     html_doc,
     subfolder="reports",                # or 'reports' to keep files in a subdir
     open_in_browser=True
