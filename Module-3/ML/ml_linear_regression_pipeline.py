@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from lib.html import HtmlBuilder, PlotRenderer
@@ -38,31 +39,94 @@ df = dfh.insert_column_after(
 
 df_info = dfh.get_dataframe_info_str(df)
 
-# initilaizaing machine learning pipeline
-ml = lmu(df, target_col="TotalSpend")
+# initializing imputer and outlier handler with custom settings
 imputer = CustomImputer(num_strategy="mean", groupby_cols=["Education", "Marital_Status"])
 outlier = OutlierHandler(method="iqr", factor=1.5)
-ml_results = ml.train_all(imputer=imputer, outlier_handler=outlier)
-mlplot = mpv(ml_results)
+
+# initialize LinearModelUtility with the dataframe and target column
+lm = lmu(df, target_col="TotalSpend", imputer=imputer, outlier_handler=outlier)
+
+# prepare data (handle missing values, outliers, etc.)
+lm.prepare_data()
+
+# run all models with default settings
+ml_results = lm.run_all_models()
+
+# run K-Fold cross-validation for all models
+ml_kfold_results = lm.run_all_models(k_fold=5)
+
+# run selected models with different parameters
+configs = [
+    {"model_name": "Ridge", "k_fold": 5},
+    {"model_name": "Lasso", "k_fold": 5},
+    {"model_name": "ElasticNet", "k_fold": 10},
+    {"model_name": "Ridge", "imputer": imputer},
+    {"model_name": "Ridge", "outlier_handler": outlier},
+]
+ml_selected_results = lm.run_experiments(configs)
+
+# define parameter grid for Ridge regressionand perform grid search
+param_grid = {"model__alpha": [0.1, 1.0, 10.0, 100.0]}
+ridge_grid_result = lm.grid_search_cv(model_name="Ridge", param_grid=param_grid)
+
+# tuned both grid search and random search for Ridge and ElasticNet respectively
+ridge_tuned_result = lm.tune_model(model_name="Ridge", param_grid=param_grid, search_type="grid",)
+
+param_dist = {
+    "model__alpha": np.linspace(0.01, 1, 20),
+    "model__l1_ratio": np.linspace(0.1, 0.9, 10)
+}
+elasticnet_tuned_result = lm.tune_model(model_name="ElasticNet", param_grid=param_dist, search_type="random", n_iter=15)
+
+
+ranking = lm.rank_models("R2")
+best_model = lm.get_best_model("R2")
+comparison = lm.compare_models()
+results_df = lm.get_combined_results_df()
+
+improvement_df = lm.compare_baseline_vs_tuned()
+best_improvement = lm.best_improvement_model()
+
 
 # use for the large dataset
 content.append(builder.full_width_card("Original Marketing Data",
                                        builder.render_dataframe_collapsible(df, initial_rows=15)))
-content.append(
-    builder.grid([
-        builder.card("Dataframe Information:", builder.render_pre(df_info)),
-        builder.card("Machine learning report:", builder.render_dict(ml_results)),]))
+
+# ===================================================================
+# RESULTS SECTION 1: Basic Info & Train All Results
+# ===================================================================
+content.append(builder.grid([
+    builder.card("Dataframe Information:", builder.render_pre(df_info)),
+    builder.card("Train All (all 5 models)", builder.render_dict(ml_results.to_dict())),
+    builder.card("Train Selected models with different parameters:", builder.render_dict(ml_selected_results.to_dict())),
+    builder.card("Train All models with K-Fold (k=5):", builder.render_dict(ml_kfold_results.to_dict())),
+    builder.card("Ridge Grid Search Result:", builder.render_dict(ridge_grid_result)),
+    builder.card("Ridge Tuned Result (Grid Search):", builder.render_dict(ridge_tuned_result)),
+    builder.card("ElasticNet Tuned Result (Random Search):", builder.render_dict(elasticnet_tuned_result)),
+    builder.card("Model Ranking (R2)", builder.render_dataframe(ranking)),
+    builder.card("Best Model", builder.render_dict(best_model)),
+    builder.card("Model Comparison Summary", builder.render_dataframe(comparison)),
+    builder.card("All Results (Flat)", builder.render_dataframe(results_df)),
+    builder.card("Baseline vs Tuned Comparison", builder.render_dataframe(improvement_df)),
+    # builder.card("Best Improvement Model", builder.render_dict(best_improvement))
+
+
+]))
+
+# ===================================================================
+# VISUALIZATION SECTION: Model Comparisons
+# ===================================================================
 
 content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(mlplot.plot_model_comparison(["Ridge", "Lasso"]), " Ridge vs Lasso Model Performances"),
-    plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(), " All Liner Regression Model Performances"),
-    plotRenderer.plot_to_card(mlplot.plot_total_error_all(mode="squared"), " Total Error for all Models"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("LinearRegression"), "LinearRegression Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("SGDRegressor"), "SGDRegressor Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Ridge"), "Ridge Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Lasso"), "Lasso Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("ElasticNet"), "ElasticNet Actual vs Predicted Performance"),
-    plotRenderer.plot_to_card(mlplot.plot_total_error("LinearRegression", mode="squared"), "LinearRegression Total Error"),
+    # plotRenderer.plot_to_card(mlplot.plot_model_comparison(["Ridge", "Lasso"]), " Ridge vs Lasso Model Performances"),
+    # plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(), " All Liner Regression Model Performances"),
+    # plotRenderer.plot_to_card(mlplot.plot_total_error_all(mode="squared"), " Total Error for all Models"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("LinearRegression"), "LinearRegression Actual vs Predicted Performance"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("SGDRegressor"), "SGDRegressor Actual vs Predicted Performance"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Ridge"), "Ridge Actual vs Predicted Performance"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Lasso"), "Lasso Actual vs Predicted Performance"),
+    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("ElasticNet"), "ElasticNet Actual vs Predicted Performance"),
+    # plotRenderer.plot_to_card(mlplot.plot_total_error("LinearRegression", mode="squared"), "LinearRegression Total Error"),
 ]))
 
 html_doc = builder.build_page(

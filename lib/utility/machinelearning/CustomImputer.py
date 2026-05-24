@@ -14,7 +14,6 @@ class CustomImputer(BaseEstimator, TransformerMixin):
         self.num_strategy = num_strategy
         self.cat_strategy = cat_strategy
         self.groupby_cols = groupby_cols
-        self.results = {}  # ✅ logging container
 
     def get_params(self, deep=True):
         return {
@@ -30,6 +29,9 @@ class CustomImputer(BaseEstimator, TransformerMixin):
 
         X = X.copy()
 
+        # ✅ initialize logs here (fresh per fit)
+        self.results_ = {}
+
         # ✅ detect columns
         self.num_cols = list(X.select_dtypes(include=['int64', 'float64']).columns)
         self.cat_cols = list(X.select_dtypes(include=['object', 'category', 'string']).columns)
@@ -42,24 +44,24 @@ class CustomImputer(BaseEstimator, TransformerMixin):
                 self.groupby_cols = None
 
         # ✅ LOG BEFORE IMPUTATION
-        self.results['imputation_details_before'] = {
+        self.results_['imputation_details_before'] = {
             "num_cols_with_nulls": X[self.num_cols].isnull().sum().to_dict(),
             "cat_cols_with_nulls": X[self.cat_cols].isnull().sum().to_dict()
         }
 
         # ---------- GLOBAL STATS ----------
-        self.global_num_values = {}
-        self.global_cat_values = {}
+        self.global_num_values_ = {}
+        self.global_cat_values_ = {}
 
         for col in self.num_cols:
             if self.num_strategy == "mean":
-                self.global_num_values[col] = X[col].mean()
+                self.global_num_values_[col] = X[col].mean()
             elif self.num_strategy == "median":
-                self.global_num_values[col] = X[col].median()
+                self.global_num_values_[col] = X[col].median()
 
         for col in self.cat_cols:
             mode_val = X[col].mode()
-            self.global_cat_values[col] = mode_val[0] if not mode_val.empty else None
+            self.global_cat_values_[col] = mode_val[0] if not mode_val.empty else None
 
         return self
 
@@ -88,21 +90,21 @@ class CustomImputer(BaseEstimator, TransformerMixin):
 
         # ---------- GLOBAL FALLBACK ----------
         for col in num_cols:
-            if col in self.global_num_values:
-                X[col] = X[col].fillna(self.global_num_values[col])
+            if col in self.global_num_values_:
+                X[col] = X[col].fillna(self.global_num_values_[col])
 
         for col in cat_cols:
-            if col in self.global_cat_values:
-                X[col] = X[col].fillna(self.global_cat_values[col])
+            if col in self.global_cat_values_:
+                X[col] = X[col].fillna(self.global_cat_values_[col])
 
         # ✅ LOG AFTER IMPUTATION
-        self.results['imputation_details_after'] = {
+        self.results_['imputation_details_after'] = {
             "num_cols_with_nulls": X[num_cols].isnull().sum().to_dict(),
             "cat_cols_with_nulls": X[cat_cols].isnull().sum().to_dict()
         }
 
-        # ✅ SUMMARY LOG
-        self.results['config'] = {
+        # ✅ CONFIG LOG
+        self.results_['config'] = {
             "num_strategy": self.num_strategy,
             "cat_strategy": self.cat_strategy,
             "groupby_cols": self.groupby_cols
