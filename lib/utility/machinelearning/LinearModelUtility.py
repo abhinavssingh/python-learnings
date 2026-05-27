@@ -311,6 +311,9 @@ class LinearModelUtility:
 
         return result
 
+    # ---------------------------------------------------
+    # MODEL COMPARISON & RANKING
+    # ---------------------------------------------------
     def rank_models(self, metric="R2", ascending=False):
         """
         Rank models based on a metric.
@@ -332,6 +335,10 @@ class LinearModelUtility:
         ranked = df.sort_values(metric, ascending=ascending).reset_index(drop=True)
 
         return ranked
+
+    # ---------------------------------------------------
+    # GET BEST MODEL
+    # ---------------------------------------------------
 
     def get_best_model(self, metric="R2"):
         """
@@ -360,6 +367,9 @@ class LinearModelUtility:
     def get_all_flat_results(self):
         return [self.flatten_result(r) for r in self.experiment_results]
 
+    # ---------------------------------------------------
+    # MODEL COMPARISON (AGGREGATE + BASELINE VS TUNED)
+    # ---------------------------------------------------
     def compare_models(self):
         """
         Aggregate comparison per model
@@ -390,6 +400,9 @@ class LinearModelUtility:
             "best_model_MSE": self.get_best_model("MSE")
         }
 
+    # ---------------------------------------------------
+        # COMPARISON: BASELINE VS TUNED
+    # ---------------------------------------------------
     def get_combined_results_df(self):
         """
         Return a single consolidated DataFrame with:
@@ -426,6 +439,9 @@ class LinearModelUtility:
 
         return df
 
+    # ---------------------------------------------------
+    # BASELINE VS TUNED COMPARISON
+    # ---------------------------------------------------
     def compare_baseline_vs_tuned(self):
         """
         Compare baseline vs tuned models
@@ -480,6 +496,9 @@ class LinearModelUtility:
 
         return pd.DataFrame(comparisons)
 
+    # ---------------------------------------------------
+    # BEST IMPROVEMENT MODEL
+    # ---------------------------------------------------
     def best_improvement_model(self):
         """
         Returns model with highest R2 gain

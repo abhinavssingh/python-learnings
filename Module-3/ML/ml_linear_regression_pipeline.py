@@ -22,6 +22,7 @@ content = []
 dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
+mlplot = mpv()
 
 df, report = dl.read_dataset("marketing_data.csv", optimize=False, handle_unnamed="drop", return_report=True)
 
@@ -53,7 +54,7 @@ lm.prepare_data()
 ml_results = lm.run_all_models()
 
 # run K-Fold cross-validation for all models
-ml_kfold_results = lm.run_all_models(k_fold=5)
+ml_kfold_results = lm.run_experiment(model_name="LinearRegression", k_fold=5)
 
 # run selected models with different parameters
 configs = [
@@ -98,8 +99,8 @@ content.append(builder.full_width_card("Original Marketing Data",
 content.append(builder.grid([
     builder.card("Dataframe Information:", builder.render_pre(df_info)),
     builder.card("Train All (all 5 models)", builder.render_dict(ml_results.to_dict())),
+    builder.card("Train LinearRegression models with K-Fold (k=5):", builder.render_dict(ml_kfold_results)),
     builder.card("Train Selected models with different parameters:", builder.render_dict(ml_selected_results.to_dict())),
-    builder.card("Train All models with K-Fold (k=5):", builder.render_dict(ml_kfold_results.to_dict())),
     builder.card("Ridge Grid Search Result:", builder.render_dict(ridge_grid_result)),
     builder.card("Ridge Tuned Result (Grid Search):", builder.render_dict(ridge_tuned_result)),
     builder.card("ElasticNet Tuned Result (Random Search):", builder.render_dict(elasticnet_tuned_result)),
@@ -107,10 +108,6 @@ content.append(builder.grid([
     builder.card("Best Model", builder.render_dict(best_model)),
     builder.card("Model Comparison Summary", builder.render_dataframe(comparison)),
     builder.card("All Results (Flat)", builder.render_dataframe(results_df)),
-    builder.card("Baseline vs Tuned Comparison", builder.render_dataframe(improvement_df)),
-    # builder.card("Best Improvement Model", builder.render_dict(best_improvement))
-
-
 ]))
 
 # ===================================================================
@@ -118,15 +115,14 @@ content.append(builder.grid([
 # ===================================================================
 
 content.append(builder.chart_grid([
-    # plotRenderer.plot_to_card(mlplot.plot_model_comparison(["Ridge", "Lasso"]), " Ridge vs Lasso Model Performances"),
-    # plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(), " All Liner Regression Model Performances"),
-    # plotRenderer.plot_to_card(mlplot.plot_total_error_all(mode="squared"), " Total Error for all Models"),
-    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("LinearRegression"), "LinearRegression Actual vs Predicted Performance"),
-    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("SGDRegressor"), "SGDRegressor Actual vs Predicted Performance"),
-    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Ridge"), "Ridge Actual vs Predicted Performance"),
-    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("Lasso"), "Lasso Actual vs Predicted Performance"),
-    # plotRenderer.plot_to_card(mlplot.plot_actual_vs_predicted("ElasticNet"), "ElasticNet Actual vs Predicted Performance"),
-    # plotRenderer.plot_to_card(mlplot.plot_total_error("LinearRegression", mode="squared"), "LinearRegression Total Error"),
+    plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(results_df), "All Models Comparison"),
+    plotRenderer.plot_to_card(mlplot.plot_best_models(results_df), "Best Model per Algorithm"),
+    plotRenderer.plot_to_card(mlplot.plot_mode_comparison(results_df), "Train vs KFold"),
+    plotRenderer.plot_to_card(mlplot.plot_optimization_animation(results_df), "Optimization Animation"),
+    plotRenderer.plot_to_card(mlplot.plot_hyperparameter_surface_3d(results_df), "3D Hyperparameter Surface"),
+    plotRenderer.plot_to_card(mlplot.plot_best_model_highlight(results_df), "Best Model Highlight"),
+    plotRenderer.plot_to_card(mlplot.plot_best_with_annotation(results_df), "Best Model (Annotated)")
+
 ]))
 
 html_doc = builder.build_page(
