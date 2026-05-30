@@ -1,161 +1,146 @@
-# ML Linear Regression Pipeline Report Generator
+# ML Linear Regression Pipeline Report Script
 
-This script builds a **complete machine learning pipeline dashboard** and exports it as an interactive HTML report.
-
-It integrates:
-
-- Data loading & cleaning
-- Feature engineering
-- Machine learning training
-- Performance visualization
-- HTML dashboard generation
+This document explains the end-to-end machine learning pipeline used for building, evaluating, tuning, and visualizing linear regression models.
 
 ---
 
-## 🚀 Features
+## Overview
 
-- 📊 End-to-end ML pipeline automation
-- 🧹 Data preprocessing (imputation + outlier handling)
-- 🧠 Multiple regression models training
-- 📈 Interactive Plotly visualizations
-- 🖥️ HTML dashboard generation (auto-open in browser)
-- 🧩 Modular architecture using reusable utilities
+This script:
 
----
-
-## 📦 Dependencies
-
-Ensure the following modules exist in your project:
-
-- HtmlBuilder
-- PlotRenderer
-- DataLoader
-- DataFrameHelper
-- CustomImputer
-- LinearModelUtility
-- ModelPerformanceVisualizer
-- OutlierHandler
-- ReportUtils
-
-External libraries:
-
-```bash
-pip install pandas plotly scikit-learn
-```
+- Loads and preprocesses a marketing dataset
+- Applies imputation and outlier handling
+- Trains multiple linear models
+- Runs experiments (K-Fold, custom configs)
+- Performs hyperparameter tuning (Grid & Random Search)
+- Generates rankings and comparisons
+- Builds an interactive HTML report
 
 ---
 
-## 🧠 Workflow
+## Key Components
 
-### 1. Load Dataset
+### Imports
 
 ```python
-df, report = dl.read_dataset("marketing_data.csv", return_report=True)
+import numpy as np
+import pandas as pd
 ```
+
+Custom utilities used:
+
+- HtmlBuilder → HTML layout builder
+- PlotRenderer → Plotly rendering helper
+- DataLoader → dataset loading
+- DataFrameHelper → dataframe utilities
+- CustomImputer → missing value handling
+- OutlierHandler → outlier treatment
+- LinearModelUtility → ML pipeline core
+- ModelPerformanceVisualizer → visualization layer
+- ReportUtils → saving reports
 
 ---
 
-### 2. Data Cleaning
+## Data Preparation
 
-- Convert `Income` to numeric
-- Convert `Dt_Customer` to datetime
+Steps performed:
+
+1. Load dataset (`marketing_data.csv`)
+2. Clean `Income` column (remove `$` and commas)
+3. Convert `Dt_Customer` to datetime
+4. Create `TotalSpend` feature (sum of all `Mnt` columns)
+5. Insert new column using helper utility
+
+---
+
+## Preprocessing
+
+- Missing values handled using `CustomImputer`
+- Outliers handled using `OutlierHandler (IQR method)`
+
+---
+
+## Model Training
+
+### Default Training
 
 ```python
-df['Income'] = df['Income'].replace('[\$,]', '', regex=True).astype(float)
-df['Dt_Customer'] = pd.to_datetime(df['Dt_Customer'])
+ml_results = lm.run_all_models()
 ```
 
----
-
-### 3. Feature Engineering
-
-Create total spend feature:
+### K-Fold Validation
 
 ```python
-Total_Mnt = df.loc[:, df.columns.str.contains('Mnt')].sum(axis=1)
+ml_kfold_results = lm.run_experiment(model_name="LinearRegression", k_fold=5)
 ```
 
----
-
-### 4. Train Machine Learning Models
+### Custom Experiments
 
 ```python
-ml = lmu(df, target_col="TotalSpend")
-
-ml_results = ml.train_all(
-    imputer=CustomImputer(),
-    outlier_handler=OutlierHandler()
-)
+configs = [...]
+ml_selected_results = lm.run_experiments(configs)
 ```
 
 ---
 
-### 5. Visualization
+## Hyperparameter Tuning
 
-Uses `ModelPerformanceVisualizer`:
-
-- Model comparison
-- Total error comparison
-- Actual vs predicted plots
-
----
-
-### 6. Build HTML Dashboard
+### Grid Search (Ridge)
 
 ```python
-html_doc = builder.build_page(title, content)
+param_grid = {"model__alpha": [0.1, 1.0, 10.0, 100.0]}
+ridge_grid_result = lm.grid_search_cv(...)
 ```
+
+### Tuned Models
+
+- Ridge → Grid Search
+- ElasticNet → Random Search
 
 ---
 
-### 7. Save Report
+## Evaluation
+
+Generated artifacts:
+
+- Model ranking
+- Best model
+- Comparison summary
+- Combined results dataframe
+- Improvement vs baseline
+
+---
+
+## Visualization
+
+Using `ModelPerformanceVisualizer`:
+
+- Train vs K-Fold comparison
+- Best model annotation
+- Optimization animation
+- 3D hyperparameter surface
+- GridSearch animation
+
+---
+
+## Report Generation
+
+HTML report built using:
+
+```python
+html_doc = builder.build_page(...)
+```
+
+Saved using:
 
 ```python
 ru.save_html_report(...)
 ```
 
-- Saves file
-- Opens automatically in browser
-
 ---
 
-## 📊 Visualizations Included
+## Output
 
-- ✅ Model comparison (Ridge vs Lasso)
-- ✅ All model comparison
-- ✅ Total error comparison (all models)
-- ✅ Actual vs predicted plots (all models)
-- ✅ Total error per model
-
----
-
-## 📂 Output
-
-- File: `ml_linear_regression_pipeline_report.html`
-- Location: `/reports` folder
-- Opens automatically in browser
-
----
-
-## ✅ Key Benefits
-
-- End-to-end ML automation
-- Interactive dashboards
-- Clean architecture
-- Plug-and-play components
-- Portfolio-ready project
-
----
-
-## 🔮 Possible Enhancements
-
-- Add K-Fold visualization support
-- Model ranking leaderboard
-- Feature importance plots
-- Deploy with Streamlit
-
----
-
-## 📜 License
-
-Free to use for learning and internal projects 🚀
+- Interactive HTML report
+- Model insights and comparisons
+- Tuning behavior visualization

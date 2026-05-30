@@ -1,115 +1,104 @@
-# ModelPerformanceVisualizer
+# ModelPerformanceVisualizer Documentation
 
-A reusable Plotly-based visualization utility for evaluating machine learning model performance. Designed to integrate seamlessly with `LinearModelUtility` outputs.
-
----
-
-## 🚀 Features
-
-- 📊 Compare all models automatically
-- 🎯 Compare selected models
-- 📉 Actual vs Predicted visualization
-- 📏 Residual diagnostics
-- 🔍 Total error visualization (absolute & squared)
-- 🧩 Flat JSON support (no nested parsing required)
+This markdown file documents the `ModelPerformanceVisualizer` class used for visualizing machine learning experiment results using Plotly.
 
 ---
 
-## 🧠 Design Philosophy
+## Overview
 
-- Uses flattened results (`get_flat_result`) for simplicity
-- Separates computation and visualization concerns
-- Handles missing data safely (e.g., skips models without predictions)
+The `ModelPerformanceVisualizer` provides multiple plotting utilities for:
 
----
-
-## 📦 Dependencies
-
-```bash
-pip install pandas plotly
-```
+- Model comparison
+- Hyperparameter tuning visualization
+- Best model selection
+- Optimization tracking
+- Preprocessing impact
 
 ---
 
-## 📥 Usage
+## Imports
 
 ```python
-viz = ModelPerformanceVisualizer(results)
-
-# Compare all models
-viz.plot_all_model_comparison().show()
-
-# Selected models
-viz.plot_model_comparison(["Ridge", "Lasso"]).show()
-
-# Individual model plots
-viz.plot_actual_vs_predicted("Ridge").show()
-viz.plot_residuals("Ridge").show()
-
-# Total error
-viz.plot_total_error("Ridge", mode="absolute").show()
-viz.plot_total_error_all(mode="squared").show()
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 ```
 
 ---
 
-## 📊 Available Plots
+## Class: ModelPerformanceVisualizer
 
-### 1. All Model Comparison
+### 1. plot_all_model_comparison
 
-- Compares all models using R² and MSE
-- Dual-axis visualization
+Compare all models using R2 and MSE.
 
-### 2. Selected Model Comparison
+### 2. plot_model_comparison
 
-- Compare only specific models
+Compare selected models.
 
-### 3. Actual vs Predicted
+### 3. plot_best_models
 
-- Scatter plot
-- Includes ideal reference line
+Shows best configuration per model.
 
-### 4. Residual Plot
+### 4. plot_mode_comparison
 
-- Residual = y_true - y_pred
-- Helps detect bias and patterns
+Compare modes like train-test vs cross-validation.
 
-### 5. Total Error (Single Model)
+### 5. plot_preprocessing_impact
 
-Modes:
+Shows impact of imputation and preprocessing choices.
 
-- `absolute` → Σ |y_true - y_pred|
-- `squared` → Σ (y_true - y_pred)²
+### 6. plot_model_ranking
 
-### 6. Total Error (All Models)
+Displays ranking of models based on R2.
 
-- Compares total error across models
-- Skips models without predictions
+### 7. plot_optimization_animation
+
+Animated visualization of optimization progress.
+
+### 8. plot_hyperparameter_surface_3d
+
+3D scatter plot for hyperparameter analysis.
+
+### 9. plot_hyperparameter_3d_scatter
+
+Alternative 3D visualization.
+
+### 10. plot_best_model_highlight
+
+Highlights best model globally.
+
+### 11. plot_best_per_model_highlight
+
+Highlights best configuration per model.
+
+### 12. plot_best_with_annotation
+
+Adds annotation for best model.
+
+### 13. plot_gridsearch_animation
+
+Animated visualization of GridSearch tuning.
+
+### 14. get_flat_result
+
+Utility to flatten nested result dictionaries.
 
 ---
 
-## 🔧 Helper Function
+## Notes
 
-### get_flat_result
+- Handles NaN values gracefully
+- Supports filtering by model and mode
+- Compatible with GridSearchCV outputs
 
-Flattens nested result dictionary for easy access:
+---
+
+## Usage Example
 
 ```python
-flat = viz.get_flat_result("Ridge")
-print(flat["MSE"], flat["y_true"])
+viz = ModelPerformanceVisualizer()
+fig = viz.plot_all_model_comparison(results_df)
+fig.show()
 ```
-
----
-
-## ✅ Key Benefits
-
-- No nested dictionary handling
-- Ready for dashboards (Plotly / Streamlit)
-- Clean and reusable design
-- Robust to mixed training modes
-
----
-
-## 📜 License
-
-Free to use for learning and projects 🚀
