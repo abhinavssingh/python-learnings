@@ -57,7 +57,6 @@ class HyperparameterTuner:
             "mode": "gridsearch",
             "best_params": grid.best_params_,
             "best_score_cv": grid.best_score_,
-            "best_model": grid.best_estimator_,
             "cv_results": grid.cv_results_
         }
 
@@ -107,7 +106,6 @@ class HyperparameterTuner:
             "mode": "random_search",
             "best_params": search.best_params_,
             "best_score_cv": search.best_score_,
-            "best_model": search.best_estimator_,
             "cv_results": search.cv_results_
         }
 

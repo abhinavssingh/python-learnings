@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -196,42 +197,76 @@ class ModelPerformanceVisualizer:
     # 8. Hyperparameter Surface Plot (for Ridge/ElasticNet)
     # ---------------------------------------------------
 
-    def plot_hyperparameter_surface_3d(self, results_df):
+    def to_scalar(self, x):
+        try:
+            if isinstance(x, (np.ndarray, np.ma.MaskedArray)):
+                return float(np.asarray(x).flatten()[0])
+            if isinstance(x, (list, tuple)):
+                return float(x[0])
+            if hasattr(x, "item"):
+                return float(x.item())
+            return float(x)
+        except BaseException:
+            return None
+
+    def plot_hyperparameter_surface_3d(self, results_df, model=None, mode=None):
 
         df = results_df.copy()
 
-        # ✅ auto-detect param columns
-        param_cols = [col for col in df.columns if col.startswith("param_")]
+        # ✅ Filter by model and mode if provided
+        if model is not None:
+            df = df[df["model"] == model]
+
+        if mode is not None:
+            df = df[df["mode"] == mode]
+
+        if df.empty:
+            return px.scatter(title="No data for selected model/mode")
+
+        # ✅ Get param columns but drop useless ones (all NaNs)
+        param_cols = [
+            col for col in df.columns
+            if col.startswith("param_") and not df[col].isna().all()
+        ]
 
         if len(param_cols) < 2:
-            print("Not enough hyperparameter columns for 3D plot")
-
-            # ✅ fallback plot instead of returning None
             return px.scatter(
                 df,
                 x="MSE",
                 y="R2",
-                color="model",
-                title="Fallback: Model Performance Scatter"
+                title="Not enough hyperparameters for 3D plot"
             )
 
-        x_col = param_cols[0]
-        y_col = param_cols[1]
+        # ✅ Pick first two valid params
+        x_col, y_col = param_cols[:2]
 
-        pivot_df = df.pivot_table(
-            index=y_col,
-            columns=x_col,
-            values="R2"
-        )
+        # ✅ Convert safely
+        df[x_col] = df[x_col].apply(self.to_scalar)
+        df[y_col] = df[y_col].apply(self.to_scalar)
+        df["R2"] = pd.to_numeric(df["R2"], errors="coerce")
 
-        fig = go.Figure(data=[go.Surface(
-            z=pivot_df.values,
-            x=pivot_df.columns,
-            y=pivot_df.index
+        # ✅ Drop invalid rows
+        df = df.dropna(subset=[x_col, y_col, "R2"])
+
+        if df.empty:
+            return px.scatter(title="No valid data after cleaning")
+
+        # ✅ 3D scatter
+        fig = go.Figure(data=[go.Scatter3d(
+            x=df[x_col],
+            y=df[y_col],
+            z=df["R2"],
+            mode='markers',
+            marker=dict(
+                size=6,
+                color=df["R2"],
+                colorscale="Viridis",
+                colorbar=dict(title="R2")
+            )
         )])
 
         fig.update_layout(
-            title=f"Hyperparameter Surface ({x_col} vs {y_col})",
+            title=f"3D Hyperparameter Surface | Model={model} | Mode={mode}",
             scene=dict(
                 xaxis_title=x_col,
                 yaxis_title=y_col,
@@ -337,6 +372,88 @@ class ModelPerformanceVisualizer:
             text=f"🏆 Best: {best_row['model']}<br>R2={best_row['R2']:.4f}",
             showarrow=True,
             arrowhead=2
+        )
+
+        return fig
+
+    # ---------------------------------------------------
+    # 13. GRIDSEARCH ANIMATION (for tuning visualization)
+    # ---------------------------------------------------
+
+    def plot_gridsearch_animation(self, results_df, model=None, mode=None):
+
+        df = results_df.copy()
+
+        # ✅ Filter gridsearch rows first
+        df = df[df["mode"].str.contains(mode, case=False, na=False)]
+
+        # ✅ Additional user filters
+        if model is not None:
+            df = df[df["model"] == model]
+
+        if mode is not None:
+            df = df[df["mode"] == mode]
+
+        if df.empty:
+            return px.scatter(title="No gridsearch rows found for given filters")
+
+        rows = []
+
+        for _, row in df.iterrows():
+
+            alphas = row.get("param_model__alpha")
+            scores = row.get("mean_test_score")
+
+            # ✅ Allow list / tuple / numpy array
+            if not isinstance(alphas, (list, tuple, np.ndarray)):
+                continue
+
+            if not isinstance(scores, (list, tuple, np.ndarray)):
+                continue
+
+            if len(alphas) != len(scores):
+                continue
+
+            for i in range(len(alphas)):
+                try:
+                    rows.append({
+                        "model": row["model"],
+                        "mode": row["mode"],
+                        "alpha": float(alphas[i]),
+                        "score": float(scores[i]),
+                        "iteration": i
+                    })
+                except Exception:
+                    continue
+
+        plot_df = pd.DataFrame(rows)
+
+        if plot_df.empty:
+            return px.scatter(title="No valid hyperparameter data")
+
+        # ✅ Sorting + cumulative best
+        plot_df = plot_df.sort_values(["model", "iteration"])
+        plot_df["best_score"] = plot_df.groupby("model")["score"].cummax()
+
+        fig = px.scatter(
+            plot_df,
+            x="alpha",
+            y="score",
+            animation_frame="iteration",
+            color="model",
+            size="score",
+            hover_data=["mode"],  # ✅ shows mode in tooltip
+            title=f"GridSearch Optimization | Model={model} | Mode={mode}"
+        )
+
+        fig.update_xaxes(type="log")
+
+        # ✅ Best-so-far line
+        fig.add_scatter(
+            x=plot_df["alpha"],
+            y=plot_df["best_score"],
+            mode="lines",
+            name="Best So Far"
         )
 
         return fig

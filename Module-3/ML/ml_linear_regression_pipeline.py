@@ -115,13 +115,13 @@ content.append(builder.grid([
 # ===================================================================
 
 content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(mlplot.plot_all_model_comparison(results_df), "All Models Comparison"),
-    plotRenderer.plot_to_card(mlplot.plot_best_models(results_df), "Best Model per Algorithm"),
     plotRenderer.plot_to_card(mlplot.plot_mode_comparison(results_df), "Train vs KFold"),
+    plotRenderer.plot_to_card(mlplot.plot_best_with_annotation(results_df), "Best Model (Annotated)"),
     plotRenderer.plot_to_card(mlplot.plot_optimization_animation(results_df), "Optimization Animation"),
-    plotRenderer.plot_to_card(mlplot.plot_hyperparameter_surface_3d(results_df), "3D Hyperparameter Surface"),
-    plotRenderer.plot_to_card(mlplot.plot_best_model_highlight(results_df), "Best Model Highlight"),
-    plotRenderer.plot_to_card(mlplot.plot_best_with_annotation(results_df), "Best Model (Annotated)")
+    plotRenderer.plot_to_card(mlplot.plot_hyperparameter_surface_3d(results_df, model="ElasticNet", mode="random_search"),
+                              "3D Hyperparameter Surface"),
+    plotRenderer.plot_to_card(mlplot.plot_gridsearch_animation(results_df, model="Ridge", mode="gridsearch"),
+                              "Grid Search Animation"),
 
 ]))
 

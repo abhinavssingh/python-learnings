@@ -246,7 +246,7 @@ class LinearModelUtility:
             "type": "tuned",
             "best_params": grid.best_params_,
             "best_score_cv": grid.best_score_,
-            "best_model": grid.best_estimator_
+            "cv_results": grid.cv_results_
         }
 
         # ✅ Evaluate on test set
@@ -257,7 +257,7 @@ class LinearModelUtility:
                 "R2": r2_score(self.y_test, y_pred),
                 "MSE": mean_squared_error(self.y_test, y_pred)
             }
-
+        self.experiment_results.append(result)
         return result
 
     # ---------------------------------------------------
@@ -295,9 +295,11 @@ class LinearModelUtility:
         # ✅ choose search type
         if search_type == "grid":
             result = tuner.grid_search(pipeline=pipeline, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=1)
+            self.experiment_results.append(result)
 
         elif search_type == "random":
             result = tuner.random_search(pipeline=pipeline, param_distributions=param_grid, cv=cv, n_iter=n_iter, scoring=scoring, n_jobs=1)
+            self.experiment_results.append(result)
 
         else:
             raise ValueError("search_type must be 'grid' or 'random'")
