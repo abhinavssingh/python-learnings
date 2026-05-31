@@ -135,7 +135,7 @@ class LinearModelUtility:
                 self.X_train,
                 self.y_train,
                 cv=kf,
-                n_jobs=1
+                n_jobs=8
             )
 
             y_true = self.y_train
@@ -236,7 +236,7 @@ class LinearModelUtility:
         pipeline = self.build_pipeline(model_name, imputer=imputer, outlier_handler=outlier_handler)
 
         # ✅ Grid Search
-        grid = GridSearchCV(estimator=pipeline, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=1)
+        grid = GridSearchCV(estimator=pipeline, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=8)
 
         grid.fit(self.X_train, self.y_train)
 
@@ -294,11 +294,11 @@ class LinearModelUtility:
 
         # ✅ choose search type
         if search_type == "grid":
-            result = tuner.grid_search(pipeline=pipeline, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=1)
+            result = tuner.grid_search(pipeline=pipeline, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=8)
             self.experiment_results.append(result)
 
         elif search_type == "random":
-            result = tuner.random_search(pipeline=pipeline, param_distributions=param_grid, cv=cv, n_iter=n_iter, scoring=scoring, n_jobs=1)
+            result = tuner.random_search(pipeline=pipeline, param_distributions=param_grid, cv=cv, n_iter=n_iter, scoring=scoring, n_jobs=8)
             self.experiment_results.append(result)
 
         else:

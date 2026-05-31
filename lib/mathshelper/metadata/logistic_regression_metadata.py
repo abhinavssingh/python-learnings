@@ -134,4 +134,165 @@ LOGISTIC_METADATA = {
         "category": "Logistic Regression",
         "subcategory": "Regularization",
     },
+
+    # =======================
+    # KNN
+    # =======================
+
+    "knn_distance_ltx": {
+        "title": "KNN Euclidean Distance Function:",
+        "category": "Logistic Regression",
+        "subcategory": "KNN Distance",
+    },
+
+    "knn_prediction_ltx": {
+        "title": "KNN Majority Vote Prediction:",
+        "category": "Logistic Regression",
+        "subcategory": "KNN Prediction",
+    },
+
+    "knn_weighted_ltx": {
+        "title": "Weighted KNN Prediction:",
+        "category": "Logistic Regression",
+        "subcategory": "KNN Weighted Prediction",
+    },
+
+    # =======================
+    # NAIVE BAYES
+    # =======================
+
+    "nb_bayes_ltx": {
+        "title": "Naive Bayes Theorem:",
+        "category": "Logistic Regression",
+        "subcategory": "NAIVE BAYES Core",
+    },
+
+    "nb_naive_ltx": {
+        "title": "Naive Independence Assumption:",
+        "category": "Logistic Regression",
+        "subcategory": "NAIVE BAYES Core",
+    },
+
+    "nb_prediction_ltx": {
+        "title": "Naive Bayes Prediction Rule:",
+        "category": "Logistic Regression",
+        "subcategory": "NAIVE BAYES Prediction",
+    },
+
+    "nb_log_ltx": {
+        "title": "Log Probability Form:",
+        "category": "Logistic Regression",
+        "subcategory": "NAIVE BAYES Optimization",
+    },
+
+    # =======================
+    # DECISION TREE
+    # =======================
+
+    "dt_entropy_ltx": {
+        "title": " Decision Tree Entropy:",
+        "category": "Logistic Regression",
+        "subcategory": "DECISION TREE Impurity Measure",
+    },
+
+    "dt_gini_ltx": {
+        "title": "Decision Tree Gini Impurity:",
+        "category": "Logistic Regression",
+        "subcategory": "DECISION TREE Impurity Measure",
+    },
+
+    "dt_information_gain_ltx": {
+        "title": "Decision Tree Information Gain:",
+        "category": "Logistic Regression",
+        "subcategory": "DECISION TREE Split Criterion",
+    },
+
+    "dt_split_ltx": {
+        "title": "Decision Tree Optimal Split Rule:",
+        "category": "Logistic Regression",
+        "subcategory": "DECISION TREE Split Criterion",
+    },
+
+    # =======================
+    # RANDOM FOREST
+    # =======================
+
+    "rf_prediction_ltx": {
+        "title": "Random Forest Majority Vote:",
+        "category": "Logistic Regression",
+        "subcategory": "RANDOM FOREST Prediction",
+    },
+
+    "rf_regression_ltx": {
+        "title": "Random Forest Averaging (Regression):",
+        "category": "Logistic Regression",
+        "subcategory": "RANDOM FOREST Prediction",
+    },
+
+    "rf_bootstrap_ltx": {
+        "title": "Random Forest Bootstrap Sampling:",
+        "category": "Logistic Regression",
+        "subcategory": "RANDOM FOREST Training",
+    },
+
+    # =======================
+    # SVM
+    # =======================
+
+    "svm_decision_ltx": {
+        "title": "SVM Decision Function:",
+        "category": "Logistic Regression",
+        "subcategory": "SVM Core",
+    },
+
+    "svm_hinge_loss_ltx": {
+        "title": "SVM Hinge Loss:",
+        "category": "Logistic Regression",
+        "subcategory": "SVM Loss Function",
+    },
+
+    "svm_soft_margin_ltx": {
+        "title": "SVM Soft Margin Optimization:",
+        "category": "Logistic Regression",
+        "subcategory": "SVM Optimization",
+    },
+
+    # =======================
+    # BINARY SEARCH
+    # =======================
+
+    "binary_mid_ltx": {
+        "title": "Binary Search Mid Index Calculation:",
+        "category": "Logistic Regression",
+        "subcategory": "BINARY SEARCH Core",
+    },
+
+    "binary_update_ltx": {
+        "title": "Binary Search Space Update Rule:",
+        "category": "Logistic Regression",
+        "subcategory": "BINARY SEARCH Core",
+    },
+
+    "binary_complexity_ltx": {
+        "title": "Binary Search Time Complexity:",
+        "category": "Logistic Regression",
+        "subcategory": "BINARY SEARCH Analysis",
+    },
+
+    # =======================
+    # SOFTMAX
+    # =======================
+
+    "softmax_ltx": {
+        "title": "Softmax Probability Function:",
+        "category": "Logistic Regression",
+        "subcategory": "SOFTMAX Core",
+    },
+
+    "softmax_loss_ltx": {
+        "title": "Softmax Cross-Entropy Loss (Multiclass):",
+        "category": "Logistic Regression",
+        "subcategory": "SOFTMAX Loss Function",
+    },
+
 }

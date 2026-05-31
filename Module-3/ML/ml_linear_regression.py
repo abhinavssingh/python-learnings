@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -17,6 +19,9 @@ def main():
     print("Running ml linear regression report...")
     # ...
 
+
+# Start the timer
+start_time = time.perf_counter()
 
 # initialization and set variable
 content = []
@@ -179,6 +184,12 @@ output_path = ru.save_html_report(
 )
 
 print(f"Wrote report to: {output_path}")
+
+# End the timer
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+
+print(f"Execution time: {execution_time:.6f} seconds")
 
 if __name__ == "__main__":
     main()

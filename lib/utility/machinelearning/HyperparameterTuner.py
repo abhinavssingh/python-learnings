@@ -23,7 +23,7 @@ class HyperparameterTuner:
         self.X_test = X_test
         self.y_test = y_test
 
-    def grid_search(self, pipeline, param_grid, cv=5, scoring='r2', n_jobs=-1):
+    def grid_search(self, pipeline, param_grid, cv=5, scoring='r2', n_jobs=8):
         """
         Perform GridSearchCV on a pipeline.
 
@@ -69,7 +69,7 @@ class HyperparameterTuner:
 
         return results
 
-    def random_search(self, pipeline, param_distributions, cv=5, n_iter=20, scoring='r2', n_jobs=-1):
+    def random_search(self, pipeline, param_distributions, cv=5, n_iter=20, scoring='r2', n_jobs=8):
         """
         Perform RandomizedSearchCV on a pipeline.
 
