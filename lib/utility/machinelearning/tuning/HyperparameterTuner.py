@@ -60,6 +60,13 @@ class HyperparameterTuner:
             "cv_results": grid.cv_results_
         }
 
+        # ✅ keep full params (optional but useful)
+        results["best_params"] = results["best_params"]
+
+        # ✅ ✅ CRITICAL FIX: flatten params
+        for k, v in results["best_params"].items():
+            results[f"param_{k}"] = v
+
         if self.X_test is not None and self.y_test is not None:
             y_pred = grid.best_estimator_.predict(self.X_test)
             results["test_metrics"] = {
@@ -108,6 +115,10 @@ class HyperparameterTuner:
             "best_score_cv": search.best_score_,
             "cv_results": search.cv_results_
         }
+
+        # ✅ ✅ CRITICAL FIX: flatten params
+        for k, v in results["best_params"].items():
+            results[f"param_{k}"] = v
 
         if self.X_test is not None and self.y_test is not None:
             y_pred = search.best_estimator_.predict(self.X_test)

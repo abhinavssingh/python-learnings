@@ -6,10 +6,13 @@ import pandas as pd
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
-from lib.utility.machinelearning.CustomImputer import CustomImputer
-from lib.utility.machinelearning.LinearModelUtility import LinearModelUtility as lmu
-from lib.utility.machinelearning.ModelPerformanceVisualizer import ModelPerformanceVisualizer as mpv
-from lib.utility.machinelearning.OutlierHandler import OutlierHandler
+from lib.utility.machinelearning.facade.LinearModelUtility import LinearModelUtility as lmu
+from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
+from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
+from lib.utility.machinelearning.visualization.advanced.ComparisonPlots import ComparisonPlots
+from lib.utility.machinelearning.visualization.advanced.HyperparameterPlots import HyperparameterPlots
+from lib.utility.machinelearning.visualization.advanced.OptimizationPlots import OptimizationPlots
+from lib.utility.machinelearning.visualization.generic.ModelPerformanceVisualizer import ModelPerformanceVisualizer as mpv
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -28,6 +31,10 @@ dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
 mlplot = mpv()
+cmp = ComparisonPlots()
+opt = OptimizationPlots()
+hp = HyperparameterPlots()
+
 
 df, report = dl.read_dataset("marketing_data.csv", optimize=False, handle_unnamed="drop", return_report=True)
 
@@ -88,10 +95,9 @@ elasticnet_tuned_result = lm.tune_model(model_name="ElasticNet", param_grid=para
 ranking = lm.rank_models("R2")
 best_model = lm.get_best_model("R2")
 comparison = lm.compare_models()
-results_df = lm.get_combined_results_df()
+results_df = lm.get_results_df()
 
-improvement_df = lm.compare_baseline_vs_tuned()
-best_improvement = lm.best_improvement_model()
+improvement_df = lm.compare_models()
 
 
 # use for the large dataset
@@ -120,12 +126,13 @@ content.append(builder.grid([
 # ===================================================================
 
 content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(mlplot.plot_mode_comparison(results_df), "Train vs KFold"),
-    plotRenderer.plot_to_card(mlplot.plot_best_with_annotation(results_df), "Best Model (Annotated)"),
-    plotRenderer.plot_to_card(mlplot.plot_optimization_animation(results_df), "Optimization Animation"),
-    plotRenderer.plot_to_card(mlplot.plot_hyperparameter_surface_3d(results_df, model="ElasticNet", mode="random_search"),
+    plotRenderer.plot_to_card(cmp.plot_preprocessing_impact(results_df, "MSE", "R2"), "Preprocessing Impact"),
+    plotRenderer.plot_to_card(cmp.plot_mode_comparison(results_df, metric="R2"), "Train vs KFold"),
+    plotRenderer.plot_to_card(cmp.plot_best_model_highlight(results_df, metric="R2"), "Best Model (Annotated)"),
+    plotRenderer.plot_to_card(opt.plot_optimization_animation(results_df, "MSE", "R2"), "Optimization Animation"),
+    plotRenderer.plot_to_card(hp.plot_3d_surface(results_df, "param_model__alpha", "param_model__l1_ratio"),
                               "3D Hyperparameter Surface"),
-    plotRenderer.plot_to_card(mlplot.plot_gridsearch_animation(results_df, model="Ridge", mode="gridsearch"),
+    plotRenderer.plot_to_card(opt.plot_gridsearch_animation(results_df, model="Ridge", mode="gridsearch"),
                               "Grid Search Animation"),
 
 ]))
