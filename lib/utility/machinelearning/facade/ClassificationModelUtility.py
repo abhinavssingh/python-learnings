@@ -29,7 +29,7 @@ class ClassificationModelUtility:
         self.preprocessor = None
 
     # ----------------------------
-    def prepare_data(self, test_size=0.2):
+    def prepare_data(self, test_size=0.2, random_state=42):
 
         df = self.df.copy()
 
@@ -42,13 +42,25 @@ class ClassificationModelUtility:
         X = df.drop(self.target_col, axis=1)
         y = df[self.target_col]
 
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            X, y,
+            test_size=test_size,
+            random_state=random_state
+        )
 
-        self.preprocessor = Preprocessor(X).build()
+        self.preprocessor = Preprocessor(
+            X,
+            imputer=self.imputer,
+            outlier_handler=self.outlier_handler
+        ).build()
+
         self.runner = ExperimentRunner(self.preprocessor)
 
     # ----------------------------
     def run_experiment(self, model_name):
+
+        if self.X_train is None:
+            raise ValueError("Call prepare_data() before running experiments")
 
         wrapper = self.registry.get_model(model_name)
 
@@ -61,6 +73,9 @@ class ClassificationModelUtility:
 
         result = {
             "model": model_name,
+            "experiment": f"{model_name} | classification",
+            "mode": "train-test",
+            "type": "baseline",
             **metrics
         }
 
@@ -70,9 +85,11 @@ class ClassificationModelUtility:
     # ----------------------------
     def run_all_models(self):
 
+        models = self.registry.get_models_by_task("classification")
+
         results = []
 
-        for name in self.registry.get_all_models().keys():
+        for name in models.keys():
             results.append(self.run_experiment(name))
 
         return pd.DataFrame(results)

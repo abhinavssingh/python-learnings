@@ -1,20 +1,9 @@
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
 
-from lib.utility.machinelearning.base.BaseModelWrapper import BaseModelWrapper
-from lib.utility.machinelearning.evaluation.Metrics import Metrics
+from lib.utility.machinelearning.base.LinearRegressionModelWrapper import RegressionModelWrapper
 
 
-class LinearRegressionWrapper(BaseModelWrapper):
-    """
-    Wrapper for linear regression family models.
-    Works with any sklearn linear model (LinearRegression, Ridge, Lasso, etc.)
-    """
+class LinearRegressionWrapper(RegressionModelWrapper):
 
-    def build_pipeline(self, preprocessor):
-        self.pipeline = Pipeline([
-            ("preprocessor", preprocessor),
-            ("model", self.model)
-        ])
-
-    def evaluate(self, y_true, y_pred):
-        return Metrics.regression(y_true, y_pred)
+    def __init__(self):
+        super().__init__(LinearRegression())

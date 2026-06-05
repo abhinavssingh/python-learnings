@@ -5,6 +5,9 @@ import plotly.express as px
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
+from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
+from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
+from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -96,6 +99,24 @@ content.append(builder.full_width_card("Original Marketing Data",
                                        builder.render_dataframe_collapsible(df, initial_rows=15)))
 
 # ===================================================================
+# Machine Learning Pipeline
+# ===================================================================
+# filter for USA only to speed up the process because dataset is imbalanced and has many rows,
+# you can remove this filter to run on the full dataset but it will take much longer time to execute
+df_usa = df[df['native.country'] == 'United-States']
+# initializing imputer and outlier handler with custom settings
+imputer = CustomImputer(num_strategy="mode", groupby_cols=["native.country", "workclass", "occupation"])
+outlier = OutlierHandler(method="iqr", factor=1.5)
+
+# initialize ClassificationModelUtility with the dataframe and target column
+cm = cmu(df_usa, target_col="income", imputer=imputer, outlier_handler=outlier)
+
+# prepare data (handle missing values, outliers, etc.)
+cm.prepare_data()
+
+# run all models with default settings
+ml_results = cm.run_all_models()
+# ===================================================================
 # RESULTS SECTION 1: Basic Info & Train All Results
 # ===================================================================
 content.append(builder.grid([
@@ -104,6 +125,7 @@ content.append(builder.grid([
     builder.card("Missing Values (as '?'):", builder.render_series(missing_count)),
     builder.card("Unique Values Count per Column:", builder.render_dict(unique_values)),
     builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
+    builder.card("Train All (all 5 models)", builder.render_dict(ml_results.to_dict())),
 ]))
 
 # ===================================================================

@@ -1,16 +1,9 @@
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import ElasticNet
 
-from lib.utility.machinelearning.base.BaseModelWrapper import BaseModelWrapper
-from lib.utility.machinelearning.evaluation.Metrics import Metrics
+from lib.utility.machinelearning.base.LinearRegressionModelWrapper import RegressionModelWrapper
 
 
-class ElasticNetWrapper(BaseModelWrapper):
+class ElasticNetWrapper(RegressionModelWrapper):
 
-    def build_pipeline(self, preprocessor):
-        self.pipeline = Pipeline([
-            ("preprocessor", preprocessor),
-            ("model", self.model)
-        ])
-
-    def evaluate(self, y_true, y_pred):
-        return Metrics.regression(y_true, y_pred)
+    def __init__(self):
+        super().__init__(ElasticNet())

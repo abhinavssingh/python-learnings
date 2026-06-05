@@ -30,6 +30,7 @@ class LinearModelUtility:
         self.experiment_results = []
 
         self.registry = ModelRegistry()
+
         self.runner = None
         self.preprocessor = None
 
@@ -47,6 +48,10 @@ class LinearModelUtility:
 
         self.X = df.drop(self.target_col, axis=1)
         self.y = df[self.target_col]
+
+        # ✅ FIX: detect AFTER y is available
+        self.task = self._detect_task()
+        self.models = self.registry.get_models_by_task(self.task)
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, test_size=test_size, random_state=random_state
@@ -130,7 +135,7 @@ class LinearModelUtility:
     def run_all_models(self, k_fold=None):
         results = []
 
-        for model_name in self.registry.get_all_models().keys():
+        for model_name in self.models.keys():
             results.append(self.run_experiment(model_name, k_fold=k_fold))
 
         return pd.DataFrame(results)
@@ -235,3 +240,9 @@ class LinearModelUtility:
 
     def compare_models(self):
         return ModelComparator(self.experiment_results).compare()
+
+    def _detect_task(self):
+        if self.y.dtype.kind in "ifu":   # numeric
+            return "regression"
+        else:
+            return "classification"
