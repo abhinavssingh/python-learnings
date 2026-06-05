@@ -1,6 +1,6 @@
 import plotly.express as px
 
-from lib.utility.machinelearning.visualization.core.DataCleaner import DataCleaner
+from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 from lib.utility.machinelearning.visualization.core.MetricResolver import MetricResolver
 
 

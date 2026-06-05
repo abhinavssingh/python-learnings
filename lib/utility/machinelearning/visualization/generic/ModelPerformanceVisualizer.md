@@ -1,190 +1,187 @@
-# ModelPerformanceVisualizer Documentation
+# ModelPerformanceVisualizer - Comprehensive Documentation
 
-## Overview
+## 📌 Overview
 
-The `ModelPerformanceVisualizer` is a **generic, model-agnostic visualization utility** designed to support:
+The `ModelPerformanceVisualizer` is a **production-grade, experiment-aware visualization engine** designed for modern ML systems.
 
-- Regression models (R2, MSE, RMSE)
-- Classification models (accuracy, F1, etc.)
-- Future extensibility (clustering, AutoML)
+It supports:
 
-It adapts dynamically using:
-
-- `DataCleaner` → handles missing values safely
-- `MetricResolver` → detects and selects metrics automatically
-
----
-
-## Class: ModelPerformanceVisualizer
-
-### Purpose
-
-Provides reusable and robust plotting utilities for ML results stored in a DataFrame.
+- ✅ Regression metrics (R2, MSE, RMSE)
+- ✅ Classification metrics (accuracy, F1, etc.)
+- ✅ Hyperparameter tuning outputs
+- ✅ Experiment-level tracking
+- ✅ AutoML-ready visualization
 
 ---
 
-## Internal Methods
+# 🚀 Evolution of the System
 
-### `_filter(df, model=None, mode=None)`
+### ❌ Before
 
-Filters data based on model name or execution mode.
+- Model-level plotting
+- Static metrics
+- No tuning support
 
-**Parameters:**
+### ✅ Now
 
-- `df`: DataFrame
-- `model`: optional model name
-- `mode`: optional mode ("train-test", "k-fold", etc.)
-
-**Returns:** Filtered DataFrame
+- Experiment-level visualization
+- Dynamic metric detection
+- Hyperparameter-aware plots
+- Optimization tracking
 
 ---
 
-## Public Methods
+# 🧩 Data Schema
 
-### 1. `plot_scatter()`
+Expected DataFrame structure:
 
-Creates a dynamic scatter plot.
+| Column        | Description                  |
+| ------------- | ---------------------------- |
+| model         | Model name                   |
+| experiment    | Unique experiment identifier |
+| mode          | train-test / k-fold / tuning |
+| type          | baseline / tuned             |
+| R2, MSE, etc. | metrics                      |
+| score         | tuning metric                |
+| param\_\*     | hyperparameters              |
 
-**Features:**
+---
 
-- Works for regression and classification
-- Automatically detects metrics if not provided
-- Handles missing values safely
+# 🧠 Core Components
 
-**Parameters:**
+### ✅ DataCleaner
 
-- `df`: input DataFrame
-- `x_metric`: metric for x-axis
-- `y_metric`: metric for y-axis
-- `size`: optional bubble size
-- `color`: grouping variable (default: model)
-- `mode`: filter mode
+- Handles NaN values
+- Ensures numeric consistency
+- Prevents visualization crashes
 
-**Example:**
+### ✅ MetricResolver
+
+- Auto-detects suitable metrics
+- Supports regression + classification
+
+---
+
+# 📊 Core Visualization Features
+
+## ✅ Scatter Plot
+
+- Auto metric selection
+- Experiment-level grouping
+- Handles missing values
+
+## ✅ Bar Plot
+
+- Model and experiment comparison
+
+## ✅ Best Model Highlight
+
+- Highlights top experiment
+
+## ✅ Auto Plot
+
+- Smart selection of metrics and plot type
+
+---
+
+# 🔬 Hyperparameter Visualization Integration
+
+The visualizer works seamlessly with:
+
+### ✅ HyperparameterPlots
+
+- 2D plots (single parameter)
+- 3D surfaces (multi-parameter)
+
+### ✅ OptimizationPlots
+
+- Iteration animation
+- Optimization tracking
+
+### ✅ ComparisonPlots
+
+- Model vs experiment comparison
+
+---
+
+# ⚙️ Intelligent Behavior
+
+## ✅ Dynamic Metric Detection
+
+Priority:
+
+1. score (tuning)
+2. R2
+3. other metrics
+
+---
+
+## ✅ Adaptive Plot Selection
+
+| Scenario  | Plot Type          |
+| --------- | ------------------ |
+| 1 param   | 2D                 |
+| 2+ params | 3D                 |
+| baseline  | scatter/bar        |
+| tuning    | optimization plots |
+
+---
+
+# 📦 Example Usage
 
 ```python
-viz.plot_scatter(df, "MSE", "R2")
-```
-
----
-
-### 2. `plot_bar()`
-
-Creates a bar chart for comparing models.
-
-**Parameters:**
-
-- `metric`: column to plot
-- `group_by`: default = "model"
-- `mode`: optional filter
-
-**Example:**
-
-```python
-viz.plot_bar(df, "R2")
-```
-
----
-
-### 3. `plot_best_model()`
-
-Highlights the best model based on a metric.
-
-**Features:**
-
-- Automatically selects the best row
-- Adds annotation to plot
-
-**Example:**
-
-```python
-viz.plot_best_model(df, "R2")
-```
-
----
-
-### 4. `auto_plot()`
-
-Automatically detects metrics and generates a scatter plot.
-
-**Example:**
-
-```python
-viz.auto_plot(df)
-```
-
----
-
-## Design Principles
-
-### ✅ 1. Model-Agnostic
-
-Supports any ML model type.
-
-### ✅ 2. Metric-Agnostic
-
-Metrics are dynamically detected, not hardcoded.
-
-### ✅ 3. Robust Data Handling
-
-Uses `DataCleaner` to:
-
-- Drop invalid rows
-- Handle NaN safely
-
-### ✅ 4. Extensible Architecture
-
-Works seamlessly with:
-
-- ComparisonPlots
-- HyperparameterPlots
-- OptimizationPlots
-
----
-
-## Dependencies
-
-- pandas
-- plotly.express
-- DataCleaner
-- MetricResolver
-
----
-
-## Example Usage
-
-```python
-from ModelPerformanceVisualizer import ModelPerformanceVisualizer
-
 viz = ModelPerformanceVisualizer()
-
-# basic scatter
-viz.plot_scatter(results_df, "MSE", "R2")
-
-# auto plot
 viz.auto_plot(results_df)
-
-# bar chart
-viz.plot_bar(results_df, "R2")
-
-# best model
-viz.plot_best_model(results_df, "R2")
 ```
 
 ---
 
-## Notes
+# 🔗 Integration Flow
 
-- Ensure metrics exist in DataFrame
-- Ensure DataCleaner supports numeric only operations
-- Flatten hyperparameters for integration with advanced plots
+```
+LinearModelUtility
+        ↓
+HyperparameterTuner
+        ↓
+DataCleaner
+        ↓
+Visualizer
+```
 
 ---
 
-## Future Enhancements
+# ✅ Best Practices
 
-- Auto plot selection by problem type
-- Interactive dashboard integration (Streamlit / Dash)
-- Experiment tracking support
+- Always include `experiment` column
+- Flatten hyperparameters
+- Use `score` for tuning
+- Avoid nested dicts
+
+---
+
+# 🚀 Advanced Capabilities
+
+- ✅ AutoML-ready visualization
+- ✅ Experiment comparison dashboard ready
+- ✅ Multi-model + multi-config tracking
+
+---
+
+# 🔮 Future Enhancements
+
+- Interactive dashboards (Streamlit)
+- AutoML pipelines
+- Experiment tracking UI
+- SHAP integration
+
+---
+
+# 🏁 Conclusion
+
+This system represents a **modern ML visualization framework** supporting:
+
+✔ Experiment-level analysis
+✔ Hyperparameter optimization
+✔ AutoML workflows
 
 ---

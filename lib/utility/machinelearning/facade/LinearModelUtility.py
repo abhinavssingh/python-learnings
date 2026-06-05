@@ -6,13 +6,11 @@ from lib.utility.machinelearning.evaluation.ModelComparator import ModelComparat
 from lib.utility.machinelearning.experiment.ExperimentRunner import ExperimentRunner
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
+from lib.utility.machinelearning.shared.Formatter import Formatter
 from lib.utility.machinelearning.tuning.HyperparameterTuner import HyperparameterTuner
 
 
 class LinearModelUtility:
-    """
-    Facade layer for running ML experiments with loose coupling.
-    """
 
     def __init__(self, df, target_col, imputer=None, outlier_handler=None):
         self.df = df
@@ -31,7 +29,6 @@ class LinearModelUtility:
 
         self.experiment_results = []
 
-        # ✅ decoupled components
         self.registry = ModelRegistry()
         self.runner = None
         self.preprocessor = None
@@ -40,7 +37,6 @@ class LinearModelUtility:
     # DATA PREPARATION
     # ---------------------------------------------------
     def prepare_data(self, test_size=0.2, random_state=42):
-
         df = self.df.copy()
 
         if self.imputer:
@@ -56,7 +52,6 @@ class LinearModelUtility:
             self.X, self.y, test_size=test_size, random_state=random_state
         )
 
-        # ✅ FIX: pass imputer/outlier into preprocessor
         self.preprocessor = Preprocessor(
             self.X,
             imputer=self.imputer,
@@ -84,12 +79,15 @@ class LinearModelUtility:
         wrapper.build_pipeline(preprocessor)
         pipeline = wrapper.get_pipeline()
 
-        # ✅ K-FOLD mode
+        # ✅ experiment label
+        mode = "k-fold" if k_fold else "train-test"
+        exp_name = Formatter.build(model_name, mode, k_fold, imputer, outlier_handler)
+
         if k_fold:
             kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
 
             y_pred = cross_val_predict(
-                pipeline,   # ✅ safe now
+                pipeline,
                 self.X_train,
                 self.y_train,
                 cv=kf,
@@ -98,6 +96,7 @@ class LinearModelUtility:
 
             result = {
                 "model": model_name,
+                "experiment": exp_name,
                 "mode": "k-fold",
                 "type": "baseline",
                 "k": k_fold,
@@ -106,7 +105,6 @@ class LinearModelUtility:
             }
 
         else:
-            # ✅ delegate to runner (clean separation)
             result = self.runner.run(
                 model_name,
                 wrapper,
@@ -117,10 +115,10 @@ class LinearModelUtility:
             )
 
             result.update({
+                "model": model_name,
+                "experiment": exp_name,
                 "mode": "train-test",
-                "type": "baseline",
-                "R2": result["R2"],
-                "MSE": result["MSE"]
+                "type": "baseline"
             })
 
         self.experiment_results.append(result)
@@ -130,7 +128,6 @@ class LinearModelUtility:
     # RUN ALL MODELS
     # ---------------------------------------------------
     def run_all_models(self, k_fold=None):
-
         results = []
 
         for model_name in self.registry.get_all_models().keys():
@@ -142,24 +139,21 @@ class LinearModelUtility:
     # RUN MULTIPLE EXPERIMENTS
     # ---------------------------------------------------
     def run_experiments(self, configs):
-
         results = []
 
         for config in configs:
-            result = self.run_experiment(**config)
-            results.append(result)
+            results.append(self.run_experiment(**config))
 
         return pd.DataFrame(results)
 
     # ---------------------------------------------------
-    # GRID SEARCH
+    # GRID SEARCH (updated with experiment)
     # ---------------------------------------------------
     def grid_search_cv(self, model_name, param_grid, cv=5, scoring="r2"):
 
         wrapper = self.registry.get_model(model_name)
         wrapper.build_pipeline(self.preprocessor)
-
-        pipeline = wrapper.get_pipeline()   # ✅ FIX
+        pipeline = wrapper.get_pipeline()
 
         from sklearn.model_selection import GridSearchCV
 
@@ -172,11 +166,13 @@ class LinearModelUtility:
         )
 
         grid.fit(self.X_train, self.y_train)
-
         y_pred = grid.best_estimator_.predict(self.X_test)
+
+        exp_name = f"{model_name} | gridsearch"
 
         result = {
             "model": model_name,
+            "experiment": exp_name,
             "type": "tuned",
             "mode": "gridsearch",
             "best_params": grid.best_params_,
@@ -189,14 +185,14 @@ class LinearModelUtility:
         return result
 
     # ---------------------------------------------------
-    # TUNING VIA TUNING ENGINE
+    # TUNING
     # ---------------------------------------------------
     def tune_model(self, model_name, param_grid, search_type="grid", cv=5, n_iter=20):
 
         wrapper = self.registry.get_model(model_name)
         wrapper.build_pipeline(self.preprocessor)
 
-        pipeline = wrapper.get_pipeline()   # ✅ FIX
+        pipeline = wrapper.get_pipeline()
 
         tuner = HyperparameterTuner(
             self.X_train,
@@ -206,18 +202,24 @@ class LinearModelUtility:
         )
 
         if search_type == "grid":
-            result = tuner.grid_search(pipeline, param_grid, cv=cv)
+            results = tuner.grid_search(pipeline, model_name, param_grid, cv=cv)
         else:
-            result = tuner.random_search(pipeline, param_grid, n_iter=n_iter, cv=cv)
+            results = tuner.random_search(pipeline, model_name, param_grid, n_iter=n_iter, cv=cv)
 
-        result.update({
-            "model": model_name,
-            "type": "tuned",
-            "search_type": search_type
-        })
+        exp_name = f"{model_name} | {search_type}"
 
-        self.experiment_results.append(result)
-        return result
+        # ✅ update each row
+        for row in results:
+            row.update({
+                "model": model_name,
+                "experiment": exp_name,
+                "type": "tuned",
+                "search_type": search_type
+            })
+
+        self.experiment_results.extend(results)
+
+        return results
 
     # ---------------------------------------------------
     # RESULTS UTILITIES
@@ -226,13 +228,10 @@ class LinearModelUtility:
         return pd.DataFrame(self.experiment_results)
 
     def rank_models(self, metric="R2", ascending=False):
-        comparator = ModelComparator(self.experiment_results)
-        return comparator.rank(metric, ascending)
+        return ModelComparator(self.experiment_results).rank(metric, ascending)
 
     def get_best_model(self, metric="R2"):
-        comparator = ModelComparator(self.experiment_results)
-        return comparator.best_model(metric)
+        return ModelComparator(self.experiment_results).best_model(metric)
 
     def compare_models(self):
-        comparator = ModelComparator(self.experiment_results)
-        return comparator.compare()
+        return ModelComparator(self.experiment_results).compare()

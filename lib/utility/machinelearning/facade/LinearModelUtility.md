@@ -1,48 +1,79 @@
-# LinearModelUtility Documentation
+# LinearModelUtility - Comprehensive Documentation
 
 ## 📌 Overview
 
-`LinearModelUtility` is a **Facade Layer** that orchestrates the end-to-end ML workflow using a **loosely coupled architecture**.
+`LinearModelUtility` is a **production-grade Facade Layer** that orchestrates the end-to-end ML lifecycle using a **loosely coupled and experiment-driven architecture**.
 
-It simplifies:
+It acts as the central engine for:
 
-- Data preparation
-- Model training
-- Experiment execution
-- Hyperparameter tuning
-- Model comparison
+- ✅ Data preparation
+- ✅ Model training
+- ✅ Experiment execution
+- ✅ Hyperparameter tuning
+- ✅ Experiment tracking (NEW)
+- ✅ Model comparison & ranking
 
 ---
 
-## 🧱 Architecture Role
+# 🚀 Key Evolution (IMPORTANT)
+
+### ❌ Earlier Version
+
+- Model-level execution
+- Limited tracking (only baseline vs tuned)
+- Best params only (no full tuning visibility)
+
+### ✅ Current Version
+
+- ✅ Experiment-level tracking (`experiment` column)
+- ✅ Hyperparameter-aware outputs (`param_*` columns)
+- ✅ Multi-row tuning results
+- ✅ Visualization-ready architecture
+- ✅ AutoML-ready framework
+
+---
+
+# 🧱 Architecture Role
 
 ```
 User Code
    ↓
 LinearModelUtility (Facade)
    ↓
---------------------------------
-| ModelRegistry               |
-| Preprocessor                |
-| ExperimentRunner            |
-| HyperparameterTuner         |
-| ModelComparator             |
---------------------------------
+-----------------------------------------
+| ModelRegistry                         |
+| Preprocessor                          |
+| ExperimentRunner                      |
+| HyperparameterTuner ✅               |
+| ModelComparator ✅                    |
+| Formatter ✅              |
+-----------------------------------------
 ```
 
 ---
 
-## 🚀 Key Features
+# 🧠 Core Responsibilities
 
-✅ Loose coupling (modular design)
-✅ Supports multiple models dynamically
-✅ Built-in train-test & K-fold validation
-✅ Hyperparameter tuning (Grid & Random)
-✅ Extensible (plug-and-play models)
+- Coordinate all ML operations from a single interface
+- Maintain experiment-level consistency across models
+- Manage structured results for downstream visualization
+- Enable plug-and-play ML components
 
 ---
 
-## 🔧 Constructor
+# 🚀 Key Features
+
+✅ Loose coupling (modular, replaceable components)
+✅ Dynamic model registry
+✅ Built-in Train-Test & K-Fold validation
+✅ Hyperparameter tuning (Grid + Random)
+✅ Experiment-level tracking (NEW)
+✅ Multi-model experimentation
+✅ Visualization-ready output
+
+---
+
+# 🔧 Constructor
 
 ```python
 LinearModelUtility(df, target_col, imputer=None, outlier_handler=None)
@@ -51,17 +82,17 @@ LinearModelUtility(df, target_col, imputer=None, outlier_handler=None)
 ### Parameters
 
 - `df`: Input dataset
-- `target_col`: Target column name
-- `imputer`: Optional imputer
-- `outlier_handler`: Optional outlier handler
+- `target_col`: Target column
+- `imputer`: Optional preprocessing
+- `outlier_handler`: Optional preprocessing
 
 ---
 
-## 📊 Data Preparation
+# 📊 Data Preparation
 
 ### `prepare_data()`
 
-Splits data into training and test sets and builds preprocessing pipeline.
+Splits data and builds preprocessing pipeline.
 
 ```python
 lm.prepare_data(test_size=0.2)
@@ -69,155 +100,170 @@ lm.prepare_data(test_size=0.2)
 
 ---
 
-## ⚙️ Model Training
+# ⚙️ Model Training
 
-### `run_experiment()`
+## ✅ `run_experiment()`
 
-Runs a single model experiment.
+Runs a single experiment.
 
-**Modes:**
+### ✅ Supported Modes
 
 - Train-Test
 - K-Fold Cross Validation
 
-```python
-lm.run_experiment("Ridge", k_fold=5)
+### ✅ NEW: Experiment Tracking
+
+Each run produces:
+
+```
+experiment = "Ridge | kfold=5 | imputer=SimpleImputer"
 ```
 
 ---
 
-## 🔁 Run Multiple Models
+# 🔁 Batch Execution
 
-### `run_all_models()`
+## ✅ `run_all_models()`
 
 Runs all registered models.
 
-```python
-lm.run_all_models()
-```
+## ✅ `run_experiments()`
 
----
-
-### `run_experiments()`
-
-Executes multiple experiment configurations.
+Executes multiple configurations.
 
 ```python
 configs = [
     {"model_name": "Ridge", "k_fold": 5},
     {"model_name": "Lasso"}
 ]
-
-lm.run_experiments(configs)
 ```
 
 ---
 
-## 🔍 Hyperparameter Tuning
+# 🔍 Hyperparameter Tuning
 
-### `grid_search_cv()`
+## ✅ `grid_search_cv()`
 
-Performs Grid Search.
+Performs traditional grid search.
 
-```python
-lm.grid_search_cv("Ridge", param_grid)
-```
+## ✅ `tune_model()`
 
----
+Advanced tuning (Grid / Random).
 
-### `tune_model()`
+### ✅ NEW Behavior
 
-Supports both Grid and Random Search.
-
-```python
-lm.tune_model("Ridge", param_grid, search_type="random")
-```
+- Returns **multiple rows** (each param combination)
+- Uses `HyperparameterTuner`
+- Adds experiment metadata
 
 ---
 
-## 📈 Results Handling
+# 📈 Results Structure
 
-### `get_results_df()`
-
-Returns experiment results as DataFrame.
-
----
-
-### `rank_models()`
-
-Ranks models based on metric.
-
----
-
-### `get_best_model()`
-
-Returns best-performing model.
-
----
-
-### `compare_models()`
-
-Aggregates model performance.
-
----
-
-## 🔄 Experiment Output Structure
-
-Example result row:
+## ✅ Baseline Example
 
 ```
 {
   "model": "Ridge",
+  "experiment": "Ridge | train-test",
   "mode": "train-test",
   "type": "baseline",
-  "R2": 0.82,
-  "MSE": 120
-}
-```
-
-### ✅ For Tuned Models
-
-```
-{
-  "model": "Ridge",
-  "type": "tuned",
-  "mode": "gridsearch",
-  "param_alpha": 10.0,
-  "R2": 0.85
+  "R2": 0.98
 }
 ```
 
 ---
 
-## 🧠 Design Principles
+## ✅ Tuned Example
 
-### ✅ Facade Pattern
+```
+{
+  "model": "ElasticNet",
+  "experiment": "ElasticNet | random",
+  "mode": "random_search",
+  "type": "tuned",
+  "param_model__alpha": 0.1,
+  "param_model__l1_ratio": 0.5,
+  "score": 0.97
+}
+```
 
-Simplifies complex ML workflows.
+---
 
-### ✅ Single Responsibility
+# 📊 Results Utilities
 
-Each component handles one task:
+## ✅ `get_results_df()`
+
+Returns complete experiment dataset.
+
+## ✅ `rank_models()`
+
+Ranks based on metric (supports experiment-level ranking).
+
+## ✅ `get_best_model()`
+
+Returns best-performing experiment.
+
+## ✅ `compare_models()`
+
+Aggregates performance results.
+
+---
+
+# ✅ Experiment Schema (IMPORTANT)
+
+Every row follows:
+
+| Column        | Purpose           |
+| ------------- | ----------------- |
+| model         | model name        |
+| experiment ✅ | unique identifier |
+| type          | baseline / tuned  |
+| mode          | execution type    |
+| metrics       | R2 / MSE / score  |
+| param\_\* ✅  | hyperparameters   |
+
+---
+
+# 🧠 Design Principles
+
+## ✅ Facade Pattern
+
+Simplifies multi-step ML workflows.
+
+## ✅ Separation of Concerns
 
 - Registry → model selection
 - Runner → execution
 - Tuner → optimization
+- Cleaner → data safety
 
-### ✅ Loose Coupling
+## ✅ Experiment-Centric Design (NEW)
 
-Components can be replaced independently.
+Moves from:
+
+```
+model comparison ❌
+```
+
+to:
+
+```
+experiment comparison ✅
+```
 
 ---
 
-## ⚠️ Best Practices
+# ⚠️ Best Practices
 
-- Always flatten `best_params` into columns
-- Avoid storing nested dictionaries for analysis
-- Use ModelComparator for ranking
+- Always use `experiment` for plotting
+- Flatten hyperparameters (`param_*`)
+- Avoid nested dictionaries (`cv_results`)
+- Use `score` for tuning results
 
 ---
 
-## 🚀 Example Usage
+# 🚀 Example Usage
 
 ```python
 lm = LinearModelUtility(df, "target")
@@ -226,29 +272,49 @@ lm.prepare_data()
 
 lm.run_all_models()
 
-lm.grid_search_cv("Ridge", param_grid)
+lm.tune_model("Ridge", param_grid)
 
-best_model = lm.get_best_model()
+results_df = lm.get_results_df()
 ```
 
 ---
 
-## 🏁 Summary
+# 🔗 Integration with Visualization
 
-`LinearModelUtility` acts as a **central engine** for:
+Works seamlessly with:
 
-✅ Running experiments
-✅ Managing models
-✅ Performing tuning
-✅ Producing structured results
+- ✅ ModelPerformanceVisualizer
+- ✅ ComparisonPlots
+- ✅ HyperparameterPlots
+- ✅ OptimizationPlots
 
 ---
 
-## 🔮 Future Enhancements
+# 🚀 Advanced Capabilities
 
-- AutoML integration
-- MLflow experiment tracking
-- Parallel model training
-- Dashboard integration
+✅ Multi-experiment comparison
+✅ Hyperparameter exploration
+✅ AutoML-ready workflows
+✅ Experiment tracking foundation
+
+---
+
+# 🔮 Future Enhancements
+
+- MLflow-style experiment tracking
+- Experiment IDs + timestamps
+- AutoML pipeline automation
+- Interactive dashboards (Streamlit)
+
+---
+
+# 🏁 Conclusion
+
+`LinearModelUtility` is the **central orchestration engine** powering:
+
+✔ Experiment-driven ML pipelines
+✔ Hyperparameter tuning workflows
+✔ Visualization-ready data outputs
+✔ Scalable and modular ML architecture
 
 ---

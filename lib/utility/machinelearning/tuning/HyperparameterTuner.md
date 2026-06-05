@@ -1,30 +1,60 @@
-# HyperparameterTuner Documentation
+# HyperparameterTuner - Comprehensive Documentation
 
-This document describes the `HyperparameterTuner` utility class used for performing hyperparameter optimization using GridSearchCV and RandomizedSearchCV.
+## 📌 Overview
+
+The `HyperparameterTuner` is a **production-grade hyperparameter optimization engine** designed for modern ML systems.
+
+It supports:
+
+- ✅ Grid Search (exhaustive search)
+- ✅ Random Search (probabilistic search)
+- ✅ Experiment-level tracking
+- ✅ AutoML-ready integration
+- ✅ Visualization-ready outputs (flattened, row-based)
 
 ---
 
-## Overview
+# 🚀 Key Evolution
 
-`HyperparameterTuner` is a lightweight, reusable utility designed to:
+### ❌ Before
 
-- Perform Grid Search and Random Search
-- Keep tuning logic separate from model training (clean architecture ✅)
-- Return structured results
-- Optionally evaluate tuned models on a test dataset
+- Returned single result (best params only)
+- Nested `cv_results` (hard to use)
+- Not suitable for visualization
+
+### ✅ Now
+
+- Returns **multiple rows** (each param combination)
+- Flattened `param_*` columns ✅
+- Compatible with visualization modules ✅
+- Integrated experiment naming ✅
 
 ---
 
-## Imports
+# 🧱 Architecture Role
 
-```python
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+```
+LinearModelUtility
+        ↓
+HyperparameterTuner
+        ↓
+DataCleaner
+        ↓
+Visualization Layer
 ```
 
 ---
 
-## Initialization
+## 🧠 Core Responsibilities
+
+- Perform tuning using sklearn
+- Convert `cv_results_` → clean tabular format
+- Attach experiment metadata
+- Provide test evaluation
+
+---
+
+## ⚙️ Initialization
 
 ```python
 tuner = HyperparameterTuner(X_train, y_train, X_test, y_test)
@@ -32,96 +62,151 @@ tuner = HyperparameterTuner(X_train, y_train, X_test, y_test)
 
 ### Parameters
 
-- `X_train`: Training feature data
-- `y_train`: Training target data
-- `X_test`: (Optional) Test feature data
-- `y_test`: (Optional) Test target data
+- `X_train`: Training features
+- `y_train`: Training target
+- `X_test`: Optional test features
+- `y_test`: Optional test target
 
 ---
 
-## Grid Search
+## 🔍 Grid Search
 
 ```python
-tuner.grid_search(pipeline, param_grid)
+tuner.grid_search(pipeline, model_name, param_grid)
 ```
 
-### Parameters
+### ✅ Returns
 
-- `pipeline`: Scikit-learn pipeline object
-- `param_grid`: Dictionary of parameters to search
-- `cv`: Number of folds (default = 5)
-- `scoring`: Metric to evaluate (default = 'r2')
-- `n_jobs`: Parallel processing (default = -1)
+List of dictionaries:
 
-### Returns
+Each row = one hyperparameter configuration
 
-Dictionary containing:
-
-- `mode`: gridsearch
-- `best_params`
-- `best_score_cv`
-- `cv_results`
-- `test_metrics` (if test data provided)
+| Field      | Description      |
+| ---------- | ---------------- |
+| model      | model name       |
+| experiment | experiment label |
+| mode       | gridsearch       |
+| type       | tuned            |
+| score      | mean CV score    |
+| param\_\*  | hyperparameters  |
 
 ---
 
-## Random Search
+## 🎲 Random Search
 
 ```python
-tuner.random_search(pipeline, param_distributions)
+tuner.random_search(pipeline, model_name, param_distributions)
 ```
 
-### Parameters
+### ✅ Returns
 
-- `pipeline`: Scikit-learn pipeline
-- `param_distributions`: Parameter distributions
-- `cv`: Number of folds (default = 5)
-- `n_iter`: Number of iterations (default = 20)
-- `scoring`: Evaluation metric
-- `n_jobs`: Parallel jobs
-
-### Returns
-
-Dictionary with:
-
-- `mode`: random_search
-- `best_params`
-- `best_score_cv`
-- `cv_results`
-- `test_metrics` (optional)
+Same structure as grid search
 
 ---
 
-## Error Handling
+## 🔄 Data Transformation (CRITICAL)
 
-Raises `ValueError` if:
+Internally uses:
 
-- `X_train` or `y_train` is missing
+```python
+DataCleaner.flatten_cv_results()
+```
+
+### ✅ Converts:
+
+```
+cv_results_ (dict) ❌
+```
+
+Into:
+
+```
+Tabular rows ✅
+```
 
 ---
 
-## Evaluation Metrics
+## 🧪 Evaluation Metrics
 
-- R2 Score → Higher is better
-- Mean Squared Error (MSE) → Lower is better
+- ✅ `score` → cross-validation metric
+- ✅ `R2` / `MSE` → test metrics (optional)
 
 ---
 
-## Example Usage
+## 📊 Output Example
+
+```
+model | param_alpha | score | mode
+-----------------------------------
+Ridge | 0.1         | 0.98  | gridsearch
+Ridge | 1.0         | 0.99  | gridsearch
+```
+
+---
+
+## ✅ Design Principles
+
+### ✅ 1. Separation of Concerns
+
+- Tuning logic isolated from model execution
+
+### ✅ 2. Visualization-Ready Output
+
+- No nested structures
+- Flat schema
+
+### ✅ 3. Experiment-Aware
+
+- Uses `ExperimentNameBuilder`
+
+### ✅ 4. Scalable Design
+
+- Works with AutoML pipelines
+
+---
+
+## ⚠️ Error Handling
+
+Raises:
+
+```python
+ValueError
+```
+
+If training data is missing.
+
+---
+
+## ✅ Example Usage
 
 ```python
 param_grid = {
-    "model__alpha": [0.1, 1.0, 10.0]
+    "model__alpha": [0.1, 1, 10]
 }
 
-tuner.grid_search(pipeline, param_grid)
+results = tuner.grid_search(pipeline, "Ridge", param_grid)
 ```
 
 ---
 
-## Design Benefits
+## 🚀 Integration Highlights
 
-- ✅ Decoupled from model logic
-- ✅ Reusable across pipelines
-- ✅ Supports both Grid & Random Search
-- ✅ Clean output format for reporting
+Works seamlessly with:
+
+- ✅ LinearModelUtility
+- ✅ HyperparameterPlots
+- ✅ OptimizationPlots
+- ✅ ComparisonPlots
+
+---
+
+## 🏁 Conclusion
+
+The updated `HyperparameterTuner` is a **core building block of an AutoML-ready system**, enabling:
+
+✔ Full hyperparameter exploration
+✔ Visualization of tuning landscapes
+✔ Experiment-level tracking
+✔ Scalable ML workflows
+
+---

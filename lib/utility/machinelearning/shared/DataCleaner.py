@@ -64,3 +64,36 @@ class DataCleaner:
                 df[col] = df[col].fillna(0)
 
         return df
+
+    def flatten_cv_results(self, cv_results, model_name, mode):
+        """
+        Convert sklearn cv_results_ dict into cleaned tabular rows.
+
+        Returns:
+            List of dictionaries (each row = one parameter combination)
+        """
+
+        df = pd.DataFrame(cv_results)
+
+        # ✅ extract param columns
+        param_cols = [col for col in df.columns if col.startswith("param_")]
+
+        if not param_cols:
+            return []
+
+        # ✅ keep only useful columns
+        df = df[param_cols + ["mean_test_score"]]
+
+        # ✅ rename for consistency
+        df = df.rename(columns={"mean_test_score": "score"})
+
+        # ✅ clean NaN safely (reuse existing logic)
+        cleaner = DataCleaner(df)
+        df = cleaner.clean(required_cols=param_cols + ["score"])
+
+        # ✅ add metadata
+        df["model"] = model_name
+        df["type"] = "tuned"
+        df["mode"] = mode
+
+        return df.to_dict(orient="records")

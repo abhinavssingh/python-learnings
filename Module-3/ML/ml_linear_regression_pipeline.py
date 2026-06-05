@@ -113,8 +113,8 @@ content.append(builder.grid([
     builder.card("Train LinearRegression models with K-Fold (k=5):", builder.render_dict(ml_kfold_results)),
     builder.card("Train Selected models with different parameters:", builder.render_dict(ml_selected_results.to_dict())),
     builder.card("Ridge Grid Search Result:", builder.render_dict(ridge_grid_result)),
-    builder.card("Ridge Tuned Result (Grid Search):", builder.render_dict(ridge_tuned_result)),
-    builder.card("ElasticNet Tuned Result (Random Search):", builder.render_dict(elasticnet_tuned_result)),
+    builder.card("Ridge Tuned Result (Grid Search):", builder.render_dataframe(pd.DataFrame(ridge_tuned_result))),
+    builder.card("ElasticNet Tuned Result (Random Search):", builder.render_dataframe(pd.DataFrame(elasticnet_tuned_result))),
     builder.card("Model Ranking (R2)", builder.render_dataframe(ranking)),
     builder.card("Best Model", builder.render_dict(best_model)),
     builder.card("Model Comparison Summary", builder.render_dataframe(comparison)),
@@ -132,7 +132,7 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(opt.plot_optimization_animation(results_df, "MSE", "R2"), "Optimization Animation"),
     plotRenderer.plot_to_card(hp.plot_3d_surface(results_df, "param_model__alpha", "param_model__l1_ratio"),
                               "3D Hyperparameter Surface"),
-    plotRenderer.plot_to_card(opt.plot_gridsearch_animation(results_df, model="Ridge", mode="gridsearch"),
+    plotRenderer.plot_to_card(opt.plot_search_animation(results_df, model="Ridge", mode="gridsearch"),
                               "Grid Search Animation"),
 
 ]))

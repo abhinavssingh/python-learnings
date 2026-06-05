@@ -1,18 +1,54 @@
-import numpy as np
-import pandas as pd
 import plotly.express as px
 
-from lib.utility.machinelearning.visualization.core.DataCleaner import DataCleaner
+from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
 
 class OptimizationPlots:
+    """
+    Handles optimization / tuning visualizations.
+    Now fully compatible with experiment-based architecture.
+    """
 
-    def plot_optimization_animation(self, df, x_metric, y_metric):
+    # ---------------------------------------------------
+    # INTERNAL HELPERS
+    # ---------------------------------------------------
+    def _resolve_group_col(self, df):
+        return "experiment" if "experiment" in df.columns else "model"
+
+    def _resolve_metric(self, df, metric):
+        if metric and metric in df.columns:
+            return metric
+        if "score" in df.columns:
+            return "score"
+        if "R2" in df.columns:
+            return "R2"
+        return None
+
+    # ---------------------------------------------------
+    # 1. GENERIC OPTIMIZATION ANIMATION
+    # ---------------------------------------------------
+    def plot_optimization_animation(self, df, x_metric=None, y_metric=None):
+
+        df = df.copy()
+
+        y_metric = self._resolve_metric(df, y_metric)
+        x_metric = x_metric if x_metric in df.columns else None
+
+        if not y_metric:
+            return px.scatter(title="No valid metric found")
+
+        # ✅ fallback x-axis
+        if not x_metric:
+            df["iteration"] = range(len(df))
+            x_metric = "iteration"
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([x_metric, y_metric])
 
         if df.empty:
             return px.scatter(title="No valid data")
+
+        color_col = self._resolve_group_col(df)
 
         df["iteration"] = range(len(df))
 
@@ -21,16 +57,19 @@ class OptimizationPlots:
             x=x_metric,
             y=y_metric,
             animation_frame="iteration",
-            color="model",
+            color=color_col,
             size=y_metric,
             title="Optimization Progress"
         )
 
-    def plot_gridsearch_animation(self, df, model=None, mode=None):
+    # ---------------------------------------------------
+    # 2. GRID / RANDOM SEARCH ANIMATION
+    # ---------------------------------------------------
+    def plot_search_animation(self, df, model=None, mode=None, metric=None):
 
         df = df.copy()
 
-        # ✅ filter tuned rows only
+        # ✅ filter tuned results
         if "type" in df.columns:
             df = df[df["type"] == "tuned"]
 
@@ -41,64 +80,52 @@ class OptimizationPlots:
             df = df[df["mode"] == mode]
 
         if df.empty:
-            return px.scatter(title="No gridsearch data found")
+            return px.scatter(title="No tuning data found")
 
-        rows = []
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.scatter(title="No valid metric found")
 
-        # ✅ Extract param data
-        for _, row in df.iterrows():
+        # ✅ detect params
+        param_cols = [c for c in df.columns if c.startswith("param_")]
 
-            # depends on structure
-            alphas = row.get("param_model__alpha")
-            scores = row.get("mean_test_score")
+        if not param_cols:
+            return px.scatter(title="No hyperparameter data available")
 
-            # ✅ handle lists/numpy
-            if not isinstance(alphas, (list, tuple, np.ndarray)):
-                continue
+        # ✅ pick first param for animation axis
+        x_param = param_cols[0]
 
-            if not isinstance(scores, (list, tuple, np.ndarray)):
-                continue
+        cleaner = DataCleaner(df)
+        df = cleaner.clean([x_param, metric])
 
-            if len(alphas) != len(scores):
-                continue
+        if df.empty:
+            return px.scatter(title="No valid data after cleaning")
 
-            for i in range(len(alphas)):
-                try:
-                    rows.append({
-                        "model": row["model"],
-                        "iteration": i,
-                        "alpha": float(alphas[i]),
-                        "score": float(scores[i])
-                    })
-                except BaseException:
-                    continue
+        color_col = self._resolve_group_col(df)
 
-        plot_df = pd.DataFrame(rows)
-
-        if plot_df.empty:
-            return px.scatter(title="No valid gridsearch data")
+        # ✅ create iteration (sorted improves animation)
+        df = df.sort_values(metric, ascending=False)
+        df["iteration"] = range(len(df))
 
         # ✅ cumulative best
-        plot_df = plot_df.sort_values(["model", "iteration"])
-        plot_df["best_score"] = plot_df.groupby("model")["score"].cummax()
+        df["best_score"] = df[metric].cummax()
 
         fig = px.scatter(
-            plot_df,
-            x="alpha",
-            y="score",
+            df,
+            x=x_param,
+            y=metric,
             animation_frame="iteration",
-            color="model",
-            size="score",
-            title="GridSearch Optimization"
+            color=color_col,
+            size=metric,
+            title="Hyperparameter Optimization Progress"
         )
 
+        # ✅ ✅ Add best trend line (static overlay)
         fig.add_scatter(
-            x=plot_df["alpha"],
-            y=plot_df["best_score"],
+            x=df[x_param],
+            y=df["best_score"],
             mode="lines",
             name="Best So Far"
         )
-
-        fig.update_xaxes(type="log")
 
         return fig

@@ -1,18 +1,41 @@
 import plotly.express as px
 import plotly.graph_objects as go
 
-from lib.utility.machinelearning.visualization.core.DataCleaner import DataCleaner
+from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
 
 class ComparisonPlots:
     """
     All model comparison, ranking, and highlighting plots.
+    Now fully experiment-aware.
     """
+
+    # ---------------------------------------------------
+    # INTERNAL UTIL
+    # ---------------------------------------------------
+    def _resolve_group_col(self, df):
+        return "experiment" if "experiment" in df.columns else "model"
+
+    def _resolve_metric(self, df, metric):
+        if metric in df.columns:
+            return metric
+        if "score" in df.columns:
+            return "score"
+        if "R2" in df.columns:
+            return "R2"
+        return None
 
     # ----------------------------
     # 1. ALL MODEL COMPARISON
     # ----------------------------
     def plot_all_model_comparison(self, df, metric1="R2", metric2="MSE", mode=None):
+
+        metric1 = self._resolve_metric(df, metric1)
+        metric2 = self._resolve_metric(df, metric2)
+
+        if not metric1 or not metric2:
+            return px.bar(title="Metrics not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric1, metric2])
 
@@ -22,10 +45,12 @@ class ComparisonPlots:
         if df.empty:
             return px.bar(title="No valid data")
 
+        group_col = self._resolve_group_col(df)
+
         fig = go.Figure()
 
-        fig.add_bar(x=df["model"], y=df[metric1], name=metric1)
-        fig.add_bar(x=df["model"], y=df[metric2], name=metric2, yaxis="y2")
+        fig.add_bar(x=df[group_col], y=df[metric1], name=metric1)
+        fig.add_bar(x=df[group_col], y=df[metric2], name=metric2, yaxis="y2")
 
         fig.update_layout(
             title=f"Model Comparison ({mode})",
@@ -40,6 +65,11 @@ class ComparisonPlots:
     # 2. SELECTED MODEL COMPARISON
     # ----------------------------
     def plot_model_comparison(self, df, model_list, metric="R2", mode=None):
+
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.bar(title="Metric not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric])
 
@@ -51,11 +81,13 @@ class ComparisonPlots:
         if df.empty:
             return px.bar(title="No valid data")
 
+        group_col = self._resolve_group_col(df)
+
         return px.bar(
             df,
-            x="model",
+            x=group_col,
             y=metric,
-            color="model",
+            color=group_col,
             title="Selected Model Comparison"
         )
 
@@ -63,6 +95,11 @@ class ComparisonPlots:
     # 3. BEST MODEL (HIGHLIGHT)
     # ----------------------------
     def plot_best_model_highlight(self, df, metric="R2"):
+
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.bar(title="Metric not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric])
 
@@ -71,14 +108,16 @@ class ComparisonPlots:
 
         best_idx = df[metric].idxmax()
 
-        df["color"] = "Other"
-        df.loc[best_idx, "color"] = "Best Model"
+        df["highlight"] = "Other"
+        df.loc[best_idx, "highlight"] = "Best"
+
+        group_col = self._resolve_group_col(df)
 
         return px.bar(
             df,
-            x="model",
+            x=group_col,
             y=metric,
-            color="color",
+            color="highlight",
             title=f"Best Model Highlight ({metric})"
         )
 
@@ -86,6 +125,11 @@ class ComparisonPlots:
     # 4. BEST PER MODEL
     # ----------------------------
     def plot_best_per_model(self, df, metric="R2"):
+
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.bar(title="Metric not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric])
 
@@ -104,18 +148,25 @@ class ComparisonPlots:
         )
 
     # ----------------------------
-    # 5. MODE COMPARISON (K-FOLD vs TRAIN-TEST)
+    # 5. MODE COMPARISON
     # ----------------------------
     def plot_mode_comparison(self, df, metric="R2"):
+
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.bar(title="Metric not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric])
 
         if df.empty:
             return px.bar(title="No valid data")
 
+        group_col = self._resolve_group_col(df)
+
         return px.bar(
             df,
-            x="model",
+            x=group_col,
             y=metric,
             color="mode",
             barmode="group",
@@ -125,41 +176,35 @@ class ComparisonPlots:
     # ----------------------------
     # 6. PREPROCESSING IMPACT
     # ----------------------------
-
     def plot_preprocessing_impact(self, df, x="MSE", y="R2"):
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([x, y])
 
         if df.empty:
             return px.scatter(title="No valid data")
 
-        # ✅ SAFE: check if imputer exists
+        color_col = self._resolve_group_col(df)
         symbol_col = "imputer" if "imputer" in df.columns else None
 
-        if symbol_col:
-            return px.scatter(
-                df,
-                x=x,
-                y=y,
-                color="model",
-                symbol=symbol_col,
-                title="Preprocessing Impact"
-            )
-        else:
-            # ✅ fallback (no symbol)
-            return px.scatter(
-                df,
-                x=x,
-                y=y,
-                color="model",
-                title="Preprocessing Impact (No Imputer Info)"
-            )
+        return px.scatter(
+            df,
+            x=x,
+            y=y,
+            color=color_col,
+            symbol=symbol_col,
+            title="Preprocessing Impact"
+        )
 
     # ----------------------------
     # 7. MODEL RANKING
     # ----------------------------
-
     def plot_model_ranking(self, df, metric="R2"):
+
+        metric = self._resolve_metric(df, metric)
+        if not metric:
+            return px.bar(title="Metric not available")
+
         cleaner = DataCleaner(df)
         df = cleaner.clean([metric])
 
@@ -169,10 +214,12 @@ class ComparisonPlots:
         df = df.sort_values(metric, ascending=False)
         df["rank"] = range(1, len(df) + 1)
 
+        group_col = self._resolve_group_col(df)
+
         return px.bar(
             df,
-            x="model",
+            x=group_col,
             y="rank",
             title="Model Ranking (Lower is Better)",
-            color="model"
+            color=group_col
         )
