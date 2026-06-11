@@ -6,4 +6,4 @@ from lib.utility.machinelearning.base.ClassificationModelWrapper import Classifi
 class DecisionTreeClassifierWrapper(ClassificationModelWrapper):
 
     def __init__(self):
-        super().__init__(DecisionTreeClassifier(random_state=42))
+        super().__init__(DecisionTreeClassifier(max_depth=5, max_features="sqrt", random_state=42))

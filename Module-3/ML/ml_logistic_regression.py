@@ -8,6 +8,7 @@ from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
+from lib.utility.machinelearning.visualization.generic.ClassificationPlots import ClassificationPlots as cp
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -25,6 +26,8 @@ content = []
 dashboard = []
 builder = HtmlBuilder()
 plotRenderer = PlotRenderer()
+cplots = cp()
+
 
 df, report = dl.read_dataset("adultcensusincome.csv", optimize=False, handle_unnamed="drop", return_report=True)
 df_info = dfh.get_dataframe_info_str(df)
@@ -116,6 +119,30 @@ cm.prepare_data()
 
 # run all models with default settings
 ml_results = cm.run_all_models()
+
+
+# ✅ tuning
+
+# cm.tune_model("LogisticRegression", C=[0.1, 1, 10], solver=["lbfgs"])
+# cm.tune_model("DecisionTreeClassifier", max_depth=[5, 10], min_samples_leaf=[2, 5])
+# cm.tune_model("RandomForestClassifier", n_estimators=[10, 20, 50], max_depth=[5, 10])
+
+# param_configs = {
+#     "LogisticRegression": {
+#         "model__C": [0.1, 1, 10]
+#     },
+#     "KNNClassifier": {
+#         "model__n_neighbors": [3, 5, 7],
+#         "model__weights": ["uniform", "distance"]
+#     }
+# }
+
+# cm.tune_all_models(param_configs, search_type="grid", cv=5, scoring="f1")
+
+models_ranked = cm.rank_models(metric="f1")
+models_comparison = cm.compare_models()
+
+results_df = cm.get_results_df()
 # ===================================================================
 # RESULTS SECTION 1: Basic Info & Train All Results
 # ===================================================================
@@ -125,7 +152,8 @@ content.append(builder.grid([
     builder.card("Missing Values (as '?'):", builder.render_series(missing_count)),
     builder.card("Unique Values Count per Column:", builder.render_dict(unique_values)),
     builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
-    builder.card("Train All (all 5 models)", builder.render_dict(ml_results.to_dict())),
+    builder.card("Train All Classification Models:", builder.render_dict(ml_results.to_dict())),
+    builder.card("All Classification Models Results (Flat)", builder.render_dataframe(results_df)),
 ]))
 
 # ===================================================================
@@ -144,6 +172,11 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(marital_status_hist_fig, "Income vs Marital Status"),
     plotRenderer.plot_to_card(sex_income_hist_fig, "Income vs Sex"),
     plotRenderer.plot_to_card(nuemric_corr_fig, "Numeric Correlation Heatmap"),
+    plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="accuracy"), "Preprocessing Impact"),
+    plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "Train vs KFold"),
+    plotRenderer.plot_to_card(cplots.plot_best_model(results_df, metric="f1"), "Best Model (Annotated)"),
+    plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall"]), "Multi-Metric Comparison"),
+    plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curves for All Models"),
 ]))
 
 html_doc = builder.build_page(
