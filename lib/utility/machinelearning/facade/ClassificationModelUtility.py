@@ -2,12 +2,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.utils.multiclass import type_of_target
+from skmultilearn.model_selection import iterative_train_test_split
 
 from lib.utility.machinelearning.evaluation.ClassificationModelComparator import ClassificationModelComparator
 from lib.utility.machinelearning.evaluation.Metrics import Metrics
 from lib.utility.machinelearning.experiment.ExperimentRunner import ExperimentRunner
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
+from lib.utility.machinelearning.shared.ClassificationFormatter import ClassificationFormatter as cf
 from lib.utility.machinelearning.tuning.ClassificationHyperparameterTuner import ClassificationHyperparameterTuner
 
 
@@ -57,11 +59,25 @@ class ClassificationModelUtility:
 
         print(f"✅ Detected problem type: {self.problem_type}")
 
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y,
-            test_size=test_size,
-            random_state=random_state
-        )
+        if self.problem_type == "multilabel-indicator":
+
+            X_np = X.values
+            y_np = y.values
+
+            X_train, y_train, X_test, y_test = iterative_train_test_split(
+                X_np, y_np, test_size=test_size
+            )
+
+            self.X_train = pd.DataFrame(X_train, columns=X.columns)
+            self.X_test = pd.DataFrame(X_test, columns=X.columns)
+            self.y_train = pd.DataFrame(y_train, columns=y.columns)
+            self.y_test = pd.DataFrame(y_test, columns=y.columns)
+
+        else:
+
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+                X, y, test_size=test_size, random_state=random_state
+            )
 
         self.preprocessor = Preprocessor(
             X,
@@ -80,56 +96,42 @@ class ClassificationModelUtility:
 
         wrapper = self.registry.get_model(model_name)
 
-        # ✅ multilabel adaptation BEFORE pipeline build
+        # ✅ multilabel adaptation
         if self.problem_type == "multilabel-indicator":
             wrapper.model = OneVsRestClassifier(wrapper.model)
 
-        # ✅ now build pipeline
         wrapper.build_pipeline(self.preprocessor)
 
-        # ✅ train
+        # ✅ train + predict
         wrapper.train(self.X_train, self.y_train)
-
-        # ✅ predictions
         y_pred = wrapper.predict(self.X_test)
 
-        # ✅ probabilities (IMPORTANT)
-        y_proba = None
-        if hasattr(wrapper.pipeline, "predict_proba"):
-            try:
-                y_proba = wrapper.pipeline.predict_proba(self.X_test)
-            except Exception:
-                y_proba = None
+        # ✅ probabilities
+        y_proba = self._get_probabilities(wrapper)
 
+        # ✅ compute metrics
         metrics = Metrics.classification(
             self.y_test,
             y_pred,
             y_proba=y_proba,
-            include_confusion_matrix=True,
+            include_confusion_matrix=(self.problem_type != "multilabel-indicator"),
             include_curves=True
         )
 
-        # ✅ split into two parts
-        artifacts_keys = ["confusion_matrix", "roc_curve", "pr_curve", "classification_report"]
-
-        artifacts = {k: metrics.pop(k) for k in list(metrics.keys()) if k in artifacts_keys}
+        # ✅ split artifacts (generic ✅)
+        artifacts = self._extract_artifacts(metrics)
 
         result = {
             "model": model_name,
             "experiment": f"{model_name} | classification",
             "mode": "train-test",
             "type": "baseline",
-
-            # ✅ clean metrics (ONLY scalars)
             **metrics,
-
-            # ✅ separate complex objects
             "artifacts": artifacts
         }
 
         self.results.append(result)
         return result
-
     # ----------------------------
 
     def run_all_models(self):
@@ -297,7 +299,16 @@ class ClassificationModelUtility:
     # ---------------------------------------------------
 
     def get_best_model(self, metric="accuracy"):
-        return ClassificationModelComparator(self.results).best_model(metric)
+
+        best = ClassificationModelComparator(self.results).best_model(metric)
+
+        if best is None:
+            return None
+
+        # ✅ remove artifacts before returning
+        clean_best = {k: v for k, v in best.items() if k != "artifacts"}
+
+        return clean_best
 
     # ---------------------------------------------------
     # COMPARE MODELS
@@ -306,25 +317,16 @@ class ClassificationModelUtility:
     def compare_models(self):
         return ClassificationModelComparator(self.results).compare()
 
-    import pandas as pd
-
     def get_confusion_matrix_df(self, model_name):
 
-        result = next(
-            (r for r in self.results if r["model"] == model_name),
-            None
-        )
+        result = next((r for r in self.results if r["model"] == model_name), None)
 
-        if not result or "confusion_matrix" not in result:
+        if not result:
             return None
 
-        cm = result["confusion_matrix"]
+        cm = result.get("artifacts", {}).get("confusion_matrix")
 
-        return pd.DataFrame(
-            cm,
-            index=[f"Actual {i}" for i in range(cm.shape[0])],
-            columns=[f"Pred {i}" for i in range(cm.shape[1])]
-        )
+        return cf.confusion_matrix(cm)
 
     def get_all_confusion_matrices(self):
 
@@ -332,16 +334,45 @@ class ClassificationModelUtility:
 
         for r in self.results:
 
-            artifacts = r.get("artifacts", {})
+            cm = r.get("artifacts", {}).get("confusion_matrix")
 
-            if "confusion_matrix" in artifacts:
-
-                cm = artifacts["confusion_matrix"]
-
-                cm_dict[r["model"]] = pd.DataFrame(
-                    cm,
-                    index=[f"Actual {i}" for i in range(len(cm))],
-                    columns=[f"Pred {i}" for i in range(len(cm[0]))]
-                )
+            if cm is not None:
+                cm_dict[r["model"]] = cf.confusion_matrix(cm)
 
         return cm_dict
+
+    def _get_probabilities(self, wrapper):
+
+        if not hasattr(wrapper.pipeline, "predict_proba"):
+            return None
+
+        try:
+            raw_proba = wrapper.pipeline.predict_proba(self.X_test)
+
+            if self.problem_type == "multilabel-indicator":
+
+                if isinstance(raw_proba, list):
+                    return np.column_stack([
+                        p[:, 1] if p.ndim > 1 else p
+                        for p in raw_proba
+                    ])
+
+            return raw_proba
+
+        except Exception:
+            return None
+
+    def _extract_artifacts(self, metrics):
+
+        artifact_keys = {"roc_curve", "pr_curve", "classification_report"}
+
+        if self.problem_type != "multilabel-indicator":
+            artifact_keys.add("confusion_matrix")
+
+        artifacts = {}
+
+        for key in list(metrics.keys()):
+            if key in artifact_keys:
+                artifacts[key] = metrics.pop(key)
+
+        return artifacts

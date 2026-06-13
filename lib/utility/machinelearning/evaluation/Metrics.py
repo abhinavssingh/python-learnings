@@ -24,8 +24,8 @@ AverageType = Literal["micro", "macro", "samples", "weighted", "binary"]
 
 class Metrics:
     """
-    Central metrics utility.
-    Supports both regression and classification.
+    Pure computation layer.
+    No formatting, no UI logic.
     """
 
     @staticmethod
@@ -70,9 +70,7 @@ class Metrics:
             "problem_type": target_type
         })
 
-        # ---------------------------------------------------
-        # ROC-AUC
-        # ---------------------------------------------------
+        # ✅ ROC-AUC
         if y_proba is not None:
             try:
                 if target_type == "binary":
@@ -88,27 +86,21 @@ class Metrics:
             except Exception:
                 result["roc_auc"] = None
 
-        # ---------------------------------------------------
-        # LOG LOSS
-        # ---------------------------------------------------
+        # ✅ log loss
         if y_proba is not None:
             try:
                 result["log_loss"] = log_loss(y_true, y_proba)
             except Exception:
                 result["log_loss"] = None
 
-        # ---------------------------------------------------
-        # CONFUSION MATRIX
-        # ---------------------------------------------------
+        # ✅ confusion matrix (raw)
         if include_confusion_matrix:
             try:
                 result["confusion_matrix"] = confusion_matrix(y_true, y_pred)
             except Exception:
                 result["confusion_matrix"] = None
 
-        # ---------------------------------------------------
-        # CLASSIFICATION REPORT
-        # ---------------------------------------------------
+        # ✅ classification report
         if include_report:
             result["classification_report"] = classification_report(
                 y_true,
@@ -117,40 +109,33 @@ class Metrics:
                 zero_division=0
             )
 
-        # ---------------------------------------------------
-        # CURVES ✅ FIXED
-        # ---------------------------------------------------
+        # ✅ curves (RAW ONLY)
         if include_curves and y_proba is not None:
 
             try:
 
-                # ✅ BINARY FIX
                 if target_type == "binary":
 
-                    # ✅ convert to numeric (CRITICAL FIX)
                     classes = np.unique(y_true)
-
-                    # map labels → 0 / 1
                     label_map = {classes[0]: 0, classes[1]: 1}
                     y_true_bin = np.vectorize(label_map.get)(y_true)
 
-                    # ✅ safe probability extraction
                     y_score = y_proba[:, 1] if len(y_proba.shape) > 1 else y_proba
 
-                    # ✅ ROC now works
                     fpr, tpr, thresholds = roc_curve(y_true_bin, y_score)
-
                     precision_c, recall_c, _ = precision_recall_curve(y_true_bin, y_score)
 
                     result["roc_curve"] = {
                         "fpr": fpr,
                         "tpr": tpr,
-                        "thresholds": thresholds   # ✅ CRITICAL
+                        "thresholds": thresholds
                     }
 
-                    result["pr_curve"] = {"precision": precision_c, "recall": recall_c}
+                    result["pr_curve"] = {
+                        "precision": precision_c,
+                        "recall": recall_c
+                    }
 
-                # ✅ MULTICLASS
                 elif target_type == "multiclass":
 
                     classes = np.unique(y_true)
@@ -164,23 +149,34 @@ class Metrics:
                             y_proba[:, i]
                         )
 
-                    result["roc_curve"] = {"multi": True, "fpr": fpr, "tpr": tpr}
+                    result["roc_curve"] = {"fpr": fpr, "tpr": tpr}
 
-                # ✅ MULTILABEL
                 elif target_type == "multilabel-indicator":
 
-                    n_labels = y_proba.shape[1]
+                    y_proba_arr = np.array(y_proba)
+
+                    if isinstance(y_proba, list):
+                        y_proba_arr = np.column_stack([
+                            p[:, 1] if p.ndim > 1 else p
+                            for p in y_proba
+                        ])
+
                     fpr, tpr = {}, {}
 
-                    for i in range(n_labels):
+                    for i in range(y_proba_arr.shape[1]):
+
+                        # ✅ skip invalid labels
+                        if len(np.unique(y_true.iloc[:, i])) < 2:
+                            continue
+
                         fpr[i], tpr[i], _ = roc_curve(
-                            y_true[:, i],
-                            y_proba[:, i]
+                            y_true.iloc[:, i],
+                            y_proba_arr[:, i]
                         )
 
-                    result["roc_curve"] = {"multilabel": True, "fpr": fpr, "tpr": tpr}
+                    result["roc_curve"] = {"fpr": fpr, "tpr": tpr}
 
-            except Exception as e:
-                print("⚠️ ROC generation failed:", str(e))  # ✅ DEBUG instead of silent fail
+            except Exception:
+                pass
 
         return result
