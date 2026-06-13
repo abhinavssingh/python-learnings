@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.utils.multiclass import type_of_target
 
 from lib.utility.machinelearning.evaluation.ClassificationModelComparator import ClassificationModelComparator
 from lib.utility.machinelearning.evaluation.Metrics import Metrics
@@ -29,6 +31,7 @@ class ClassificationModelUtility:
         self.registry = ModelRegistry()
         self.runner = None
         self.preprocessor = None
+        self.problem_type = None
 
     # ----------------------------
     def prepare_data(self, test_size=0.2, random_state=42):
@@ -42,7 +45,17 @@ class ClassificationModelUtility:
             df = self.outlier_handler.fit_transform(df)
 
         X = df.drop(self.target_col, axis=1)
-        y = df[self.target_col]
+
+        # ✅ support list of columns for multilabel classification
+        if isinstance(self.target_col, list):
+            y = df[self.target_col]
+        else:
+            y = df[self.target_col]
+
+        # ✅ detect problem type
+        self.problem_type = type_of_target(y)
+
+        print(f"✅ Detected problem type: {self.problem_type}")
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X, y,
@@ -67,7 +80,14 @@ class ClassificationModelUtility:
 
         wrapper = self.registry.get_model(model_name)
 
+        # ✅ multilabel adaptation BEFORE pipeline build
+        if self.problem_type == "multilabel-indicator":
+            wrapper.model = OneVsRestClassifier(wrapper.model)
+
+        # ✅ now build pipeline
         wrapper.build_pipeline(self.preprocessor)
+
+        # ✅ train
         wrapper.train(self.X_train, self.y_train)
 
         # ✅ predictions
@@ -81,21 +101,30 @@ class ClassificationModelUtility:
             except Exception:
                 y_proba = None
 
-        # ✅ FULL metrics
         metrics = Metrics.classification(
             self.y_test,
             y_pred,
             y_proba=y_proba,
             include_confusion_matrix=True,
-            include_curves=True   # ✅ enables ROC + PR
+            include_curves=True
         )
+
+        # ✅ split into two parts
+        artifacts_keys = ["confusion_matrix", "roc_curve", "pr_curve", "classification_report"]
+
+        artifacts = {k: metrics.pop(k) for k in list(metrics.keys()) if k in artifacts_keys}
 
         result = {
             "model": model_name,
             "experiment": f"{model_name} | classification",
             "mode": "train-test",
             "type": "baseline",
-            **metrics
+
+            # ✅ clean metrics (ONLY scalars)
+            **metrics,
+
+            # ✅ separate complex objects
+            "artifacts": artifacts
         }
 
         self.results.append(result)
@@ -220,7 +249,41 @@ class ClassificationModelUtility:
     # ---------------------------------------------------
 
     def get_results_df(self):
-        return pd.DataFrame(self.results)
+
+        df = pd.DataFrame(self.results)
+
+        # ❌ remove artifacts column (optional)
+        if "artifacts" in df.columns:
+            df = df.drop(columns=["artifacts"])
+
+        return df
+
+    def get_artifacts_df(self):
+
+        rows = []
+
+        for r in self.results:
+
+            artifacts = r.get("artifacts", {})
+
+            row = {
+                "model": r["model"]
+            }
+
+            # ✅ Confusion Matrix → string/table friendly
+            if "confusion_matrix" in artifacts:
+                cm = artifacts["confusion_matrix"]
+                row["confusion_matrix"] = str(cm.tolist())
+
+            # ✅ ROC AUC summary only (optional)
+            if "roc_curve" in artifacts:
+                row["has_roc_curve"] = True
+            else:
+                row["has_roc_curve"] = False
+
+            rows.append(row)
+
+        return pd.DataFrame(rows)
 
     # ---------------------------------------------------
     # RANK MODELS
@@ -242,3 +305,43 @@ class ClassificationModelUtility:
 
     def compare_models(self):
         return ClassificationModelComparator(self.results).compare()
+
+    import pandas as pd
+
+    def get_confusion_matrix_df(self, model_name):
+
+        result = next(
+            (r for r in self.results if r["model"] == model_name),
+            None
+        )
+
+        if not result or "confusion_matrix" not in result:
+            return None
+
+        cm = result["confusion_matrix"]
+
+        return pd.DataFrame(
+            cm,
+            index=[f"Actual {i}" for i in range(cm.shape[0])],
+            columns=[f"Pred {i}" for i in range(cm.shape[1])]
+        )
+
+    def get_all_confusion_matrices(self):
+
+        cm_dict = {}
+
+        for r in self.results:
+
+            artifacts = r.get("artifacts", {})
+
+            if "confusion_matrix" in artifacts:
+
+                cm = artifacts["confusion_matrix"]
+
+                cm_dict[r["model"]] = pd.DataFrame(
+                    cm,
+                    index=[f"Actual {i}" for i in range(len(cm))],
+                    columns=[f"Pred {i}" for i in range(len(cm[0]))]
+                )
+
+        return cm_dict

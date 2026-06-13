@@ -1,3 +1,4 @@
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -148,33 +149,99 @@ class ClassificationPlots:
     # ----------------------------
     # ROC CURVE (MULTI-MODEL ✅)
     # ----------------------------
+
     def plot_roc_all_models(self, results):
+
+        import numpy as np
+        import plotly.graph_objects as go
 
         fig = go.Figure()
 
+        best_model = None
+        best_auc = -1
+
         for r in results:
 
-            if "roc_curve" not in r:
+            model_name = r["model"]
+            auc = r.get("roc_auc")
+            roc_data = r.get("artifacts", {}).get("roc_curve")
+
+            if not roc_data:
                 continue
 
+            fpr = np.array(roc_data.get("fpr"))
+            tpr = np.array(roc_data.get("tpr"))
+            thresholds = roc_data.get("thresholds")
+
+            if fpr is None or tpr is None:
+                continue
+
+            # ✅ find best threshold (Youden’s J)
+            j_scores = tpr - fpr
+            best_idx = np.argmax(j_scores)
+
+            best_fpr = fpr[best_idx]
+            best_tpr = tpr[best_idx]
+
+            best_thr = None
+            if thresholds is not None and len(thresholds) > best_idx:
+                best_thr = thresholds[best_idx]
+
+            # ✅ track best model
+            if auc and auc > best_auc:
+                best_auc = auc
+                best_model = model_name
+
+            # ✅ plot ROC line
             fig.add_trace(go.Scatter(
-                x=r["roc_curve"]["fpr"],
-                y=r["roc_curve"]["tpr"],
+                x=fpr,
+                y=tpr,
                 mode="lines",
-                name=r["model"]
+                name=f"{model_name} (AUC={auc:.3f})" if auc else model_name,
+                line=dict(width=4 if model_name == best_model else 2)
             ))
 
+            # ✅ add threshold marker
+            fig.add_trace(go.Scatter(
+                x=[best_fpr],
+                y=[best_tpr],
+                mode="markers+text",
+                text=[f"{model_name}<br>thr={best_thr:.2f}" if best_thr else model_name],
+                textposition="top center",
+                marker=dict(size=10, color="red"),
+                showlegend=False
+            ))
+
+        # ✅ diagonal line
+        fig.add_trace(go.Scatter(
+            x=[0, 1],
+            y=[0, 1],
+            mode="lines",
+            line=dict(dash="dash"),
+            name="Random"
+        ))
+
+        # ✅ best model annotation
+        if best_model:
+            fig.add_annotation(
+                text=f"🏆 Best Model: {best_model} (AUC={best_auc:.3f})",
+                x=0.6,
+                y=0.2,
+                showarrow=False,
+                font=dict(size=14)
+            )
+
         fig.update_layout(
-            title="ROC Curve Comparison",
+            title="ROC Curve Comparison (Best Threshold Highlighted)",
             xaxis_title="False Positive Rate",
             yaxis_title="True Positive Rate"
         )
 
         return fig
-
     # ----------------------------
     # AUTO METRIC PICK (IMPORTANT)
     # ----------------------------
+
     def _default_metrics(self, df):
 
         # ✅ classification priority

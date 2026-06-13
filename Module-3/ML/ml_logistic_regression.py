@@ -143,6 +143,7 @@ models_ranked = cm.rank_models(metric="f1")
 models_comparison = cm.compare_models()
 
 results_df = cm.get_results_df()
+artifacts_df = cm.get_artifacts_df()
 # ===================================================================
 # RESULTS SECTION 1: Basic Info & Train All Results
 # ===================================================================
@@ -154,6 +155,9 @@ content.append(builder.grid([
     builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
     builder.card("Train All Classification Models:", builder.render_dict(ml_results.to_dict())),
     builder.card("All Classification Models Results (Flat)", builder.render_dataframe(results_df)),
+    # builder.card("Artifacts for all classification models:", builder.render_dataframe(artifacts_df)),
+    builder.card("Confusion Matrix for all classification models:", builder.render_dict(cm.get_all_confusion_matrices()))
+
 ]))
 
 # ===================================================================
@@ -175,7 +179,7 @@ content.append(builder.chart_grid([
     plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="accuracy"), "Preprocessing Impact"),
     plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "Train vs KFold"),
     plotRenderer.plot_to_card(cplots.plot_best_model(results_df, metric="f1"), "Best Model (Annotated)"),
-    plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall"]), "Multi-Metric Comparison"),
+    plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall", "roc_auc"]), "Multi-Metric Comparison"),
     plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curves for All Models"),
 ]))
 
