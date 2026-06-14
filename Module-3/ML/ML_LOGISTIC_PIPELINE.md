@@ -1,4 +1,3 @@
-
 # ML Logistic Regression Pipeline Report – Detailed Documentation
 
 ## Overview
@@ -13,11 +12,29 @@ This script builds a complete **end-to-end Machine Learning pipeline report** fo
 
 ---
 
-## Architecture Flow
+## 🧱 Architecture Flow
 
+```mermaid
+flowchart TD
+    A[Data Load] --> B[EDA]
+    B --> C[Preprocessor]
+    C --> D[ClassificationModelUtility]
+    D --> E[ModelRegistry]
+    E --> F[Wrapper]
+    F --> G[Pipeline]
+    G --> H[Train & Predict]
+    H --> I[Metrics.classification]
+    I --> J[Artifacts]
 ```
-Data Load → EDA → Preprocessing → Model Training → Evaluation → Visualization → HTML Report
-```
+
+---
+
+## ✅ Key Changes (Refactoring)
+
+- ✅ Wrapper-first execution
+- ✅ Classification-only metrics
+- ✅ Artifact separation
+- ✅ Cleaner result structure
 
 ---
 
@@ -30,6 +47,7 @@ dl.read_dataset("adultcensusincome.csv")
 ```
 
 Features:
+
 - Handles unnamed columns
 - Optional optimization
 - Returns dataset + load report
@@ -74,6 +92,7 @@ df_usa = df[df['native.country'] == 'United-States']
 ```
 
 Purpose:
+
 - Reduce imbalance
 - Improve performance
 
@@ -100,6 +119,7 @@ cm = ClassificationModelUtility(...)
 ```
 
 Responsibilities:
+
 - Data preparation
 - Model execution
 - Metric computation
@@ -114,6 +134,7 @@ cm.run_all_models()
 ```
 
 Runs multiple models:
+
 - Logistic Regression
 - Decision Tree
 - Random Forest
@@ -190,6 +211,7 @@ ru.save_html_report(...)
 ```
 
 Outputs:
+
 - HTML report file
 - Opens automatically in browser
 
@@ -238,4 +260,3 @@ Future enhancements:
 ## Summary
 
 This script demonstrates a **complete ML reporting pipeline**, combining data analysis, modeling, and visualization into a single automated HTML report. It is designed for scalability, extensibility, and enterprise-level usage.
-

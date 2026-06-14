@@ -181,156 +181,147 @@ flowchart TD
 machinelearning/
 │
 ├── README.md
-│   # ✅ High-level overview of ML framework, architecture, usage
+│   # ✅ Updated: Wrapper-driven architecture + end-to-end flow + AutoML-ready
 │
 ├── base/
 │   ├── MLModelBase.py
-│   │   # ✅ Abstract base class defining common ML interface (train, predict, pipeline)
+│   │   # ✅ Core abstraction (train / predict / evaluate contract)
 │   │
 │   ├── BaseModelWrapper.py
-│   │   # ✅ Generic wrapper for pipeline + model integration
+│   │   # ✅ Central wrapper (pipeline + lifecycle execution)
 │   │
 │   ├── ClassificationModelWrapper.py
-│   │   # ✅ Wrapper specialized for classification models
+│   │   # ✅ Classification wrapper (predict_proba + classification metrics)
 │   │
 │   ├── LinearRegressionModelWrapper.py
-│       # ✅ Wrapper specialized for regression models
+│       # ✅ Regression wrapper (regression-only evaluation)
 │
 ├── evaluation/
 │   ├── Metrics.py
-│   │   # ✅ Core computation engine (accuracy, f1, roc, etc.)
+│   │   # ✅ PURE metrics layer (classification vs regression separated)
 │   │
 │   ├── METRICS.md
-│   │   # ✅ Documentation for Metrics logic and usage
+│   │   # ✅ Updated (artifact separation + task-aware metrics)
 │   │
 │   ├── ModelComparator.py
-│   │   # ✅ Generic comparator for ranking models (shared logic)
+│   │   # ✅ Generic comparison logic (experiment-level comparison)
 │   │
 │   ├── ClassificationModelComparator.py
-│       # ✅ Classification-specific ranking, best model selection
+│       # ✅ Classification ranking + best model selection
 │
 ├── facade/
 │   ├── ClassificationModelUtility.py
-│   │   # ✅ Main orchestration layer (classification pipeline: train, eval, tuning)
+│   │   # ✅ Classification orchestration (wrapper-driven + artifact-aware)
 │   │
 │   ├── CLASSIFICATIONMODELUTILITY.md
-│   │   # ✅ Detailed documentation (flow, usage, architecture)
+│   │   # ✅ Updated (pipeline + metrics + artifacts + tuning flow)
 │   │
 │   ├── LinearModelUtility.py
-│   │   # ✅ Orchestration layer for regression workflows
+│   │   # ✅ Regression orchestration (correct scoring + wrapper-based)
 │   │
 │   ├── LinearModelUtility.md
-│       # ✅ Documentation for regression utility
+│       # ✅ Updated (regression separation + tuning fix)
 │
 ├── models/
 │   ├── __init__.py
-│   │   # ✅ Module initialization
+│   │   # ✅ Model discovery entry (auto-registration)
 │   │
 │   ├── classification/
 │   │   ├── __init__.py
 │   │   │   # ✅ Registers classification models
 │   │   │
 │   │   ├── LogisticRegressionWrapper.py
-│   │   │   # ✅ Wrapper for Logistic Regression
-│   │   │
 │   │   ├── DecisionTreeClassifierWrapper.py
-│   │   │   # ✅ Wrapper for Decision Tree
-│   │   │
 │   │   ├── RandomForestWrapper.py
-│   │   │   # ✅ Wrapper for Random Forest
-│   │   │
 │   │   ├── KNNClassifierWrapper.py
-│   │   │   # ✅ Wrapper for KNN
-│   │   │
 │   │   ├── SVCWrapper.py
-│   │       # ✅ Wrapper for Support Vector Classifier
+│   │       # ✅ All implement: task="classification", family="*"
 │   │
 │   ├── linear/
 │       ├── __init__.py
 │       │   # ✅ Registers regression models
 │       │
 │       ├── LinearRegressionWrapper.py
-│       │   # ✅ Linear Regression model wrapper
-│       │
 │       ├── RidgeWrapper.py
-│       │   # ✅ Ridge model wrapper
-│       │
 │       ├── LassoWrapper.py
-│       │   # ✅ Lasso model wrapper
-│       │
 │       ├── ElasticNetWrapper.py
-│           # ✅ ElasticNet model wrapper
+│           # ✅ All implement: task="regression", family="linear"
 │
 ├── pipeline/
 │   ├── Preprocessor.py
-│   │   # ✅ Builds full preprocessing pipeline (encoding, scaling, etc.)
+│   │   # ✅ PIPELINE BUILDER (not executor)
+│   │   # ✅ Combines: Imputer → Outlier → Transformer
 │   │
 │   ├── CustomImputer.py
-│   │   # ✅ Handles missing values with advanced grouped strategies
+│   │   # ✅ Missing value handler (group-aware + results_ logging)
 │   │
 │   ├── CustomImputer.md
-│   │   # ✅ Documentation for imputation logic
+│   │   # ✅ Updated (framework integration + pipeline safety)
 │   │
 │   ├── OutlierHandler.py
-│   │   # ✅ Handles outliers (IQR, z-score, etc.)
+│   │   # ✅ Outlier handler (IQR/Z-score, no row deletion)
 │   │
 │   ├── OutlierHandler.md
-│       # ✅ Documentation for outlier handling
+│       # ✅ Updated (pipeline compatibility + logging)
 │
 ├── registry/
 │   ├── ModelRegistry.py
-│       # ✅ Central registry for model discovery & dynamic loading
+│       # ✅ Wrapper discovery engine
+│       # ✅ Task-aware (classification / regression)
+│       # ✅ Family-aware (linear / tree / boosting)
 │
 ├── shared/
 │   ├── DataCleaner.py
-│   │   # ✅ Cleans DataFrame (NaN handling, filtering for plots/metrics)
+│   │   # ✅ CV results flattening + cleanup
 │   │
 │   ├── Formatter.py
-│   │   # ✅ Generic formatter interface (base formatting utilities)
+│   │   # ✅ Experiment naming (standardized format)
 │   │
 │   ├── ClassificationFormatter.py
-│       # ✅ Formats classification artifacts (CM, ROC, PR → DataFrame/UI)
+│       # ✅ Artifact formatting (ROC / PR / CM → DataFrame/UI)
 │
 ├── tuning/
 │   ├── HyperparameterTuner.py
-│   │   # ✅ Generic hyperparameter tuning engine (grid/random)
+│   │   # ✅ REGRESSION tuner
+│   │   # ✅ FIXED: scoring = neg_mean_squared_error
 │   │
 │   ├── HyperparameterTuner.md
-│   │   # ✅ Documentation for tuning strategies
+│   │   # ✅ Updated (regression-only tuning flow)
 │   │
 │   ├── ClassificationHyperparameterTuner.py
-│       # ✅ Classification-specific tuning logic and evaluation hooks
+│       # ✅ Classification tuner
+│       # ✅ Wrapper-based execution + artifact-aware output
 │
 ├── visualization/
 │   ├── README.md
-│   │   # ✅ Visualization module overview and usage
+│   │   # ✅ Visualization architecture overview
 │   │
 │   ├── core/
 │   │   ├── MetricResolver.py
-│   │       # ✅ Dynamically resolves best metrics for plotting
+│   │       # ✅ Dynamically selects best metrics for plots
 │   │
 │   ├── generic/
 │   │   ├── ClassificationPlots.py
-│   │   │   # ✅ Core visualization (bar, scatter, ROC, multi-metric)
+│   │   │   # ✅ Core plots (ROC, PR, multi-metric, comparisons)
 │   │   │
 │   │   ├── CLASSIFICATIONPLOTS.md
-│   │   │   # ✅ Documentation for classification visualizations
+│   │   │   # ✅ Visualization documentation
 │   │   │
 │   │   ├── ModelPerformanceVisualizer.py
-│   │   │   # ✅ Generic visualization wrapper for results
+│   │   │   # ✅ Visual orchestration layer (results + artifacts)
 │   │   │
 │   │   ├── ModelPerformanceVisualizer.md
-│   │       # ✅ Documentation for visualizer layer
+│   │       # ✅ Updated visualization docs
 │   │
 │   ├── advanced/
 │       ├── ComparisonPlots.py
-│       │   # ✅ Advanced model comparison visualizations
+│       │   # ✅ Baseline vs tuned comparison
 │       │
 │       ├── HyperparameterPlots.py
-│       │   # ✅ Visualize tuning results (grid/random search)
+│       │   # ✅ Grid / Random search visualization
 │       │
 │       ├── OptimizationPlots.py
-│           # ✅ Visualize optimization trends & performance curves
+│           # ✅ Optimization trends & performance curves
 ```
 
 ---

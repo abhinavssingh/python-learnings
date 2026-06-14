@@ -18,6 +18,39 @@ This script:
 
 ---
 
+## 🧱 Architecture Flow
+
+```mermaid
+flowchart TD
+    A[Data Load] --> B[Preprocessor]
+    B --> C[LinearModelUtility]
+    C --> D[ModelRegistry]
+    D --> E[Wrapper]
+    E --> F[Pipeline]
+    F --> G[Train & Predict]
+    G --> H[Metrics.regression]
+    H --> I[Results + Artifacts]
+```
+
+---
+
+## ✅ Key Changes (Refactoring)
+
+- ✅ Wrapper-based execution
+- ✅ Regression-only metrics
+- ✅ Correct tuning scoring
+- ✅ Artifact separation
+
+---
+
+## 📊 Data Preparation
+
+- Clean columns
+- Feature engineering
+- Ensure numeric consistency
+
+---
+
 ## Key Components
 
 ### Imports
