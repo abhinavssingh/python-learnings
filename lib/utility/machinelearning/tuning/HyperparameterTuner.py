@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
+from lib.utility.logger import Logger
+
 
 class HyperparameterTuner:
     """
@@ -37,10 +39,8 @@ class HyperparameterTuner:
                     cv=5, scoring=None, n_jobs=8):
 
         try:
-            wrapper.build_pipeline()
             pipeline = wrapper.get_pipeline()
 
-            # ✅ FIX: enforce regression scoring
             scoring = scoring or "neg_mean_squared_error"
 
             grid = GridSearchCV(
@@ -66,11 +66,13 @@ class HyperparameterTuner:
                 mode="gridsearch"
             )
 
+            Logger.info(f"Best result for {model_name}: {best_result}")
             results.append(best_result)
 
             return results
 
         except Exception as e:
+            Logger.error(f"Grid search failed for {model_name}: {str(e)}")
             return [{
                 "model": model_name,
                 "type": "failed",
@@ -86,10 +88,8 @@ class HyperparameterTuner:
                       cv=5, n_iter=20, scoring=None, n_jobs=8):
 
         try:
-            wrapper.build_pipeline()
             pipeline = wrapper.get_pipeline()
 
-            # ✅ FIX: enforce regression scoring
             scoring = scoring or "neg_mean_squared_error"
 
             search = RandomizedSearchCV(
@@ -117,11 +117,13 @@ class HyperparameterTuner:
                 mode="random_search"
             )
 
+            Logger.info(f"Best result for {model_name}: {best_result}")
             results.append(best_result)
 
             return results
 
         except Exception as e:
+            Logger.error(f"Random search failed for {model_name}: {str(e)}")
             return [{
                 "model": model_name,
                 "type": "failed",
@@ -156,12 +158,7 @@ class HyperparameterTuner:
 
                 y_pred = best_model.predict(self.X_test)
 
-                try:
-                    y_proba = best_model.predict_proba(self.X_test)
-                except Exception:
-                    y_proba = None
-
-                metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+                metrics = wrapper.evaluate(self.y_test, y_pred)
 
                 artifacts, metrics = self._extract_artifacts(metrics)
 
@@ -178,7 +175,7 @@ class HyperparameterTuner:
     # ---------------------------------------------------
     def _extract_artifacts(self, metrics):
 
-        artifact_keys = {"roc_curve", "pr_curve", "confusion_matrix"}
+        artifact_keys = {"residuals", "prediction_vs_actual"}
 
         artifacts = {}
         numeric_metrics = {}

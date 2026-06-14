@@ -3,6 +3,7 @@ import copy
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict, train_test_split
 
+from lib.utility.logger import Logger
 from lib.utility.machinelearning.evaluation.ModelComparator import ModelComparator
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
@@ -63,8 +64,6 @@ class LinearModelUtility:
     # ---------------------------------------------------
     def run_experiment(self, model_name, k_fold=None, imputer=None, outlier_handler=None):
 
-        import copy
-
         wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
         # ✅ preprocessing override
@@ -81,6 +80,7 @@ class LinearModelUtility:
 
         mode = "k-fold" if k_fold else "train-test"
         exp_name = Formatter.build(model_name, mode, k_fold, imputer, outlier_handler)
+        Logger.info(f"Running experiment: {exp_name}")
 
         # ✅ -------------------------
         # K-FOLD CASE
@@ -133,20 +133,37 @@ class LinearModelUtility:
     # ---------------------------------------------------
     def run_all_models(self, k_fold=None):
 
-        models = self.registry.get_models_by_task("regression")
+        models = self.registry.get_models_by_task("linear regression")
 
         results = []
-        for model_name in models:
-            results.append(self.run_experiment(model_name, k_fold=k_fold))
+
+        for model_name in models.keys():
+
+            Logger.info(f"Running model: {model_name}")
+
+            try:
+                result = self.run_experiment(model_name, k_fold=k_fold)
+                results.append(result)
+
+            except Exception as e:
+
+                Logger.error(f"Critical failure in {model_name}: {str(e)}")
+
+                results.append({
+                    "model": model_name,
+                    "task": "regression",
+                    "type": "failed",
+                    "error": str(e)
+                })
+
+        Logger.info(f"Completed {len(results)} experiments")
 
         return pd.DataFrame(results)
-
     # ---------------------------------------------------
     # RUN CUSTOM CONFIGS
     # ---------------------------------------------------
-    def run_experiments(self, configs):
 
-        import copy
+    def run_experiments(self, configs):
 
         all_results = []
 
@@ -161,7 +178,15 @@ class LinearModelUtility:
                 wrapper.build_pipeline(self.preprocessor)
 
                 mode = "k-fold" if k_fold else "train-test"
-                exp_name = f"{model_name} | custom"
+
+                exp_name = Formatter.build(
+                    model_name=model_name,
+                    mode=mode,
+                    k=config.get("k_fold"),
+                    imputer=config.get("imputer"),
+                    outlier_handler=config.get("outlier_handler"),
+                    search_type="custom"
+                )
 
                 # ✅ K-FOLD
                 if k_fold:
@@ -184,9 +209,8 @@ class LinearModelUtility:
                     wrapper.train(self.X_train, self.y_train)
 
                     y_pred = wrapper.predict(self.X_test)
-                    y_proba = wrapper.predict_proba(self.X_test)
 
-                    metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+                    metrics = wrapper.evaluate(self.y_test, y_pred)
 
                 artifacts, metrics = self._extract_artifacts(metrics)
 
@@ -208,6 +232,7 @@ class LinearModelUtility:
                     "type": "failed",
                     "error": str(e)
                 }
+                Logger.error(f"Experiment failed for {model_name}: {str(e)}")
 
             self.results.append(result)
             all_results.append(result)
@@ -234,7 +259,7 @@ class LinearModelUtility:
             # ✅ 🚨 CRITICAL FIX: enforce regression scoring
             scoring = scoring or "neg_mean_squared_error"
 
-            print(f"✅ Using scoring: {scoring} for {model_name}")  # DEBUG
+            Logger.info(f"Starting GridSearchCV for {model_name} with params: {param_grid} and cv={cv}")
 
             grid = GridSearchCV(
                 estimator=pipeline,
@@ -251,14 +276,8 @@ class LinearModelUtility:
 
             y_pred = best_model.predict(self.X_test)
 
-            # ✅ regression → no proba normally
-            try:
-                y_proba = best_model.predict_proba(self.X_test)
-            except Exception:
-                y_proba = None
-
             # ✅ evaluate using wrapper
-            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+            metrics = wrapper.evaluate(self.y_test, y_pred)
 
             artifacts, metrics = self._extract_artifacts(metrics)
 

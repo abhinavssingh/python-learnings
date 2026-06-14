@@ -99,7 +99,7 @@ def main():
     # ===================================================================
     content.append(builder.grid([
         builder.card("Dataframe Information:", builder.render_pre(df_info)),
-        builder.card("Train All (all 5 models)", builder.render_dict(ml_results.to_dict())),
+        builder.card("Train All (all 5 models)", builder.render_dataframe(ml_results)),
         builder.card("Train LinearRegression models with K-Fold (k=5):", builder.render_dict(ml_kfold_results)),
         builder.card("Train Selected models with different parameters:", builder.render_dict(ml_selected_results.to_dict())),
         builder.card("Ridge Grid Search Result:", builder.render_dict(ridge_grid_result)),
