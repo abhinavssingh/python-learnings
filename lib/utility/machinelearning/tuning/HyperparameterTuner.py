@@ -1,14 +1,11 @@
 import pandas as pd
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-
-from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
 
 class HyperparameterTuner:
     """
-    Utility class for hyperparameter tuning.
-    Produces CLEAN and PLOTTABLE outputs using DataCleaner.
+    Framework-aligned tuner supporting classification + regression.
+    Wrapper-driven, artifact-aware, AutoML-ready.
     """
 
     def __init__(self, X_train, y_train, X_test=None, y_test=None):
@@ -18,121 +15,178 @@ class HyperparameterTuner:
         self.y_test = y_test
 
     # ---------------------------------------------------
-    # INTERNAL: CLEAN CV RESULTS USING DataCleaner
+    # INTERNAL: CLEAN CV RESULTS
     # ---------------------------------------------------
     def _process_cv_results(self, cv_results, model_name, mode):
-        """
-        Uses DataCleaner to convert cv_results_ into clean rows
-        """
+
+        from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
         cleaner = DataCleaner(pd.DataFrame())
 
-        rows = cleaner.flatten_cv_results(
+        return cleaner.flatten_cv_results(
             cv_results,
             model_name=model_name,
             mode=mode
         )
 
-        return rows
-
     # ---------------------------------------------------
     # GRID SEARCH
     # ---------------------------------------------------
-    def grid_search(self, pipeline, model_name, param_grid,
-                    cv=5, scoring='r2', n_jobs=8):
 
-        if self.X_train is None or self.y_train is None:
-            raise ValueError("X_train and y_train must be provided")
+    def grid_search(self, wrapper, model_name, param_grid,
+                    cv=5, scoring=None, n_jobs=8):
 
-        grid = GridSearchCV(
-            pipeline,
-            param_grid,
-            cv=cv,
-            scoring=scoring,
-            n_jobs=n_jobs
-        )
+        try:
+            wrapper.build_pipeline()
+            pipeline = wrapper.get_pipeline()
 
-        grid.fit(self.X_train, self.y_train)
+            # ✅ FIX: enforce regression scoring
+            scoring = scoring or "neg_mean_squared_error"
 
-        # ✅ ✅ Convert full grid results → rows
-        results = self._process_cv_results(
-            grid.cv_results_,
-            model_name=model_name,
-            mode="gridsearch"
-        )
+            grid = GridSearchCV(
+                estimator=pipeline,
+                param_grid=param_grid,
+                cv=cv,
+                scoring=scoring,
+                n_jobs=n_jobs
+            )
 
-        # ✅ ✅ Add best result separately
-        best_result = {
-            "model": model_name,
-            "type": "tuned",
-            "mode": "gridsearch_best",
-            "best_score_cv": grid.best_score_,
-        }
+            grid.fit(self.X_train, self.y_train)
 
-        # ✅ flatten best params
-        for k, v in grid.best_params_.items():
-            best_result[f"param_{k}"] = v
+            results = self._process_cv_results(
+                grid.cv_results_,
+                model_name=model_name,
+                mode="gridsearch"
+            )
 
-        # ✅ add test metrics if provided
-        if self.X_test is not None and self.y_test is not None:
-            y_pred = grid.best_estimator_.predict(self.X_test)
-            best_result["test_metrics"] = {
-                "MSE": mean_squared_error(self.y_test, y_pred),
-                "R2": r2_score(self.y_test, y_pred)
-            }
+            best_result = self._build_best_result(
+                wrapper,
+                grid,
+                model_name,
+                mode="gridsearch"
+            )
 
-        results.append(best_result)
+            results.append(best_result)
 
-        return results
+            return results
+
+        except Exception as e:
+            return [{
+                "model": model_name,
+                "type": "failed",
+                "experiment": f"{model_name} | gridsearch",
+                "error": str(e)
+            }]
 
     # ---------------------------------------------------
     # RANDOM SEARCH
     # ---------------------------------------------------
-    def random_search(self, pipeline, model_name, param_distributions,
-                      cv=5, n_iter=20, scoring='r2', n_jobs=8):
 
-        if self.X_train is None or self.y_train is None:
-            raise ValueError("X_train and y_train must be provided")
+    def random_search(self, wrapper, model_name, param_dist,
+                      cv=5, n_iter=20, scoring=None, n_jobs=8):
 
-        search = RandomizedSearchCV(
-            pipeline,
-            param_distributions,
-            cv=cv,
-            n_iter=n_iter,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            random_state=42
-        )
+        try:
+            wrapper.build_pipeline()
+            pipeline = wrapper.get_pipeline()
 
-        search.fit(self.X_train, self.y_train)
+            # ✅ FIX: enforce regression scoring
+            scoring = scoring or "neg_mean_squared_error"
 
-        # ✅ ✅ Convert full search results → rows
-        results = self._process_cv_results(
-            search.cv_results_,
-            model_name=model_name,
-            mode="random_search"
-        )
+            search = RandomizedSearchCV(
+                estimator=pipeline,
+                param_distributions=param_dist,
+                cv=cv,
+                n_iter=n_iter,
+                scoring=scoring,
+                n_jobs=n_jobs,
+                random_state=42
+            )
 
-        # ✅ ✅ Best result
-        best_result = {
+            search.fit(self.X_train, self.y_train)
+
+            results = self._process_cv_results(
+                search.cv_results_,
+                model_name=model_name,
+                mode="random_search"
+            )
+
+            best_result = self._build_best_result(
+                wrapper,
+                search,
+                model_name,
+                mode="random_search"
+            )
+
+            results.append(best_result)
+
+            return results
+
+        except Exception as e:
+            return [{
+                "model": model_name,
+                "type": "failed",
+                "experiment": f"{model_name} | random_search",
+                "error": str(e)
+            }]
+
+    # ---------------------------------------------------
+    # BEST RESULT (FRAMEWORK-ALIGNED)
+    # ---------------------------------------------------
+    def _build_best_result(self, wrapper, search_obj, model_name, mode):
+
+        result = {
             "model": model_name,
+            "experiment": f"{model_name} | {mode}_best",
+            "mode": f"{mode}_best",
             "type": "tuned",
-            "mode": "random_search_best",
-            "best_score_cv": search.best_score_,
+            "best_score_cv": search_obj.best_score_,
+            "task": getattr(wrapper, "task", "unknown"),
+            "family": getattr(wrapper, "family", "unknown")
         }
 
         # ✅ flatten params
-        for k, v in search.best_params_.items():
-            best_result[f"param_{k}"] = v
+        for k, v in search_obj.best_params_.items():
+            result[f"param_{k}"] = v
 
-        # ✅ test metrics
+        # ✅ evaluation using wrapper (IMPORTANT)
         if self.X_test is not None and self.y_test is not None:
-            y_pred = search.best_estimator_.predict(self.X_test)
-            best_result["test_metrics"] = {
-                "MSE": mean_squared_error(self.y_test, y_pred),
-                "R2": r2_score(self.y_test, y_pred)
-            }
 
-        results.append(best_result)
+            try:
+                best_model = search_obj.best_estimator_
 
-        return results
+                y_pred = best_model.predict(self.X_test)
+
+                try:
+                    y_proba = best_model.predict_proba(self.X_test)
+                except Exception:
+                    y_proba = None
+
+                metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+
+                artifacts, metrics = self._extract_artifacts(metrics)
+
+                result.update(metrics)
+                result["artifacts"] = artifacts
+
+            except Exception as e:
+                result["error"] = str(e)
+
+        return result
+
+    # ---------------------------------------------------
+    # ARTIFACT SPLITTING
+    # ---------------------------------------------------
+    def _extract_artifacts(self, metrics):
+
+        artifact_keys = {"roc_curve", "pr_curve", "confusion_matrix"}
+
+        artifacts = {}
+        numeric_metrics = {}
+
+        for k, v in metrics.items():
+            if k in artifact_keys:
+                artifacts[k] = v
+            else:
+                numeric_metrics[k] = v
+
+        return artifacts, numeric_metrics

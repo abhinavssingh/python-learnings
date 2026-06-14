@@ -1,12 +1,14 @@
+import copy
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import type_of_target
 from skmultilearn.model_selection import iterative_train_test_split
 
+from lib.utility.logger import Logger
 from lib.utility.machinelearning.evaluation.ClassificationModelComparator import ClassificationModelComparator
-from lib.utility.machinelearning.evaluation.Metrics import Metrics
-from lib.utility.machinelearning.experiment.ExperimentRunner import ExperimentRunner
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.ClassificationFormatter import ClassificationFormatter as cf
@@ -31,7 +33,6 @@ class ClassificationModelUtility:
         self.results = []
 
         self.registry = ModelRegistry()
-        self.runner = None
         self.preprocessor = None
         self.problem_type = None
 
@@ -48,16 +49,18 @@ class ClassificationModelUtility:
 
         X = df.drop(self.target_col, axis=1)
 
-        # ✅ support list of columns for multilabel classification
-        if isinstance(self.target_col, list):
-            y = df[self.target_col]
-        else:
-            y = df[self.target_col]
+        y = df[self.target_col]
 
-        # ✅ detect problem type
+        # ✅ FIX: encode string labels → numeric
+
+        self.label_encoder = None
+
+        if isinstance(y, pd.Series) and not pd.api.types.is_numeric_dtype(y):
+            self.label_encoder = LabelEncoder()
+            y = self.label_encoder.fit_transform(y)
+
         self.problem_type = type_of_target(y)
-
-        print(f"✅ Detected problem type: {self.problem_type}")
+        Logger.info(f"Detected problem type: {self.problem_type}")
 
         if self.problem_type == "multilabel-indicator":
 
@@ -80,70 +83,77 @@ class ClassificationModelUtility:
             )
 
         self.preprocessor = Preprocessor(
-            X,
+            self.X_train,
             imputer=self.imputer,
             outlier_handler=self.outlier_handler
         ).build()
-
-        self.runner = ExperimentRunner(self.preprocessor)
 
     # ----------------------------
 
     def run_experiment(self, model_name):
 
-        if self.X_train is None:
-            raise ValueError("Call prepare_data() before running experiments")
+        wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
-        wrapper = self.registry.get_model(model_name)
+        try:
+            if self.problem_type == "multilabel-indicator":
+                wrapper.model = OneVsRestClassifier(wrapper.model)
 
-        # ✅ multilabel adaptation
-        if self.problem_type == "multilabel-indicator":
-            wrapper.model = OneVsRestClassifier(wrapper.model)
+            wrapper.build_pipeline(self.preprocessor)
 
-        wrapper.build_pipeline(self.preprocessor)
+            # ✅ TRAIN
+            wrapper.train(self.X_train, self.y_train)
 
-        # ✅ train + predict
-        wrapper.train(self.X_train, self.y_train)
-        y_pred = wrapper.predict(self.X_test)
+            # ✅ PREDICT (only if train succeeded)
+            y_pred = wrapper.predict(self.X_test)
 
-        # ✅ probabilities
-        y_proba = self._get_probabilities(wrapper)
+            y_proba = wrapper.predict_proba(self.X_test)
 
-        # ✅ compute metrics
-        metrics = Metrics.classification(
-            self.y_test,
-            y_pred,
-            y_proba=y_proba,
-            include_confusion_matrix=(self.problem_type != "multilabel-indicator"),
-            include_curves=True
-        )
+            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
 
-        # ✅ split artifacts (generic ✅)
-        artifacts = self._extract_artifacts(metrics)
+            artifacts, metrics = self._extract_artifacts(metrics)
 
-        result = {
-            "model": model_name,
-            "experiment": f"{model_name} | classification",
-            "mode": "train-test",
-            "type": "baseline",
-            **metrics,
-            "artifacts": artifacts
-        }
+            result = {
+                "model": model_name,
+                "family": getattr(wrapper, "family", "unknown"),
+                "experiment": f"{model_name} | classification",
+                "mode": "train-test",
+                "type": "baseline",
+                **metrics,
+                "artifacts": artifacts
+            }
+
+        except Exception as e:
+
+            Logger.error(f"Model {model_name} failed during experiment: {e}")
+
+            # ✅ SAFE FAILURE RECORD
+            result = {
+                "model": model_name,
+                "family": getattr(wrapper, "family", "unknown"),
+                "experiment": f"{model_name} | classification",
+                "mode": "train-test",
+                "type": "failed",
+                "error": str(e)
+            }
 
         self.results.append(result)
         return result
+
     # ----------------------------
 
     def run_all_models(self):
 
         models = self.registry.get_models_by_task("classification")
+
         results = []
 
         for name in models.keys():
-            results.append(self.run_experiment(name))
+            try:
+                results.append(self.run_experiment(name))
+            except Exception as e:
+                Logger.error(f"Experiment for model {name} failed: {e}")
 
         return pd.DataFrame(results)
-
     # ---------------------------------------------------
     # TUNING
     # ---------------------------------------------------
@@ -231,7 +241,7 @@ class ClassificationModelUtility:
 
         for model_name in param_configs:
 
-            print(f"🔧 Tuning {model_name}...")
+            Logger.info(f"🔧 Tuning {model_name}...")
 
             res = self.tune_model(
                 model_name=model_name,
@@ -341,27 +351,6 @@ class ClassificationModelUtility:
 
         return cm_dict
 
-    def _get_probabilities(self, wrapper):
-
-        if not hasattr(wrapper.pipeline, "predict_proba"):
-            return None
-
-        try:
-            raw_proba = wrapper.pipeline.predict_proba(self.X_test)
-
-            if self.problem_type == "multilabel-indicator":
-
-                if isinstance(raw_proba, list):
-                    return np.column_stack([
-                        p[:, 1] if p.ndim > 1 else p
-                        for p in raw_proba
-                    ])
-
-            return raw_proba
-
-        except Exception:
-            return None
-
     def _extract_artifacts(self, metrics):
 
         artifact_keys = {"roc_curve", "pr_curve", "classification_report"}
@@ -370,9 +359,12 @@ class ClassificationModelUtility:
             artifact_keys.add("confusion_matrix")
 
         artifacts = {}
+        numeric_metrics = {}
 
-        for key in list(metrics.keys()):
-            if key in artifact_keys:
-                artifacts[key] = metrics.pop(key)
+        for key, val in metrics.items():
+            if key in artifact_keys and val is not None:
+                artifacts[key] = val
+            else:
+                numeric_metrics[key] = val
 
-        return artifacts
+        return artifacts, numeric_metrics

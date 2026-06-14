@@ -3,15 +3,13 @@ from typing import Any, Dict, List
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
-from lib.utility.machinelearning.evaluation.Metrics import Metrics
 from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 from lib.utility.machinelearning.shared.Formatter import Formatter
 
 
 class ClassificationHyperparameterTuner:
     """
-    Generic classification tuner supporting dynamic kwargs.
-    Works with any classification model.
+    Wrapper-aligned classification tuner.
     """
 
     def __init__(self, X_train, y_train, X_test=None, y_test=None):
@@ -23,10 +21,9 @@ class ClassificationHyperparameterTuner:
     # ---------------------------------------------------
     # MAIN ENTRY
     # ---------------------------------------------------
-
     def tune(
         self,
-        pipeline,
+        wrapper,                         # ✅ changed (pass wrapper, not pipeline)
         model_name: str,
         search_type: str = "grid",
         param_config: Dict[str, Any] = None,
@@ -35,78 +32,88 @@ class ClassificationHyperparameterTuner:
 
         print(f"🔧 Tuning {model_name} using {search_type}")
 
-        # ✅ NEW: auto-build param_config from kwargs if not provided
         if param_config is None:
-
             if not kwargs:
-                raise ValueError("Either param_config or model parameters (**kwargs) must be provided")
+                raise ValueError("Provide param_config or tuning kwargs")
 
-            # ✅ prefix parameters automatically
             param_config = {
                 f"model__{k}": v if isinstance(v, list) else [v]
                 for k, v in kwargs.items()
             }
 
-        # ✅ routing
+        pipeline = wrapper.get_pipeline()
+
         if search_type == "grid":
-            return self._grid_search(pipeline, model_name, param_config, **kwargs)
+            return self._grid_search(wrapper, pipeline, model_name, param_config, **kwargs)
 
         elif search_type == "random":
-            return self._random_search(pipeline, model_name, param_config, **kwargs)
+            return self._random_search(wrapper, pipeline, model_name, param_config, **kwargs)
 
         elif search_type == "none":
             pipeline.fit(self.X_train, self.y_train)
-            return [self._evaluate_model(pipeline, model_name)]
+            return [self._evaluate(wrapper, pipeline, model_name)]
 
         else:
             raise ValueError(f"Unsupported search_type: {search_type}")
+
     # ---------------------------------------------------
     # GRID SEARCH
     # ---------------------------------------------------
+    def _grid_search(self, wrapper, pipeline, model_name, param_grid, **kwargs):
 
-    def _grid_search(self, pipeline, model_name, param_grid, **kwargs):
+        try:
+            grid = GridSearchCV(
+                estimator=pipeline,
+                param_grid=param_grid,
+                scoring=kwargs.get("scoring", "accuracy"),
+                cv=kwargs.get("cv", 5),
+                n_jobs=kwargs.get("n_jobs", -1)
+            )
 
-        if not param_grid:
-            raise ValueError(f"param_config missing for {model_name}")
+            grid.fit(self.X_train, self.y_train)
 
-        grid = GridSearchCV(
-            pipeline,
-            param_grid,
-            scoring=kwargs.get("scoring", "accuracy"),
-            cv=kwargs.get("cv", 5),
-            n_jobs=kwargs.get("n_jobs", 1)  # ✅ avoid nested parallelism
-        )
+            return self._process_results(wrapper, grid, model_name, "gridsearch", "grid")
 
-        grid.fit(self.X_train, self.y_train)
-
-        return self._process_results(grid, model_name, "gridsearch", "grid")
+        except Exception as e:
+            return [{
+                "model": model_name,
+                "type": "failed",
+                "experiment": f"{model_name} | gridsearch",
+                "error": str(e)
+            }]
 
     # ---------------------------------------------------
     # RANDOM SEARCH
     # ---------------------------------------------------
-    def _random_search(self, pipeline, model_name, param_dist, **kwargs):
+    def _random_search(self, wrapper, pipeline, model_name, param_dist, **kwargs):
 
-        if not param_dist:
-            raise ValueError(f"param_config missing for {model_name}")
+        try:
+            search = RandomizedSearchCV(
+                estimator=pipeline,
+                param_distributions=param_dist,
+                n_iter=kwargs.get("n_iter", 20),
+                scoring=kwargs.get("scoring", "accuracy"),
+                cv=kwargs.get("cv", 5),
+                n_jobs=kwargs.get("n_jobs", -1),
+                random_state=42
+            )
 
-        search = RandomizedSearchCV(
-            pipeline,
-            param_dist,
-            n_iter=kwargs.get("n_iter", 20),
-            scoring=kwargs.get("scoring", "accuracy"),
-            cv=kwargs.get("cv", 5),
-            n_jobs=kwargs.get("n_jobs", 1),  # ✅ safe
-            random_state=42
-        )
+            search.fit(self.X_train, self.y_train)
 
-        search.fit(self.X_train, self.y_train)
+            return self._process_results(wrapper, search, model_name, "random_search", "random")
 
-        return self._process_results(search, model_name, "random_search", "random")
+        except Exception as e:
+            return [{
+                "model": model_name,
+                "type": "failed",
+                "experiment": f"{model_name} | random",
+                "error": str(e)
+            }]
 
     # ---------------------------------------------------
     # PROCESS RESULTS
     # ---------------------------------------------------
-    def _process_results(self, search_obj, model_name, mode, search_type):
+    def _process_results(self, wrapper, search_obj, model_name, mode, search_type):
 
         cleaner = DataCleaner(pd.DataFrame())
 
@@ -122,21 +129,25 @@ class ClassificationHyperparameterTuner:
             search_type=search_type
         )
 
+        # ✅ enrich rows
         for i, row in enumerate(rows):
             row.update({
                 "experiment": exp_name,
                 "type": "tuned",
                 "search_type": search_type,
-                "iteration": i
+                "iteration": i,
+                "task": getattr(wrapper, "task", "classification"),
+                "family": getattr(wrapper, "family", "unknown")
             })
 
-        # ✅ Add best result
+        # ✅ add best result
         best_result = self._build_best_result(
-            search_obj, model_name, mode, search_type
+            wrapper, search_obj, model_name, mode, search_type
         )
+
         rows.append(best_result)
 
-        # ✅ sort results
+        # ✅ sort
         rows = sorted(
             rows,
             key=lambda x: x.get("score", 0),
@@ -148,7 +159,7 @@ class ClassificationHyperparameterTuner:
     # ---------------------------------------------------
     # BEST RESULT
     # ---------------------------------------------------
-    def _build_best_result(self, search_obj, model_name, mode, search_type):
+    def _build_best_result(self, wrapper, search_obj, model_name, mode, search_type):
 
         exp_name = Formatter.build(
             model_name=model_name,
@@ -162,61 +173,82 @@ class ClassificationHyperparameterTuner:
             "mode": f"{mode}_best",
             "type": "tuned",
             "search_type": search_type,
-            "best_score_cv": search_obj.best_score_
+            "best_score_cv": search_obj.best_score_,
+            "task": getattr(wrapper, "task"),
+            "family": getattr(wrapper, "family")
         }
 
-        # ✅ flatten params
+        # ✅ params
         for k, v in search_obj.best_params_.items():
             result[f"param_{k}"] = v
 
-        # ✅ evaluate on test data
+        # ✅ evaluate best model
         if self.X_test is not None and self.y_test is not None:
 
-            best_model = search_obj.best_estimator_
+            try:
+                best_model = search_obj.best_estimator_
 
-            y_pred = best_model.predict(self.X_test)
+                y_pred = best_model.predict(self.X_test)
 
-            y_proba = None
-            if hasattr(best_model, "predict_proba"):
                 try:
                     y_proba = best_model.predict_proba(self.X_test)
                 except Exception:
                     y_proba = None
 
-            result.update(
-                Metrics.classification(
-                    self.y_test,
-                    y_pred,
-                    y_proba=y_proba
-                )
-            )
+                metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+
+                # ✅ split artifacts
+                artifacts, metrics = self._extract_artifacts(metrics)
+
+                result.update(metrics)
+                result["artifacts"] = artifacts
+
+            except Exception as e:
+                result["error"] = str(e)
 
         return result
 
     # ---------------------------------------------------
-    # NO-TUNING CASE
+    # NO-TUNING
     # ---------------------------------------------------
-    def _evaluate_model(self, pipeline, model_name):
+    def _evaluate(self, wrapper, pipeline, model_name):
 
         y_pred = pipeline.predict(self.X_test)
 
-        y_proba = None
-        if hasattr(pipeline, "predict_proba"):
-            try:
-                y_proba = pipeline.predict_proba(self.X_test)
-            except Exception:
-                y_proba = None
+        try:
+            y_proba = pipeline.predict_proba(self.X_test)
+        except Exception:
+            y_proba = None
 
-        metrics = Metrics.classification(
-            self.y_test,
-            y_pred,
-            y_proba=y_proba
-        )
+        metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+
+        artifacts, metrics = self._extract_artifacts(metrics)
 
         return {
             "model": model_name,
             "experiment": f"{model_name} | no-tuning",
             "mode": "train",
             "type": "baseline",
-            **metrics
+            "task": getattr(wrapper, "task"),
+            "family": getattr(wrapper, "family"),
+            **metrics,
+            "artifacts": artifacts
         }
+
+    # ---------------------------------------------------
+    # ARTIFACT SPLITTER
+    # ---------------------------------------------------
+    def _extract_artifacts(self, metrics):
+
+        artifact_keys = {"roc_curve", "pr_curve", "confusion_matrix"}
+
+        artifacts = {}
+        numeric_metrics = {}
+
+        for k, v in metrics.items():
+            if k in artifact_keys:
+                artifacts[k] = v
+            else:
+                numeric_metrics[k] = v
+
+        return artifacts, numeric_metrics

@@ -1,9 +1,9 @@
+import copy
+
 import pandas as pd
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import KFold, cross_val_predict, train_test_split
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict, train_test_split
 
 from lib.utility.machinelearning.evaluation.ModelComparator import ModelComparator
-from lib.utility.machinelearning.experiment.ExperimentRunner import ExperimentRunner
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.Formatter import Formatter
@@ -13,31 +13,29 @@ from lib.utility.machinelearning.tuning.HyperparameterTuner import Hyperparamete
 class LinearModelUtility:
 
     def __init__(self, df, target_col, imputer=None, outlier_handler=None):
+
         self.df = df
         self.target_col = target_col
 
         self.imputer = imputer
         self.outlier_handler = outlier_handler
 
-        self.X = None
-        self.y = None
-
         self.X_train = None
         self.X_test = None
         self.y_train = None
         self.y_test = None
 
-        self.experiment_results = []
+        self.results = []
 
         self.registry = ModelRegistry()
-
-        self.runner = None
         self.preprocessor = None
+        self.task = "regression"
 
     # ---------------------------------------------------
     # DATA PREPARATION
     # ---------------------------------------------------
     def prepare_data(self, test_size=0.2, random_state=42):
+
         df = self.df.copy()
 
         if self.imputer:
@@ -46,35 +44,33 @@ class LinearModelUtility:
         if self.outlier_handler:
             df = self.outlier_handler.fit_transform(df)
 
-        self.X = df.drop(self.target_col, axis=1)
-        self.y = df[self.target_col]
-
-        # ✅ FIX: detect AFTER y is available
-        self.task = self._detect_task()
-        self.models = self.registry.get_models_by_task(self.task)
+        X = df.drop(self.target_col, axis=1)
+        y = df[self.target_col]
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.X, self.y, test_size=test_size, random_state=random_state
+            X, y, test_size=test_size, random_state=random_state
         )
 
+        # ✅ FIX: use TRAIN DATA ONLY
         self.preprocessor = Preprocessor(
-            self.X,
+            self.X_train,
             imputer=self.imputer,
             outlier_handler=self.outlier_handler
         ).build()
-
-        self.runner = ExperimentRunner(self.preprocessor)
 
     # ---------------------------------------------------
     # RUN SINGLE EXPERIMENT
     # ---------------------------------------------------
     def run_experiment(self, model_name, k_fold=None, imputer=None, outlier_handler=None):
 
-        wrapper = self.registry.get_model(model_name)
+        import copy
 
+        wrapper = copy.deepcopy(self.registry.get_model(model_name))
+
+        # ✅ preprocessing override
         if imputer or outlier_handler:
             preprocessor = Preprocessor(
-                self.X,
+                self.X_train,
                 imputer=imputer or self.imputer,
                 outlier_handler=outlier_handler or self.outlier_handler
             ).build()
@@ -82,122 +78,224 @@ class LinearModelUtility:
             preprocessor = self.preprocessor
 
         wrapper.build_pipeline(preprocessor)
-        pipeline = wrapper.get_pipeline()
 
-        # ✅ experiment label
         mode = "k-fold" if k_fold else "train-test"
         exp_name = Formatter.build(model_name, mode, k_fold, imputer, outlier_handler)
 
+        # ✅ -------------------------
+        # K-FOLD CASE
+        # ✅ -------------------------
         if k_fold:
+
             kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
 
             y_pred = cross_val_predict(
-                pipeline,
+                wrapper.get_pipeline(),
                 self.X_train,
                 self.y_train,
                 cv=kf,
-                n_jobs=8
+                n_jobs=-1
             )
 
-            result = {
-                "model": model_name,
-                "experiment": exp_name,
-                "mode": "k-fold",
-                "type": "baseline",
-                "k": k_fold,
-                "R2": r2_score(self.y_train, y_pred),
-                "MSE": mean_squared_error(self.y_train, y_pred)
-            }
+            metrics = wrapper.evaluate(self.y_train, y_pred)
 
+        # ✅ -------------------------
+        # TRAIN-TEST CASE
+        # ✅ -------------------------
         else:
-            result = self.runner.run(
-                model_name,
-                wrapper,
-                self.X_train,
-                self.X_test,
-                self.y_train,
-                self.y_test
-            )
 
-            result.update({
-                "model": model_name,
-                "experiment": exp_name,
-                "mode": "train-test",
-                "type": "baseline"
-            })
+            wrapper.train(self.X_train, self.y_train)
 
-        self.experiment_results.append(result)
+            y_pred = wrapper.predict(self.X_test)
+
+            metrics = wrapper.evaluate(self.y_test, y_pred)
+
+        # ✅ artifact extraction (future-ready)
+        artifacts, metrics = self._extract_artifacts(metrics)
+
+        result = {
+            "model": model_name,
+            "task": getattr(wrapper, "task", "regression"),
+            "family": getattr(wrapper, "family", "unknown"),
+            "experiment": exp_name,
+            "mode": mode,
+            "type": "baseline",
+            "k": k_fold if k_fold else None,
+            **metrics,
+            "artifacts": artifacts
+        }
+
+        self.results.append(result)
         return result
 
     # ---------------------------------------------------
     # RUN ALL MODELS
     # ---------------------------------------------------
     def run_all_models(self, k_fold=None):
-        results = []
 
-        for model_name in self.models.keys():
+        models = self.registry.get_models_by_task("regression")
+
+        results = []
+        for model_name in models:
             results.append(self.run_experiment(model_name, k_fold=k_fold))
 
         return pd.DataFrame(results)
 
     # ---------------------------------------------------
-    # RUN MULTIPLE EXPERIMENTS
+    # RUN CUSTOM CONFIGS
     # ---------------------------------------------------
     def run_experiments(self, configs):
-        results = []
+
+        import copy
+
+        all_results = []
 
         for config in configs:
-            results.append(self.run_experiment(**config))
 
-        return pd.DataFrame(results)
+            model_name = config.get("model_name")
+            k_fold = config.get("k_fold", None)
+
+            try:
+                wrapper = copy.deepcopy(self.registry.get_model(model_name))
+
+                wrapper.build_pipeline(self.preprocessor)
+
+                mode = "k-fold" if k_fold else "train-test"
+                exp_name = f"{model_name} | custom"
+
+                # ✅ K-FOLD
+                if k_fold:
+                    from sklearn.model_selection import KFold, cross_val_predict
+
+                    kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
+
+                    y_pred = cross_val_predict(
+                        wrapper.get_pipeline(),
+                        self.X_train,
+                        self.y_train,
+                        cv=kf,
+                        n_jobs=-1
+                    )
+
+                    metrics = wrapper.evaluate(self.y_train, y_pred)
+
+                # ✅ TRAIN-TEST
+                else:
+                    wrapper.train(self.X_train, self.y_train)
+
+                    y_pred = wrapper.predict(self.X_test)
+                    y_proba = wrapper.predict_proba(self.X_test)
+
+                    metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+
+                artifacts, metrics = self._extract_artifacts(metrics)
+
+                result = {
+                    "model": model_name,
+                    "task": getattr(wrapper, "task", "regression"),
+                    "family": getattr(wrapper, "family", "unknown"),
+                    "experiment": exp_name,
+                    "mode": mode,
+                    "type": "custom",
+                    **metrics,
+                    "artifacts": artifacts
+                }
+
+            except Exception as e:
+                result = {
+                    "model": model_name,
+                    "experiment": f"{model_name} | custom",
+                    "type": "failed",
+                    "error": str(e)
+                }
+
+            self.results.append(result)
+            all_results.append(result)
+
+        return pd.DataFrame(all_results)
 
     # ---------------------------------------------------
-    # GRID SEARCH (updated with experiment)
+    # GRID SEARCH
     # ---------------------------------------------------
-    def grid_search_cv(self, model_name, param_grid, cv=5, scoring="r2"):
+    def grid_search_cv(
+        self,
+        model_name,
+        param_grid,
+        cv=5,
+        scoring=None
+    ):
 
-        wrapper = self.registry.get_model(model_name)
-        wrapper.build_pipeline(self.preprocessor)
-        pipeline = wrapper.get_pipeline()
+        try:
+            wrapper = copy.deepcopy(self.registry.get_model(model_name))
+            wrapper.build_pipeline(self.preprocessor)
 
-        from sklearn.model_selection import GridSearchCV
+            pipeline = wrapper.get_pipeline()
 
-        grid = GridSearchCV(
-            pipeline,
-            param_grid,
-            cv=cv,
-            scoring=scoring,
-            n_jobs=8
-        )
+            # ✅ 🚨 CRITICAL FIX: enforce regression scoring
+            scoring = scoring or "neg_mean_squared_error"
 
-        grid.fit(self.X_train, self.y_train)
-        y_pred = grid.best_estimator_.predict(self.X_test)
+            print(f"✅ Using scoring: {scoring} for {model_name}")  # DEBUG
 
-        exp_name = f"{model_name} | gridsearch"
+            grid = GridSearchCV(
+                estimator=pipeline,
+                param_grid=param_grid,
+                cv=cv,
+                scoring=scoring,
+                n_jobs=-1
+            )
 
-        result = {
-            "model": model_name,
-            "experiment": exp_name,
-            "type": "tuned",
-            "mode": "gridsearch",
-            "best_params": grid.best_params_,
-            "best_score_cv": grid.best_score_,
-            "R2": r2_score(self.y_test, y_pred),
-            "MSE": mean_squared_error(self.y_test, y_pred)
-        }
+            # ✅ TRAIN
+            grid.fit(self.X_train, self.y_train)
 
-        self.experiment_results.append(result)
+            best_model = grid.best_estimator_
+
+            y_pred = best_model.predict(self.X_test)
+
+            # ✅ regression → no proba normally
+            try:
+                y_proba = best_model.predict_proba(self.X_test)
+            except Exception:
+                y_proba = None
+
+            # ✅ evaluate using wrapper
+            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+
+            artifacts, metrics = self._extract_artifacts(metrics)
+
+            result = {
+                "model": model_name,
+                "task": getattr(wrapper, "task", "regression"),
+                "family": getattr(wrapper, "family", "unknown"),
+                "experiment": f"{model_name} | gridsearch",
+                "type": "tuned",
+                "mode": "gridsearch",
+                "search_type": "grid",
+                "best_params": grid.best_params_,
+                "best_score_cv": grid.best_score_,
+                **metrics,
+                "artifacts": artifacts
+            }
+
+        except Exception as e:
+
+            result = {
+                "model": model_name,
+                "experiment": f"{model_name} | gridsearch",
+                "type": "failed",
+                "error": str(e)
+            }
+
+        self.results.append(result)
         return result
 
     # ---------------------------------------------------
     # TUNING
     # ---------------------------------------------------
+
     def tune_model(self, model_name, param_grid, search_type="grid", cv=5, n_iter=20):
 
-        wrapper = self.registry.get_model(model_name)
+        wrapper = copy.deepcopy(self.registry.get_model(model_name))
         wrapper.build_pipeline(self.preprocessor)
-
-        pipeline = wrapper.get_pipeline()
 
         tuner = HyperparameterTuner(
             self.X_train,
@@ -206,43 +304,67 @@ class LinearModelUtility:
             self.y_test
         )
 
+        # ✅ FIX: use wrapper-based API + keyword args (important)
         if search_type == "grid":
-            results = tuner.grid_search(pipeline, model_name, param_grid, cv=cv)
+            results = tuner.grid_search(
+                wrapper=wrapper, model_name=model_name, param_grid=param_grid, cv=cv)
+
+        elif search_type == "random":
+            results = tuner.random_search(wrapper=wrapper, model_name=model_name,
+                                          param_dist=param_grid, n_iter=n_iter, cv=cv)
+
         else:
-            results = tuner.random_search(pipeline, model_name, param_grid, n_iter=n_iter, cv=cv)
+            raise ValueError(f"Unsupported search_type: {search_type}")
 
-        exp_name = f"{model_name} | {search_type}"
-
-        # ✅ update each row
+        # ✅ enrich results (minimal change from your version)
         for row in results:
             row.update({
                 "model": model_name,
-                "experiment": exp_name,
-                "type": "tuned",
+                "task": getattr(wrapper, "task", "regression"),
+                "family": getattr(wrapper, "family", "unknown"),
+                "type": row.get("type", "tuned"),
                 "search_type": search_type
             })
 
-        self.experiment_results.extend(results)
+        # ✅ persist
+        self.results.extend(results)
 
         return results
 
     # ---------------------------------------------------
-    # RESULTS UTILITIES
+    # RESULT UTILITIES
     # ---------------------------------------------------
     def get_results_df(self):
-        return pd.DataFrame(self.experiment_results)
+        df = pd.DataFrame(self.results)
+        return df.drop(columns=["artifacts"], errors="ignore")
 
-    def rank_models(self, metric="R2", ascending=False):
-        return ModelComparator(self.experiment_results).rank(metric, ascending)
+    def rank_models(self, metric="r2", ascending=False):
+        return ModelComparator(self.results).rank(metric, ascending)
 
-    def get_best_model(self, metric="R2"):
-        return ModelComparator(self.experiment_results).best_model(metric)
+    def get_best_model(self, metric="r2"):
+        best = ModelComparator(self.results).best_model(metric)
+        if best is None:
+            return None
+        return {k: v for k, v in best.items() if k != "artifacts"}
 
     def compare_models(self):
-        return ModelComparator(self.experiment_results).compare()
+        return ModelComparator(self.results).compare()
 
-    def _detect_task(self):
-        if self.y.dtype.kind in "ifu":   # numeric
-            return "regression"
-        else:
-            return "classification"
+    # ---------------------------------------------------
+    # INTERNAL
+    # ---------------------------------------------------
+    def _extract_artifacts(self, metrics):
+
+        # ✅ future extension (residuals, plots etc.)
+        artifact_keys = {"residuals", "prediction_vs_actual"}
+
+        artifacts = {}
+        numeric_metrics = {}
+
+        for key, val in metrics.items():
+            if key in artifact_keys and val is not None:
+                artifacts[key] = val
+            else:
+                numeric_metrics[key] = val
+
+        return artifacts, numeric_metrics

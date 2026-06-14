@@ -19,18 +19,57 @@ This repository provides a **modular, scalable, and loosely coupled machine lear
 
 ## 🧭 Architecture Overview
 
+### ML Framework Layered Architecture
+
+```mermaid
+flowchart TD
+
+    A["MLModelBase<br/>Core abstraction layer"] --> B["BaseModelWrapper<br/>Generic wrapper contract"]
+
+    B --> C["ClassificationModelWrapper<br/>Task-specific implementation"]
+
+    C --> D["Concrete Wrappers<br/>Logistic, RF, XGB, SVC, etc."]
+
+    D --> E["ModelRegistry<br/>Auto-discovery & management"]
+
+    E --> F["Utility Layer<br/>ClassificationModelUtility"]
+
+    F --> G["Visualizer<br/>Plots, ROC, Metrics Charts"]
+```
+
 ### 🔷 High-Level Flow
 
 ```mermaid
 flowchart TD
-    A[User API - Utility] --> B[ModelRegistry]
-    A --> C[Preprocessor]
-    A --> D[ExperimentRunner]
-    D --> E[Model Wrapper]
-    E --> F[Pipeline]
-    F --> G[Predictions]
-    G --> H[Metrics]
-    H --> I[Results]
+
+    A[User Script / API] --> B[ClassificationModelUtility]
+
+    B --> C[ModelRegistry]
+    B --> D[Preprocessor]
+
+    C --> E[Fetch Wrapper]
+    E --> F[Deep Copy Wrapper]
+
+    D --> G[Preprocessing Pipeline]
+
+    F --> H["Build Pipeline<br/>(Preprocessor + Model)"]
+
+    H --> I["Train<br/>pipeline.fit"]
+
+    I --> J{Training Success?}
+
+    J -->|Yes| K[Predict]
+    J -->|No| Z[Capture Error]
+
+    K --> L[Predict Proba]
+
+    L --> M[Metrics Evaluation]
+
+    M --> N[Extract Artifacts]
+
+    N --> O[Store Results]
+
+    Z --> O
 ```
 
 ---
@@ -40,20 +79,98 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant LU as LinearModelUtility
+    participant CMU as ClassificationModelUtility
     participant MR as ModelRegistry
-    participant ER as ExperimentRunner
     participant W as Wrapper
+    participant P as Pipeline
+    participant MET as Metrics
 
-    U->>LU: run_experiment()
-    LU->>MR: get_model()
-    MR-->>LU: wrapper
-    LU->>W: build_pipeline()
-    LU->>ER: run()
-    ER->>W: train()
-    ER->>W: predict()
-    ER->>W: evaluate()
-    ER-->>LU: results
+    U->>CMU: run_all_models()
+
+    loop For each model
+        CMU->>MR: get_model(name)
+        MR-->>CMU: Wrapper
+
+        CMU->>W: clone (deepcopy)
+        CMU->>W: build_pipeline()
+
+        CMU->>W: train()
+        W->>P: fit()
+
+        alt Success
+            CMU->>W: predict()
+            CMU->>W: predict_proba()
+
+            CMU->>W: evaluate()
+            W->>MET: compute metrics
+
+            CMU->>CMU: extract artifacts
+            CMU->>CMU: append results
+
+        else Failure
+            CMU->>CMU: log error
+            CMU->>CMU: append failed result
+        end
+    end
+
+    CMU-->>U: Results DataFrame
+```
+
+### RESULTS & COMPARISON FLOW
+
+```mermaid
+flowchart TD
+
+    A[Experiment Results List] --> B[Results DataFrame]
+    A --> C[Artifacts DataFrame]
+
+    B --> D[Model Comparator]
+
+    D --> E[Rank Models]
+    D --> F[Best Model]
+    D --> G[Compare Models]
+
+    E --> H[Sorted Results]
+    F --> I[Top Model]
+```
+
+### VISUALIZATION FLOW
+
+```mermaid
+flowchart TD
+
+    A[Results DataFrame] --> B[ClassificationPlots]
+
+    B --> C[Bar Charts]
+    B --> D[Multi-Metric Charts]
+    B --> E[Best Model Visualization]
+
+    A --> F[Artifacts]
+
+    F --> G[ROC Curves]
+    F --> H[Confusion Matrix Plots]
+
+    C --> I[PlotRenderer]
+    G --> I
+```
+
+### REPORT GENERATION FLOW
+
+```mermaid
+flowchart TD
+
+    A[Plots + Data] --> B[HtmlBuilder]
+
+    B --> C[Build Cards]
+    B --> D[Build Grids]
+    B --> E[Embed Charts]
+
+    C --> F[HTML Document]
+
+    F --> G[ReportUtils.save_html]
+
+    G --> H[Saved HTML File]
+    H --> I[Auto Open in Browser]
 ```
 
 ---
@@ -91,10 +208,6 @@ machinelearning/
 │   │
 │   ├── ClassificationModelComparator.py
 │       # ✅ Classification-specific ranking, best model selection
-│
-├── experiment/
-│   ├── ExperimentRunner.py
-│       # ✅ Executes training pipelines, manages experiment lifecycle
 │
 ├── facade/
 │   ├── ClassificationModelUtility.py
@@ -222,276 +335,85 @@ machinelearning/
 
 ---
 
-## 🧩 Layer-by-Layer Explanation
+## ✅ Core Layers
 
-### 1. Base Layer (`base/`)
-
-#### MLModelBase
-
-Defines a contract for:
-
-- Data preparation
-- Experiment execution
-- Model tuning
-- Evaluation and comparison
-
-#### BaseModelWrapper
-
-Encapsulates model logic:
-
-- Pipeline building
-- Training and prediction
-- Model-specific evaluation
-
-```python
-wrapper.build_pipeline(preprocessor)
-wrapper.train(X_train, y_train)
-preds = wrapper.predict(X_test)
-metrics = wrapper.evaluate(y_test, preds)
-```
+| Layer        | Responsibility         |
+| ------------ | ---------------------- |
+| Utility      | Orchestration          |
+| Registry     | Model discovery        |
+| Wrapper      | Pipeline + model       |
+| Preprocessor | Feature transformation |
+| Metrics      | Evaluation             |
+| Tuner        | Optimization           |
 
 ---
 
-### 2. Model Layer (`models/`)
+## ✅ Key Improvements
 
-Each model has its own wrapper class.
-
-Example:
-
-- LinearRegressionWrapper
-- RidgeWrapper
-- LassoWrapper
-- ElasticNetWrapper
-
-Responsibilities:
-
-- Build pipeline
-- Define evaluation metrics
-
-```python
-class RidgeWrapper(BaseModelWrapper):
-    def build_pipeline(self, preprocessor):
-        ...
-```
+- ✅ Wrapper-driven architecture
+- ✅ Regression vs classification separation
+- ✅ Fixed scoring bug in tuning
+- ✅ Artifact-aware design
+- ✅ Experiment-level tracking
 
 ---
 
-### 3. Registry Layer (`registry/`)
-
-#### ModelRegistry
-
-- Stores all available models
-- Returns model wrappers
-- Enables plug-and-play architecture
+## 🚀 End-to-End Flow
 
 ```python
-registry = ModelRegistry()
-model = registry.get_model("Ridge")
-```
-
----
-
-### 4. Pipeline Layer (`pipeline/`)
-
-#### Preprocessor
-
-Builds preprocessing pipeline:
-
-- Numeric scaling
-- Categorical encoding
-- Optional imputation
-- Optional outlier handling
-
-```python
-preprocessor = Preprocessor(X, imputer, outlier).build()
-```
-
----
-
-### 5. Experiment Layer (`experiment/`)
-
-#### ExperimentRunner
-
-Handles:
-
-- Training
-- Prediction
-- Evaluation
-- Experiment result tracking
-
-```python
-runner.run(model_name, wrapper, X_train, X_test, y_train, y_test)
-```
-
----
-
-### 6. Tuning Layer (`tuning/`)
-
-#### HyperparameterTuner
-
-Supports:
-
-- Grid Search
-- Random Search
-
-```python
-result = tuner.grid_search(pipeline, param_grid)
-```
-
----
-
-### 7. Evaluation Layer (`evaluation/`)
-
-#### Metrics
-
-Provides:
-
-- Regression metrics (R2, MSE, RMSE)
-- Classification metrics (Accuracy, F1)
-
-```python
-Metrics.regression(y_true, y_pred)
-```
-
-#### ModelComparator
-
-Supports:
-
-- Model ranking
-- Best model selection
-- Baseline vs tuned comparison
-
----
-
-### 8. Facade Layer (`facade/`)
-
-#### LinearModelUtility
-
-Main user-facing class:
-
-- Prepare data
-- Run experiments
-- Perform tuning
-- Compare models
-
-#### ClassificationModelUtility
-
-## Similar interface for classification tasks.
-
-## 🧪 Example Usage (End-to-End)
-
-```python
-lm = LinearModelUtility(df, target_col="target")
-
+lm = LinearModelUtility(df, "target")
 lm.prepare_data()
-
-lm.run_experiment("Ridge")
-
 lm.run_all_models()
-
-lm.grid_search_cv("Ridge", param_grid)
-
-best = lm.get_best_model("R2")
+lm.tune_model("Ridge", param_grid)
+results = lm.get_results_df()
 ```
 
 ---
 
-## 📚 API Documentation
+## ✅ Classification Flow
 
-## LinearModelUtility
+```
+ClassificationModelUtility → Metrics.classification → ROC / CM
+```
 
-### prepare_data()
+## ✅ Regression Flow
 
-Prepares dataset and builds preprocessing pipeline.
-
-### run_experiment(model_name, k_fold=None)
-
-Runs a single experiment.
-
-### run_all_models()
-
-Runs all models.
-
-### grid_search_cv()
-
-Performs grid search.
+```
+LinearModelUtility → Metrics.regression → R2 / MSE
+```
 
 ---
 
-## BaseModelWrapper
+## ✅ Key Fixes Implemented
 
-### build_pipeline()
-
-Constructs ML pipeline.
-
-### train()
-
-Fits model.
-
-### predict()
-
-Generates predictions.
+- ❌ Removed misuse of classification scoring in regression
+- ✅ Enforced proper scoring in tuner
+- ✅ Fixed empty tuning results issue
 
 ---
 
-## ModelRegistry
+## ✅ Design Principles
 
-### get_model(name)
-
-Returns model wrapper.
-
----
-
-## 🔄 Workflow
-
-1. Initialize utility
-2. Prepare data
-3. Build preprocessing pipeline
-4. Fetch model from registry
-5. Run experiment using runner
-6. Evaluate and store results
+- ✅ Separation of concerns
+- ✅ Loose coupling
+- ✅ Extensibility
+- ✅ Production-ready
 
 ---
 
-## ✅ Key Benefits
+## ✅ Future Scope
 
-- Loose coupling between components
-- Highly extensible (add new models easily)
-- Reusable pipelines and experiments
-- Clean separation of responsibilities
-- Production-ready architecture
+- AutoML orchestrator
+- Multi-metric tuning
+- Explainability integration
 
 ---
 
-## 🚀 How to Extend
+## ✅ Summary
 
-### Add new model
+This framework is now:
 
-1. Create wrapper in `models/`
-2. Register in `ModelRegistry`
-
-### Add new metric
-
-1. Add method in `Metrics.py`
-
-### Add new preprocessing step
-
-1. Modify `Preprocessor.py`
-
----
-
-## 📌 Summary
-
-This framework follows best practices:
-
-- SOLID principles
-- Modular design
-- Scalable architecture
-
-It is suitable for:
-
-- Production ML systems
-- Rapid experimentation
-- Extensible AutoML systems
-
----
+🚀 Production-ready
+🚀 AutoML-compatible
+🚀 Fully modular
+🚀 Architecturally clean

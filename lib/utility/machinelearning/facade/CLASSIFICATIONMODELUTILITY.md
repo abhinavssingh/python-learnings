@@ -1,111 +1,222 @@
-
 # ClassificationModelUtility – Detailed Documentation
 
 ## Overview
+
 The `ClassificationModelUtility` is a high-level orchestration layer designed to manage end-to-end classification workflows. It integrates preprocessing, model execution, evaluation, tuning, and result management into a unified, extensible framework.
 
 ---
 
 ## Architecture
 
-```
-Data → Preprocessing → Model → Metrics → Artifacts → Formatter → UI
+### DATA PREPARATION FLOW
+
+```mermaid
+flowchart TD
+    A[Input Dataset] --> B[DataLoader]
+    B --> C[DataFrameHelper]
+
+    C --> D[ClassificationModelUtility.prepare_data]
+
+    D --> E[Imputer]
+    E --> F[OutlierHandler]
+
+    F --> G[Target Extraction]
+
+    G --> H[Label Encoding]
+    H --> I[Problem Type Detection]
+
+    I --> J{Problem Type}
+
+    J -->|Binary / Multiclass| K[Train-Test Split]
+    J -->|Multilabel| L[Iterative Train-Test Split]
+
+    K --> M[X_train, X_test]
+    L --> M
+
+    M --> N[Preprocessor Build]
 ```
 
-### Key Responsibilities
-- Data preparation and splitting
-- Model execution
-- Metric computation (via Metrics)
-- Artifact extraction
-- Hyperparameter tuning
-- Result aggregation and ranking
+```mermaid
+flowchart TD
+    A[User API] --> B[ClassificationModelUtility]
+    B --> C[ModelRegistry]
+    B --> D[Preprocessor]
+
+    C --> E[Get Wrapper]
+    E --> F[Build Pipeline]
+
+    F --> G[Train]
+    G --> H[Predict]
+    H --> I[Predict Proba]
+
+    I --> J[Metrics.classification]
+    J --> K[Artifacts Extraction]
+
+    K --> L[Results Store]
+```
+
+### TRAINING & INFERENCE FLOW
+
+```mermaid
+flowchart TD
+
+    A[run_experiment] --> B[Get Wrapper from Registry]
+
+    B --> C[Deep Copy Wrapper]
+
+    C --> D["Multilabel?"]
+    D -->|Yes| E[Wrap with OneVsRest]
+    D -->|No| F[Continue]
+
+    E --> G[Build Pipeline]
+    F --> G
+
+    G --> H[Pipeline = Preprocessor + Model]
+
+    H --> I[Train Wrapper]
+    I --> J[Pipeline.fit]
+
+    J --> K{Training Success?}
+
+    K -->|Yes| L[Predict]
+    K -->|No| M[Capture Error]
+
+    L --> N[Predict Proba]
+
+    N --> O[Evaluation]
+```
+
+### ARTIFACT EXTRACTION FLOW
+
+```mermaid
+flowchart TD
+
+    A[Raw Metrics Output] --> B[Extract Artifacts]
+
+    B --> C[ROC Curve]
+    B --> D[PR Curve]
+    B --> E[Classification Report]
+
+    B --> F{Multilabel?}
+
+    F -->|No| G[Confusion Matrix]
+    F -->|Yes| H[Skip CM]
+
+    C --> I[Artifacts Dict]
+    G --> I
+
+    A --> J[Numeric Metrics]
+```
 
 ---
 
-## Initialization
+## ✅ Key Responsibilities (Refactored)
+
+- Data preparation and splitting
+- Model execution via Wrapper architecture
+- Metric computation using Metrics (classification only)
+- Artifact extraction (ROC, PR, CM)
+- Hyperparameter tuning (via ClassificationHyperparameterTuner)
+- Result aggregation, normalization, and ranking
+- Failure-safe model execution
+
+---
+
+## 🚀 Initialization
 
 ```python
 cm = ClassificationModelUtility(df, target_col, imputer, outlier_handler)
 ```
 
 ### Parameters
+
 - **df**: Input dataset
-- **target_col**: Target column or list (multilabel)
-- **imputer**: Optional missing value handler
-- **outlier_handler**: Optional outlier processor
+- **target_col**: Target column or list (multilabel supported)
+- **imputer**: Optional CustomImputer
+- **outlier_handler**: Optional OutlierHandler
 
 ---
 
-## Data Preparation
+## 📊 Data Preparation
 
 ```python
 cm.prepare_data()
 ```
 
 ### Features
-- Auto-detects problem type
-- Supports multilabel via `iterative_train_test_split`
-- Applies preprocessing pipeline
 
-### Supported Types
-| Type | Strategy |
-|------|--------|
-| Binary | random split |
-| Multiclass | random split |
-| Multilabel | iterative split |
+- Auto-detects problem type
+- Supports multilabel via iterative train-test split
+- Applies preprocessing pipeline (imputer + outlier + encoder)
+- Ensures pipeline-safe transformations
 
 ---
 
-## Running Experiments
+### Supported Problem Types
+
+| Type       | Strategy         |
+| ---------- | ---------------- |
+| Binary     | Train/Test Split |
+| Multiclass | Train/Test Split |
+| Multilabel | Iterative Split  |
+
+---
+
+## ⚙️ Running Experiments
 
 ```python
 cm.run_experiment("LogisticRegression")
 ```
 
-### Workflow
-1. Fetch model from registry
-2. Wrap with OneVsRest (multilabel)
-3. Build pipeline
-4. Train model
-5. Predict outputs
-6. Compute probabilities
-7. Generate metrics
-8. Extract artifacts
-9. Store results
+### Execution Flow
+
+1. Retrieve model wrapper from registry
+2. Deep copy wrapper (avoid state leakage)
+3. Wrap with OneVsRest (for multilabel)
+4. Build pipeline (Preprocessor + Model)
+5. Train pipeline (`fit`)
+6. Predict labels
+7. Predict probabilities (safe handling)
+8. Compute metrics via Metrics.classification
+9. Extract artifacts
+10. Store structured results
 
 ---
 
-## Running All Models
+## 🔁 Run All Models
 
 ```python
 cm.run_all_models()
 ```
 
 ### Output
-Returns DataFrame of model performance
+
+- Returns structured DataFrame
+- Skips failed models safely
 
 ---
 
-## Artifact Handling
+## 📦 Artifact Handling (Refactored)
 
 Artifacts include:
-- ROC curves
-- PR curves
-- Confusion matrix (non-multilabel)
-- Classification report
 
-Artifacts are separated from scalar metrics:
+- ROC Curve
+- PR Curve
+- Confusion Matrix (only for non-multilabel)
+- Classification Report
 
+### Separation Logic
+
+```python
+artifacts, metrics = _extract_artifacts(metrics)
 ```
-result = {
-    metrics,
-    artifacts
-}
-```
+
+✔ Keeps metrics clean
+✔ Avoids UI pollution
 
 ---
 
-## Probability Handling
+## 🎯 Probability Handling
 
 Multilabel probabilities are normalized:
 
@@ -115,19 +226,28 @@ np.column_stack([p[:, 1] for p in raw_proba])
 
 ---
 
-## Hyperparameter Tuning
+## 🔧 Hyperparameter Tuning (Updated)
 
 ```python
-cm.tune_model("RandomForest", max_depth=[5,10])
+cm.tune_model("RandomForest", param_grid)
 ```
 
-Supports:
-- Grid search
-- Random search
+### Supports
+
+- Grid Search ✅
+- Random Search ✅
+
+### Key Fix
+
+✔ Strict classification scoring
+
+```
+scoring = "accuracy" or "f1_weighted"
+```
 
 ---
 
-## Result Utilities
+## 📊 Results & Reporting
 
 ### Get Results DataFrame
 
@@ -135,7 +255,7 @@ Supports:
 cm.get_results_df()
 ```
 
-### Get Artifacts Summary
+### Get Artifacts
 
 ```python
 cm.get_artifacts_df()
@@ -143,7 +263,7 @@ cm.get_artifacts_df()
 
 ---
 
-## Model Comparison
+## 🧠 Model Comparison
 
 ### Rank Models
 
@@ -159,56 +279,77 @@ cm.get_best_model(metric="roc_auc")
 
 ---
 
-## Confusion Matrix Handling
+## 📉 Confusion Matrix Handling
 
 ```python
 cm.get_confusion_matrix_df(model_name)
 ```
 
-Uses `ClassificationFormatter` to convert to DataFrame.
+✔ Uses ClassificationFormatter
+✔ Avoids multilabel misuse
 
 ---
 
-## Internal Helpers
+## ⚙️ Internal Helpers
 
-### 1. _get_probabilities
-Handles model-specific probability output.
+### \_get_probabilities
 
-### 2. _extract_artifacts
-Separates artifacts from metrics to avoid UI pollution.
+Handles:
 
----
-
-## Design Principles
-
-- ✅ Separation of concerns
-- ✅ Modular architecture
-- ✅ Extensible model registry
-- ✅ Multilabel support
-- ✅ Production-ready structure
+- Binary models
+- Multiclass
+- Multilabel
 
 ---
 
-## Best Practices
+### \_extract_artifacts
+
+Splits metrics vs artifacts
+
+---
+
+## ✅ Design Principles (Updated)
+
+- ✅ Wrapper-based architecture
+- ✅ Strict task separation (classification vs regression)
+- ✅ Pipeline consistency
+- ✅ Artifact-aware design
+- ✅ Fault-tolerant execution
+- ✅ AutoML-ready structure
+
+---
+
+## ✅ Best Practices
 
 - Avoid confusion matrix for multilabel
 - Always validate label distribution
-- Use formatter for UI rendering
-- Keep Metrics computation pure
+- Use formatter layer for visualization
+- Keep metrics computation pure
+- Always use wrapper.evaluate()
 
 ---
 
-## Extensibility
+## 🚀 Extensibility
 
-Future capabilities:
-- Per-label evaluation
-- AutoML integration
-- Model explainability
-- Feature importance tracking
+Future Enhancements:
+
+- AutoML orchestration layer
+- Model explainability (SHAP)
+- Threshold optimization
+- Ensemble models (stacking/voting)
 
 ---
 
-## Summary
+## ✅ Final Summary
 
-`ClassificationModelUtility` acts as the central engine of the ML pipeline, coordinating all stages from data preparation to evaluation and reporting.
+`ClassificationModelUtility` now acts as:
 
+🚀 A fully modular, wrapper-driven ML orchestration engine
+
+Supporting:
+
+- ✅ Multi-model execution
+- ✅ Multiclass & multilabel
+- ✅ Hyperparameter tuning
+- ✅ Artifact-driven evaluation
+- ✅ Production-grade ML pipelines

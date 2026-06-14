@@ -1,113 +1,84 @@
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.validation import check_is_fitted
 
 
 class CustomImputer(BaseEstimator, TransformerMixin):
-
-    """
-    Flexible Imputer:
-    - global mean / median / mode
-    - group-based imputation
-    - logging support
-    """
 
     def __init__(self, num_strategy="mean", cat_strategy="mode", groupby_cols=None):
         self.num_strategy = num_strategy
         self.cat_strategy = cat_strategy
         self.groupby_cols = groupby_cols
 
-    def get_params(self, deep=True):
-        return {
-            "num_strategy": self.num_strategy,
-            "cat_strategy": self.cat_strategy,
-            "groupby_cols": self.groupby_cols
-        }
-
-    # ---------------------------------------------------
-    # FIT
-    # ---------------------------------------------------
     def fit(self, X, y=None):
+
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
 
         X = X.copy()
 
-        # ✅ initialize logs here (fresh per fit)
         self.results_ = {}
 
-        # ✅ detect columns
-        self.num_cols = list(X.select_dtypes(include=['int64', 'float64']).columns)
-        self.cat_cols = list(X.select_dtypes(include=['object', 'category', 'string']).columns)
-        self.all_cols = self.num_cols + self.cat_cols
+        self.num_cols = list(X.select_dtypes(include=["int64", "float64"]).columns)
+        self.cat_cols = list(X.select_dtypes(include=["object", "category", "string"]).columns)
 
-        # ✅ VALIDATE GROUPBY COLUMNS
+        # ✅ safe groupby cols
         if self.groupby_cols:
-            self.groupby_cols = [col for col in self.groupby_cols if col in X.columns]
-            if len(self.groupby_cols) == 0:
-                self.groupby_cols = None
+            valid_group_cols = [col for col in self.groupby_cols if col in X.columns]
+            self._groupby_cols = valid_group_cols if valid_group_cols else None
+        else:
+            self._groupby_cols = None
 
-        # ✅ LOG BEFORE IMPUTATION
-        self.results_['imputation_details_before'] = {
-            "num_cols_with_nulls": X[self.num_cols].isnull().sum().to_dict(),
-            "cat_cols_with_nulls": X[self.cat_cols].isnull().sum().to_dict()
-        }
-
-        # ---------- GLOBAL STATS ----------
+        # ✅ global numeric
         self.global_num_values_ = {}
-        self.global_cat_values_ = {}
-
         for col in self.num_cols:
             if self.num_strategy == "mean":
                 self.global_num_values_[col] = X[col].mean()
             elif self.num_strategy == "median":
                 self.global_num_values_[col] = X[col].median()
 
+        # ✅ global categorical
+        self.global_cat_values_ = {}
         for col in self.cat_cols:
-            mode_val = X[col].mode()
-            self.global_cat_values_[col] = mode_val[0] if not mode_val.empty else None
+            if self.cat_strategy == "mode":
+                mode_val = X[col].mode()
+                self.global_cat_values_[col] = mode_val.iloc[0] if not mode_val.empty else None
+            elif self.cat_strategy == "constant":
+                self.global_cat_values_[col] = "missing"
 
         return self
 
-    # ---------------------------------------------------
-    # TRANSFORM
-    # ---------------------------------------------------
     def transform(self, X):
+
+        check_is_fitted(self, ["num_cols", "cat_cols"])
+
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
 
         X = X.copy()
 
-        num_cols = [col for col in self.num_cols if col in X.columns]
-        cat_cols = [col for col in self.cat_cols if col in X.columns]
+        num_cols = [c for c in self.num_cols if c in X.columns]
+        cat_cols = [c for c in self.cat_cols if c in X.columns]
 
-        # ---------- GROUP IMPUTATION ----------
-        if self.groupby_cols:
+        # ✅ group imputation
+        if self._groupby_cols:
 
             for col in num_cols:
-                X[col] = X.groupby(self.groupby_cols)[col].transform(
-                    lambda x: x.fillna(x.mean())
-                )
+                if self.num_strategy == "mean":
+                    X[col] = X.groupby(self._groupby_cols)[col].transform(lambda x: x.fillna(x.mean()))
+                elif self.num_strategy == "median":
+                    X[col] = X.groupby(self._groupby_cols)[col].transform(lambda x: x.fillna(x.median()))
 
             for col in cat_cols:
-                X[col] = X.groupby(self.groupby_cols)[col].transform(
-                    lambda x: x.fillna(x.mode()[0] if not x.mode().empty else None)
+                X[col] = X.groupby(self._groupby_cols)[col].transform(
+                    lambda x: x.fillna(x.mode().iloc[0] if not x.mode().empty else None)
                 )
 
-        # ---------- GLOBAL FALLBACK ----------
+        # ✅ global fallback
         for col in num_cols:
-            if col in self.global_num_values_:
-                X[col] = X[col].fillna(self.global_num_values_[col])
+            X[col] = X[col].fillna(self.global_num_values_.get(col, None))
 
         for col in cat_cols:
-            if col in self.global_cat_values_:
-                X[col] = X[col].fillna(self.global_cat_values_[col])
-
-        # ✅ LOG AFTER IMPUTATION
-        self.results_['imputation_details_after'] = {
-            "num_cols_with_nulls": X[num_cols].isnull().sum().to_dict(),
-            "cat_cols_with_nulls": X[cat_cols].isnull().sum().to_dict()
-        }
-
-        # ✅ CONFIG LOG
-        self.results_['config'] = {
-            "num_strategy": self.num_strategy,
-            "cat_strategy": self.cat_strategy,
-            "groupby_cols": self.groupby_cols
-        }
+            X[col] = X[col].fillna(self.global_cat_values_.get(col, None))
 
         return X

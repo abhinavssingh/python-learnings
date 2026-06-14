@@ -1,35 +1,19 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict
-
-from sklearn.pipeline import Pipeline
+from lib.utility.machinelearning.base.MLModelBase import MLModelBase
 
 
-class BaseModelWrapper(ABC):
+class BaseModelWrapper(MLModelBase):
 
-    def __init__(self, model: Any):
+    def __init__(self, model):
         self.model = model
-        self.pipeline: Pipeline | None = None   # ✅ typed properly
+        self.pipeline = None
 
-    @abstractmethod
-    def build_pipeline(self, preprocessor: Any) -> None:
-        """Attach preprocessor + model into pipeline"""
-        pass
-
-    @abstractmethod
-    def evaluate(self, y_true, y_pred) -> Dict[str, float]:
-        """Model-specific evaluation metrics"""
-        pass
-
-    # ✅ NEW: Safe accessor
-    def get_pipeline(self) -> Pipeline:
+    def get_pipeline(self):
         if self.pipeline is None:
-            raise ValueError("Pipeline not built. Call build_pipeline first.")
+            raise ValueError("Pipeline not built.")
         return self.pipeline
 
-    def train(self, X, y) -> None:
-        pipeline = self.get_pipeline()   # ✅ safer
-        pipeline.fit(X, y)
+    def train(self, X, y):
+        self.get_pipeline().fit(X, y)
 
     def predict(self, X):
-        pipeline = self.get_pipeline()   # ✅ safer
-        return pipeline.predict(X)
+        return self.get_pipeline().predict(X)

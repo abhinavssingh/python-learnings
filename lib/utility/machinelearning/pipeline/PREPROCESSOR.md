@@ -1,201 +1,127 @@
+# Preprocessor (Updated Documentation)
 
-# Preprocessor – Detailed Documentation
+## ✅ Overview
 
-## Overview
-
-The `Preprocessor` class is responsible for building a reusable and consistent data preprocessing pipeline using scikit-learn components. It integrates numerical scaling, categorical encoding, and optional preprocessing steps such as imputation and outlier handling.
-
----
-
-## Purpose
-
-- Standardize preprocessing across all models
-- Separate feature engineering from model logic
-- Enable reusable pipelines
-- Support plug-and-play preprocessing steps
+`Preprocessor` is a **central pipeline builder** that ensures consistent feature preparation across all models.
 
 ---
 
-## Architecture
+## 🧱 Updated Architecture Flow
 
+```mermaid
+flowchart TD
+    A[Raw Data] --> B[CustomImputer]
+    B --> C[OutlierHandler]
+    C --> D[ColumnTransformer]
+
+    D --> E[Numeric Pipeline]
+    D --> F[Categorical Pipeline]
+
+    E --> E1[StandardScaler]
+    F --> F1[OneHotEncoder]
+
+    E1 --> G[Combined Features]
+    F1 --> G
+
+    G --> H[Processed Data]
 ```
-Raw Data → (Imputer) → (OutlierHandler) → ColumnTransformer → Model
-```
 
 ---
 
-## Initialization
+## ✅ Key Responsibilities (Refactored)
+
+- Pipeline creation (NOT transformation itself)
+- Integration of preprocessing components
+- Separation of numeric & categorical logic
+- Ensure pipeline compatibility
+
+---
+
+## ⚙️ Constructor
 
 ```python
 Preprocessor(X, imputer=None, outlier_handler=None)
 ```
 
-### Parameters
-
-- **X**: Input feature DataFrame
-- **imputer** *(optional)*: Custom imputation logic
-- **outlier_handler** *(optional)*: Outlier processing logic
-
 ---
 
-## Method: build()
+## 🔧 Build Method
 
 ```python
-build() → Pipeline
+pipeline = preprocessor.build()
 ```
-
-Constructs a complete preprocessing pipeline.
 
 ---
 
-## Step-by-Step Breakdown
+## 🔍 Pipeline Steps (Updated)
 
-### 1. Column Selection
+### 1. Optional Steps
 
-```python
-num_cols = X.select_dtypes(include=["int64", "float64"])
-cat_cols = X.select_dtypes(include=["object", "category", "string"])
+```
+CustomImputer → OutlierHandler
 ```
 
-Separates:
-- Numerical features
-- Categorical features
+### 2. ColumnTransformer
+
+- Numeric → StandardScaler
+- Categorical → OneHotEncoder
 
 ---
 
-### 2. Numeric Pipeline
+## ✅ Column Detection (Improved)
 
-```python
-numeric_pipeline = Pipeline([
-    ("scaler", StandardScaler())
-])
 ```
-
-Purpose:
-- Normalize numeric features
-- Improve model convergence
+include="number"
+include=["object", "category", "string"]
+```
 
 ---
 
-### 3. Categorical Pipeline
-
-```python
-categorical_pipeline = Pipeline([
-    ("encoder", OneHotEncoder(handle_unknown="ignore"))
-])
-```
-
-Purpose:
-- Convert categorical variables into numerical form
-- Handle unseen categories safely
-
----
-
-### 4. Column Transformer
-
-```python
-ColumnTransformer([
-    ("num", numeric_pipeline, num_cols),
-    ("cat", categorical_pipeline, cat_cols)
-])
-```
-
-Purpose:
-- Apply transformations to correct column types
-- Combine outputs into a unified feature matrix
-
----
-
-### 5. Optional Steps
-
-```python
-steps = []
-
-if imputer:
-    steps.append(("imputer", imputer))
-
-if outlier_handler:
-    steps.append(("outlier", outlier_handler))
-```
-
-Provides flexibility for:
-- Missing value handling
-- Outlier correction
-
----
-
-### 6. Final Pipeline
-
-```python
-steps.append(("column_transform", column_transform))
-Pipeline(steps)
-```
-
-Final output is a complete preprocessing pipeline.
-
----
-
-## Output
+## ✅ Output
 
 Returns:
 
-```python
+```
 sklearn.pipeline.Pipeline
 ```
 
-Ready to be integrated into model wrapper pipelines.
+Used inside Wrapper:
+
+```
+wrapper.build_pipeline(preprocessor)
+```
 
 ---
 
-## Design Principles
-
-- ✅ Modular design
-- ✅ Reusability across models
-- ✅ Separation of concerns
-- ✅ Scikit-learn compatibility
-
----
-
-## Integration
+## ✅ Framework Integration
 
 Used in:
 
-- `ClassificationModelUtility`
-- `LinearModelUtility`
-- `ExperimentRunner`
+- ClassificationModelUtility
+- LinearModelUtility
+- ExperimentRunner
 
 ---
 
-## Benefits
+## ✅ Design Principles (Updated)
 
-- Consistent preprocessing
-- Reduced code duplication
-- Easy experimentation
-- Plug-and-play pipeline structure
-
----
-
-## Best Practices
-
-- Always separate numeric and categorical logic
-- Use `handle_unknown="ignore"` for production pipelines
-- Keep preprocessing lightweight for efficiency
-- Avoid data leakage (fit only on training data)
+- ✅ Wrapper-driven design
+- ✅ Separation from model logic
+- ✅ Reusable pipeline
+- ✅ No data leakage
+- ✅ Plug-and-play components
 
 ---
 
-## Extensibility
+## ⚠️ Best Practices
 
-You can extend this pipeline with:
-
-- Feature selection
-- Feature scaling alternatives (MinMaxScaler)
-- Custom transformers
-- Feature engineering steps
+- Fit only on training data
+- Always pass same pipeline to wrapper
+- Keep steps modular
+- Avoid heavy transformations
 
 ---
 
-## Summary
+## ✅ Final Summary
 
-The `Preprocessor` class is a foundational component of the ML pipeline that ensures consistent, reusable, and scalable data preparation across models.
-
+`Preprocessor` is the **foundation of your ML pipeline**, ensuring consistent, reusable, and production-ready feature processing.

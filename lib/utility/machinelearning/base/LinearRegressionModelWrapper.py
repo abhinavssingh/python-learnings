@@ -8,7 +8,9 @@ class RegressionModelWrapper(BaseModelWrapper):
     """
     Base wrapper for all regression models.
     """
-    task = "regression"
+
+    task = "linear regression"
+    family = "linear"
 
     def build_pipeline(self, preprocessor):
         self.pipeline = Pipeline([
@@ -17,4 +19,14 @@ class RegressionModelWrapper(BaseModelWrapper):
         ])
 
     def evaluate(self, y_true, y_pred):
-        return Metrics.regression(y_true, y_pred)
+        """
+        Evaluate regression model performance.
+        Can be extended to include residual plots, error distributions, etc.
+        """
+        return Metrics.regression(
+            y_true,
+            y_pred,
+            # ✅ future-ready (optional flags if you extend Metrics later)
+            # include_residuals=True,
+            # include_plots=True
+        )

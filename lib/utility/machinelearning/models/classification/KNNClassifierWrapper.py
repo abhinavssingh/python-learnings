@@ -4,6 +4,19 @@ from lib.utility.machinelearning.base.ClassificationModelWrapper import Classifi
 
 
 class KNNClassifierWrapper(ClassificationModelWrapper):
+    """
+    Wrapper for K-Nearest Neighbors classification model.
+    """
 
     def __init__(self):
-        super().__init__(KNeighborsClassifier(n_jobs=8, n_neighbors=5, weights='distance', metric='euclidean'))
+        super().__init__(
+            KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean', n_jobs=8))
+
+        self.family = "instance"
+
+        # ✅ Tuning support
+        self.param_grid = {
+            "model__n_neighbors": [3, 5, 7, 11],
+            "model__weights": ["uniform", "distance"],
+            "model__metric": ["euclidean", "manhattan"]
+        }

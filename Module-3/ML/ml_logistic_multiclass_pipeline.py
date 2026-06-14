@@ -74,7 +74,7 @@ def main():
     # ---------------------------------------------------
     # ✅ MODEL COMPARISON
     # ---------------------------------------------------
-    ranked = cm.rank_models(metric="f1")
+    # ranked = cm.rank_models(metric="f1")
     best_model = cm.get_best_model(metric="f1")
 
     results_df = cm.get_results_df()

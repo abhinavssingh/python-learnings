@@ -1,7 +1,7 @@
-
 # Metrics Utility Documentation
 
 ## Overview
+
 The `Metrics` class provides a centralized computation layer for regression and classification tasks.
 It focuses purely on metric calculation and avoids UI or formatting concerns.
 
@@ -15,6 +15,34 @@ It focuses purely on metric calculation and avoids UI or formatting concerns.
 - ✅ Extensible for future metrics
 
 ---
+
+## EVALUATION & METRICS FLOW
+
+```mermaid
+flowchart TD
+
+    A[Predictions + True Labels] --> B[Metrics.classification]
+
+    B --> C[Compute Accuracy]
+    B --> D[Compute Precision]
+    B --> E[Compute Recall]
+    B --> F[Compute F1]
+
+    B --> G[Compute ROC-AUC]
+    B --> H[Compute Log Loss]
+
+    B --> I{Problem Type}
+
+    I -->|Binary| J[Confusion Matrix]
+    I -->|Multiclass| K[Skip Confusion Matrix or Multi-class CM]
+
+    J --> L[Artifacts]
+    G --> L
+    H --> L
+
+    C --> M[Final Metrics]
+    F --> M
+```
 
 ## Regression Metrics
 
@@ -57,6 +85,7 @@ type_of_target(y_true)
 ```
 
 Supports:
+
 - binary
 - multiclass
 - multilabel-indicator
@@ -72,11 +101,11 @@ Supports:
 
 Averaging strategy:
 
-| Problem Type | Average |
-|-------------|--------|
-| Binary | weighted |
-| Multiclass | configurable |
-| Multilabel | samples |
+| Problem Type | Average      |
+| ------------ | ------------ |
+| Binary       | weighted     |
+| Multiclass   | configurable |
+| Multilabel   | samples      |
 
 ---
 
@@ -138,7 +167,7 @@ Computed only if probabilities are available.
     "roc_auc": float,
     "log_loss": float,
     "problem_type": str,
-    
+
     # Optional artifacts
     "confusion_matrix": np.ndarray,
     "classification_report": dict,
@@ -168,6 +197,16 @@ formatted = ClassificationFormatter.format(...)
 
 ---
 
+## ✅ Key Updates (Recent Changes)
+
+### 1. Strict Separation of Concerns
+
+- ✅ Classification metrics and regression metrics are now **fully separated**
+- ✅ Hyperparameter tuning uses **task-specific scoring only**
+- ✅ Removed fallback to incorrect metrics (e.g., accuracy for regression)
+
+---
+
 ## Future Extensions
 
 - PR AUC
@@ -180,4 +219,3 @@ formatted = ClassificationFormatter.format(...)
 ## Summary
 
 The Metrics class forms the backbone of the ML evaluation layer. Combined with a Formatter, it enables building scalable, production-grade ML pipelines.
-

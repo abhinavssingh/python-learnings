@@ -5,10 +5,9 @@ from lib.utility.machinelearning.evaluation.Metrics import Metrics
 
 
 class ClassificationModelWrapper(BaseModelWrapper):
-    """
-    Base wrapper for all classification models.
-    """
+
     task = "classification"
+    family = "general"
 
     def build_pipeline(self, preprocessor):
         self.pipeline = Pipeline([
@@ -16,5 +15,17 @@ class ClassificationModelWrapper(BaseModelWrapper):
             ("model", self.model)
         ])
 
-    def evaluate(self, y_true, y_pred):
-        return Metrics.classification(y_true, y_pred)
+    def predict_proba(self, X):
+        if hasattr(self.pipeline, "predict_proba"):
+            return self.pipeline.predict_proba(X)
+        return None
+
+    def evaluate(self, y_true, y_pred, y_proba=None):
+
+        return Metrics.classification(
+            y_true,
+            y_pred,
+            y_proba=y_proba,
+            include_curves=True,
+            include_confusion_matrix=True
+        )

@@ -1,4 +1,3 @@
-
 # ModelRegistry – Detailed Documentation
 
 ## Overview
@@ -16,227 +15,108 @@ The `ModelRegistry` class provides a **dynamic auto-discovery mechanism** for al
 
 ---
 
-## Architecture
+## MODEL REGISTRY & WRAPPER DISCOVERY
 
-```
-models/ directory → dynamic scan → filter wrappers → instantiate → registry
-```
+```mermaid
+flowchart TD
+    A[ModelRegistry Init] --> B[Scan models package]
 
----
+    B --> C[Load Python Modules]
 
-## Key Features
+    C --> D[Find Classes]
 
-- ✅ Auto-discovery of models
-- ✅ Dynamic importing using `importlib`
-- ✅ Class inspection using `inspect`
-- ✅ Plug-and-play architecture
-- ✅ Task-based model filtering
+    D --> E{Is Subclass of BaseModelWrapper?}
 
----
+    E -->|Yes| F[Instantiate Wrapper]
+    E -->|No| G[Skip]
 
-## Initialization
+    F --> H[Extract Model Name]
 
-```python
-registry = ModelRegistry()
-```
+    H --> I[Register Model Instance]
 
-### Process
-
-1. Initializes empty registry
-2. Calls `_load_models()`
-3. Populates registry automatically
-
----
-
-## Method: _load_models()
-
-### Purpose
-
-Automatically scans all modules under:
-
-```
-lib.utility.machinelearning.models
+    I --> J[Registry Dictionary]
 ```
 
 ---
 
-### Step-by-Step Flow
+## ✅ Key Responsibilities (Refactored)
 
-#### 1. Load Base Package
-
-```python
-package = importlib.import_module(base_package)
-```
-
-#### 2. Discover Submodules
-
-```python
-pkgutil.walk_packages(package.__path__)
-```
-
-#### 3. Import Each Module
-
-```python
-module = importlib.import_module(name)
-```
-
-#### 4. Inspect Classes
-
-```python
-inspect.getmembers(module, inspect.isclass)
-```
-
-#### 5. Filter Valid Wrappers
-
-```python
-issubclass(obj, BaseModelWrapper)
-```
-
-Excludes:
-- BaseModelWrapper itself
-- Classes ending with `ModelWrapper` (framework-level wrappers)
+- Discover wrapper classes dynamically
+- Instantiate wrapper objects
+- Store models by name
+- Support task-based retrieval
 
 ---
 
-### Model Naming
+## ✅ Important Enhancements
 
-```python
-model_name = obj.__name__.replace("Wrapper", "")
-```
-
-Example:
+### ✔ Wrapper-Based Design Alignment
 
 ```
-LogisticRegressionWrapper → LogisticRegression
+ModelRegistry → Wrapper → build_pipeline() → Utility
+```
+
+### ✔ Family & Task Awareness
+
+Wrappers now expose:
+
+```
+wrapper.task → classification / regression
+wrapper.family → linear / tree / boosting
 ```
 
 ---
 
-### Registration
+## ✅ Core Methods
+
+### get_model(model_name)
+
+Returns a deep-copy safe wrapper
+
+---
+
+### get_all_models()
+
+Returns complete registry
+
+---
+
+### get_models_by_task(task)
 
 ```python
-self._registry[model_name] = instance
+registry.get_models_by_task("regression")
 ```
 
 ---
 
-## Method: get_model()
+## ✅ Output Structure
 
-```python
-get_model(model_name)
 ```
-
-### Purpose
-
-Fetch a specific model wrapper
-
-### Behavior
-
-- Returns wrapper instance
-- Raises error if not found
-
----
-
-## Method: get_all_models()
-
-```python
-get_all_models()
-```
-
-### Purpose
-
-Returns full registry dictionary
-
----
-
-## Method: register_model() (Manual)
-
-```python
-register_model(model_name, wrapper)
-```
-
-### Purpose
-
-Allows manual override or injection of models
-
----
-
-## Method: get_models_by_task()
-
-```python
-get_models_by_task(task)
-```
-
-### Purpose
-
-Filter models by task type (e.g., classification, regression)
-
-### Logic
-
-```python
-getattr(model, "task")
-```
-
----
-
-## Output Structure
-
-```python
 {
-    "LogisticRegression": LogisticRegressionWrapper(),
-    "RandomForest": RandomForestWrapper(),
-    ...
+  "Ridge": RidgeWrapper(),
+  "ElasticNet": ElasticNetWrapper()
 }
 ```
 
 ---
 
-## Design Principles
+## ✅ Design Principles
 
-- ✅ Dynamic loading (no hardcoding)
-- ✅ Extensibility
-- ✅ Decoupled architecture
 - ✅ Reflection-based discovery
+- ✅ No hardcoded model registration
+- ✅ Extensible architecture
+- ✅ Task-aware filtering
 
 ---
 
-## Benefits
+## ✅ Best Practices
 
-- Easily add new models → auto-registered
-- No need to modify core code
-- Clean separation of model implementations
-
----
-
-## Best Practices
-
-- Ensure all models inherit `BaseModelWrapper`
-- Use consistent naming (`XYZWrapper`)
-- Define `task` attribute in wrappers
-- Handle import errors gracefully
+- All models must inherit BaseModelWrapper
+- Always define task & family
+- Use Wrapper naming convention (XYZWrapper)
 
 ---
 
-## Limitations
+## ✅ Final Summary
 
-- Import errors silently skipped
-- Requires correct package structure
-- Reflection can add slight startup overhead
-
----
-
-## Extensibility
-
-Future enhancements:
-
-- Model tagging (fast, interpretable, etc.)
-- Lazy loading models
-- Versioned model registry
-- Plugin-based external model loading
-
----
-
-## Summary
-
-`ModelRegistry` is the backbone of the ML framework's extensibility. It enables automatic discovery and management of models, allowing the system to scale without requiring code changes.
-
+`ModelRegistry` is the **foundation for AutoML-ready model extensibility**, enabling seamless addition of new models.

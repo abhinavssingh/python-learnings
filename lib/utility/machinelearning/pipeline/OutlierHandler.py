@@ -1,43 +1,30 @@
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.validation import check_is_fitted
 
 
 class OutlierHandler(BaseEstimator, TransformerMixin):
-    """
-    Handles outliers using:
-    - IQR method (default)
-    - Z-score method
-
-    Includes logging:
-    - Outlier counts before & after
-    - Configuration tracking
-    """
 
     def __init__(self, method="iqr", factor=1.5, z_thresh=3):
         self.method = method
         self.factor = factor
         self.z_thresh = z_thresh
 
-    def get_params(self, deep=True):
-        return {
-            "method": self.method,
-            "factor": self.factor,
-            "z_thresh": self.z_thresh
-        }
-
-    # ---------------------------------------------------
-    # FIT
-    # ---------------------------------------------------
     def fit(self, X, y=None):
+
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
 
         X = X.copy()
 
-        # ✅ initialize logs here (fresh every fit)
         self.results_ = {}
 
-        self.num_cols = list(X.select_dtypes(include=['int64', 'float64']).columns)
+        if self.method not in ["iqr", "zscore"]:
+            raise ValueError(f"Unsupported method: {self.method}")
 
-        # ✅ Log BEFORE handling
+        self.num_cols = list(X.select_dtypes(include=["number"]).columns)
+
         self.results_['outliers_before'] = {}
 
         if self.method == "iqr":
@@ -76,25 +63,28 @@ class OutlierHandler(BaseEstimator, TransformerMixin):
 
         return self
 
-    # ---------------------------------------------------
-    # TRANSFORM
-    # ---------------------------------------------------
     def transform(self, X):
+
+        check_is_fitted(self, ["num_cols"])
+
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
 
         X = X.copy()
 
-        num_cols = [col for col in self.num_cols if col in X.columns]
-
         self.results_['outliers_after'] = {}
 
+        num_cols = [col for col in self.num_cols if col in X.columns]
+
         if self.method == "iqr":
+
             for col in num_cols:
                 lower, upper = self.bounds_[col]
 
                 before = ((X[col] < lower) | (X[col] > upper)).sum()
 
-                X[col] = np.where(X[col] < lower, lower, X[col])
-                X[col] = np.where(X[col] > upper, upper, X[col])
+                # ✅ CLEAN FIX
+                X[col] = X[col].clip(lower, upper)
 
                 after = ((X[col] < lower) | (X[col] > upper)).sum()
 
@@ -104,22 +94,19 @@ class OutlierHandler(BaseEstimator, TransformerMixin):
                 }
 
         elif self.method == "zscore":
+
             for col in num_cols:
 
                 mean, std = self.stats_[col]
 
                 if std == 0:
-                    self.results_['outliers_after'][col] = {
-                        "before": 0,
-                        "after": 0
-                    }
+                    self.results_['outliers_after'][col] = {"before": 0, "after": 0}
                     continue
 
                 z_scores = (X[col] - mean) / std
 
                 before = (np.abs(z_scores) > self.z_thresh).sum()
 
-                # ✅ replace outliers with mean
                 X.loc[np.abs(z_scores) > self.z_thresh, col] = mean
 
                 z_scores_new = (X[col] - mean) / std
@@ -130,7 +117,6 @@ class OutlierHandler(BaseEstimator, TransformerMixin):
                     "after": int(after)
                 }
 
-        # ✅ CONFIG LOG
         self.results_['config'] = {
             "method": self.method,
             "factor": self.factor,
