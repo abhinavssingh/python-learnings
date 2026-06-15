@@ -13,301 +13,291 @@ def main():
     print("Running Probability exercise  report...")
     # ...
 
+    builder = HtmlBuilder()
+    plotRenderer = PlotRenderer()
+    content = []
 
-builder = HtmlBuilder()
-plotRenderer = PlotRenderer()
-content = []
+    df, report = dl.read_dataset("Retail_Store_Data.csv", optimize=True, handle_unnamed="drop", return_report=True)
 
-df, report = dl.read_dataset("Retail_Store_Data.csv", optimize=True, handle_unnamed="drop", return_report=True)
+    # Get information about the DataFrame
+    df_info_str = dfh.get_dataframe_info_str(df)
 
-# Get information about the DataFrame
-df_info_str = dfh.get_dataframe_info_str(df)
+    # Bernoulli Plot histogram
+    df["High_Time_Spent"] = (df["Visit_Duration"] > 30).astype(int)
+    bernoulli_data = df["High_Time_Spent"]
+    bernouli_fig = go.Figure()
 
+    bernouli_fig.add_histogram(
+        x=bernoulli_data,
+        histnorm="probability",
+        xbins=dict(start=-0.5, end=1.5, size=1),
+        name="Bernoulli Histogram",
+        marker_color="#4C72B0"
+    )
 
-# Bernoulli Plot histogram
-df["High_Time_Spent"] = (df["Visit_Duration"] > 30).astype(int)
-bernoulli_data = df["High_Time_Spent"]
-bernouli_fig = go.Figure()
+    # --- KDE (smoothed visualization) ---
+    # KDE needs samples (repeat Bernoulli draws)
+    kde = gaussian_kde(bernoulli_data)
+    x_kde = np.linspace(-0.5, 1.5, 200)
+    y_kde = kde(x_kde)
 
+    bernouli_fig.add_scatter(
+        x=x_kde,
+        y=y_kde,
+        mode="lines",
+        name="KDE (smoothed)",
+        line=dict(color="#DD8452", width=3)
+    )
 
-bernouli_fig.add_histogram(
-    x=bernoulli_data,
-    histnorm="probability",
-    xbins=dict(start=-0.5, end=1.5, size=1),
-    name="Bernoulli Histogram",
-    marker_color="#4C72B0"
-)
+    # Layout
+    bernouli_fig.update_layout(
+        title="Bernoulli Histogram with KDE: High_Time_Spent",
+        xaxis=dict(
+            title="High_Time_Spent (0 = ≤30 mins, 1 = >30 mins)",
+            tickmode="array",
+            tickvals=[0, 1]
+        ),
+        yaxis_title="Probability / Density",
+        bargap=0.4
+    )
 
+    # Binomial Plot
 
-# --- KDE (smoothed visualization) ---
-# KDE needs samples (repeat Bernoulli draws)
-kde = gaussian_kde(bernoulli_data)
-x_kde = np.linspace(-0.5, 1.5, 200)
-y_kde = kde(x_kde)
+    # 1. Create Bernoulli column using FULL dataset
+    df["High_Spend"] = (df["Purchase_Amount"] > 100).astype(int)
 
-bernouli_fig.add_scatter(
-    x=x_kde,
-    y=y_kde,
-    mode="lines",
-    name="KDE (smoothed)",
-    line=dict(color="#DD8452", width=3)
-)
+    # 2. Estimate probability p from ALL rows
+    p_hat = df["High_Spend"].mean()
 
-# Layout
-bernouli_fig.update_layout(
-    title="Bernoulli Histogram with KDE: High_Time_Spent",
-    xaxis=dict(
-        title="High_Time_Spent (0 = ≤30 mins, 1 = >30 mins)",
-        tickmode="array",
-        tickvals=[0, 1]
-    ),
-    yaxis_title="Probability / Density",
-    bargap=0.4
-)
+    # 3. Binomial setup: 10 random visits
+    n = 10
+    k = np.arange(0, n + 1)
 
-# Binomial Plot
+    # Binomial PMF
+    pmf = binom.pmf(k, n=n, p=p_hat)
 
-# 1. Create Bernoulli column using FULL dataset
-df["High_Spend"] = (df["Purchase_Amount"] > 100).astype(int)
+    # 4. KDE via simulated binomial samples
+    samples = binom.rvs(n=n, p=p_hat, size=5000)
+    kde = gaussian_kde(samples)
+    x_kde = np.linspace(0, n, 400)
+    y_kde = kde(x_kde)
 
-# 2. Estimate probability p from ALL rows
-p_hat = df["High_Spend"].mean()
+    # 5. Plot
+    binomial_fig = go.Figure()
 
-# 3. Binomial setup: 10 random visits
-n = 10
-k = np.arange(0, n + 1)
+    # Binomial PMF bars
+    binomial_fig.add_bar(
+        x=k,
+        y=pmf,
+        name="Binomial PMF",
+        marker_color="#4C72B0"
+    )
 
-# Binomial PMF
-pmf = binom.pmf(k, n=n, p=p_hat)
+    # KDE overlay
+    binomial_fig.add_scatter(
+        x=x_kde,
+        y=y_kde,
+        mode="lines",
+        name="KDE (smoothed – visual aid)",
+        line=dict(color="#DD8452", width=3)
+    )
 
-# 4. KDE via simulated binomial samples
-samples = binom.rvs(n=n, p=p_hat, size=5000)
-kde = gaussian_kde(samples)
-x_kde = np.linspace(0, n, 400)
-y_kde = kde(x_kde)
+    binomial_fig.update_layout(
+        title="Binomial Distribution: High-Spend Visits (> $100) out of 10",
+        xaxis_title="Number of High-Spend Visits (k)",
+        yaxis_title="Probability / Density",
+        bargap=0.25
+    )
 
-# 5. Plot
-binomial_fig = go.Figure()
+    # Poisson Plot
 
-# Binomial PMF bars
-binomial_fig.add_bar(
-    x=k,
-    y=pmf,
-    name="Binomial PMF",
-    marker_color="#4C72B0"
-)
+    # Given average rate
+    lambda_per_hour = 15
 
-# KDE overlay
-binomial_fig.add_scatter(
-    x=x_kde,
-    y=y_kde,
-    mode="lines",
-    name="KDE (smoothed – visual aid)",
-    line=dict(color="#DD8452", width=3)
-)
+    # Possible customer counts per hour
+    k = np.arange(0, 40)
 
-binomial_fig.update_layout(
-    title="Binomial Distribution: High-Spend Visits (> $100) out of 10",
-    xaxis_title="Number of High-Spend Visits (k)",
-    yaxis_title="Probability / Density",
-    bargap=0.25
-)
+    # Poisson PMF
+    pmf = poisson.pmf(k, mu=lambda_per_hour)
 
-# Poisson Plot
+    # --- KDE via simulation ---
+    # Generate large sample of Poisson observations
+    samples = poisson.rvs(mu=lambda_per_hour, size=5000)
 
-# Given average rate
-lambda_per_hour = 15
+    kde = gaussian_kde(samples)
+    x_kde = np.linspace(0, 40, 400)
+    y_kde = kde(x_kde)
 
-# Possible customer counts per hour
-k = np.arange(0, 40)
+    # Plot
+    poisson_fig = go.Figure()
 
-# Poisson PMF
-pmf = poisson.pmf(k, mu=lambda_per_hour)
+    # Poisson PMF bars
+    poisson_fig.add_bar(
+        x=k,
+        y=pmf,
+        name="Poisson PMF",
+        marker_color="#4C72B0"
+    )
 
+    # KDE overlay (smoothed visual aid)
+    poisson_fig.add_scatter(
+        x=x_kde,
+        y=y_kde,
+        mode="lines",
+        name="KDE (smoothed – visual aid)",
+        line=dict(color="#DD8452", width=3)
+    )
 
-# --- KDE via simulation ---
-# Generate large sample of Poisson observations
-samples = poisson.rvs(mu=lambda_per_hour, size=5000)
+    poisson_fig.update_layout(
+        title="Poisson Distribution: Customers Visiting the Store per Hour (λ = 15)",
+        xaxis_title="Number of Customers in One Hour",
+        yaxis_title="Probability / Density",
+        bargap=0.15
+    )
 
-kde = gaussian_kde(samples)
-x_kde = np.linspace(0, 40, 400)
-y_kde = kde(x_kde)
+    # Normal Distribution
+    purchase = df["Purchase_Amount"]
+    mu = purchase.mean()
+    sigma = purchase.std()
 
+    # X-axis range
+    x = np.linspace(purchase.min(), purchase.max(), 500)
 
-# Plot
-poisson_fig = go.Figure()
+    # Normal PDF
+    normal_pdf = norm.pdf(x, mu, sigma)
 
+    # KDE (empirical density)
+    kde = gaussian_kde(purchase)
+    kde_values = kde(x)
 
-# Poisson PMF bars
-poisson_fig.add_bar(
-    x=k,
-    y=pmf,
-    name="Poisson PMF",
-    marker_color="#4C72B0"
-)
+    # Create figure
+    normal_fig = go.Figure()
 
-# KDE overlay (smoothed visual aid)
-poisson_fig.add_scatter(
-    x=x_kde,
-    y=y_kde,
-    mode="lines",
-    name="KDE (smoothed – visual aid)",
-    line=dict(color="#DD8452", width=3)
-)
+    # Histogram (density-normalized)
+    normal_fig.add_histogram(
+        x=purchase,
+        histnorm="probability density",
+        nbinsx=40,
+        name="Purchase Amount Histogram",
+        opacity=0.6
+    )
 
-poisson_fig.update_layout(
-    title="Poisson Distribution: Customers Visiting the Store per Hour (λ = 15)",
-    xaxis_title="Number of Customers in One Hour",
-    yaxis_title="Probability / Density",
-    bargap=0.15
-)
+    # Normal PDF
+    normal_fig.add_scatter(
+        x=x,
+        y=normal_pdf,
+        mode="lines",
+        name="Normal PDF",
+        line=dict(color="#4C72B0", width=3)
+    )
 
-# Normal Distribution
-purchase = df["Purchase_Amount"]
-mu = purchase.mean()
-sigma = purchase.std()
+    # KDE curve
+    normal_fig.add_scatter(
+        x=x,
+        y=kde_values,
+        mode="lines",
+        name="KDE (empirical)",
+        line=dict(color="#DD8452", width=3, dash="dash")
+    )
 
-# X-axis range
-x = np.linspace(purchase.min(), purchase.max(), 500)
+    # Layout
+    normal_fig.update_layout(
+        title=f"Normal Distribution of Purchase Amount (μ = {mu:.2f}, σ = {sigma:.2f})",
+        xaxis_title="Purchase Amount",
+        yaxis_title="Density",
+        bargap=0.05
+    )
 
-# Normal PDF
-normal_pdf = norm.pdf(x, mu, sigma)
+    # Uniform Distribution
 
-# KDE (empirical density)
-kde = gaussian_kde(purchase)
-kde_values = kde(x)
+    # Use full Visit_Duration column
+    visit_duration = df["Visit_Duration"]
+    a = visit_duration.min()
+    b = visit_duration.max()
 
-# Create figure
-normal_fig = go.Figure()
+    # X-axis range
+    x = np.linspace(a, b, 500)
 
-# Histogram (density-normalized)
-normal_fig.add_histogram(
-    x=purchase,
-    histnorm="probability density",
-    nbinsx=40,
-    name="Purchase Amount Histogram",
-    opacity=0.6
-)
+    # Uniform PDF
+    uniform_pdf = np.full_like(x, 1 / (b - a))
 
-# Normal PDF
-normal_fig.add_scatter(
-    x=x,
-    y=normal_pdf,
-    mode="lines",
-    name="Normal PDF",
-    line=dict(color="#4C72B0", width=3)
-)
+    # KDE (empirical density)
+    kde = gaussian_kde(visit_duration)
+    kde_values = kde(x)
 
-# KDE curve
-normal_fig.add_scatter(
-    x=x,
-    y=kde_values,
-    mode="lines",
-    name="KDE (empirical)",
-    line=dict(color="#DD8452", width=3, dash="dash")
-)
+    uniform_fig = go.Figure()
 
-# Layout
-normal_fig.update_layout(
-    title=f"Normal Distribution of Purchase Amount (μ = {mu:.2f}, σ = {sigma:.2f})",
-    xaxis_title="Purchase Amount",
-    yaxis_title="Density",
-    bargap=0.05
-)
+    # Histogram (density-normalized)
+    uniform_fig.add_histogram(
+        x=visit_duration,
+        histnorm="probability density",
+        nbinsx=40,
+        name="Visit Duration Histogram",
+        opacity=0.6
+    )
 
-# Uniform Distribution
+    # Uniform PDF
+    uniform_fig.add_scatter(
+        x=x,
+        y=uniform_pdf,
+        mode="lines",
+        name="Uniform PDF",
+        line=dict(color="#4C72B0", width=3)
+    )
 
-# Use full Visit_Duration column
-visit_duration = df["Visit_Duration"]
-a = visit_duration.min()
-b = visit_duration.max()
+    # KDE curve
+    uniform_fig.add_scatter(
+        x=x,
+        y=kde_values,
+        mode="lines",
+        name="KDE (empirical)",
+        line=dict(color="#DD8452", width=3, dash="dash")
+    )
 
+    uniform_fig.update_layout(
+        title=f"Uniform Distribution with KDE for Visit Duration (a={a:.2f}, b={b:.2f})",
+        xaxis_title="Visit Duration (minutes)",
+        yaxis_title="Density",
+        bargap=0.05
+    )
 
-# X-axis range
-x = np.linspace(a, b, 500)
+    content.append(builder.full_width_card(
+        "Retail Store DataFrame",
+        builder.render_dataframe_collapsible(df, initial_rows=10)
+    ))
 
-# Uniform PDF
-uniform_pdf = np.full_like(x, 1 / (b - a))
+    content.append(
+        builder.grid([
+            builder.card("Retail Dataframe Description:",
+                         builder.render_dict(df.describe().to_dict())),
+            builder.card("Information of the Housing Dataframe is:",
+                         builder.render_pre(df_info_str)),
+            builder.card("Optimized Dataframe report:",
+                         builder.render_pre(report))
+        ]))
 
-# KDE (empirical density)
-kde = gaussian_kde(visit_duration)
-kde_values = kde(x)
-
-uniform_fig = go.Figure()
-
-# Histogram (density-normalized)
-uniform_fig.add_histogram(
-    x=visit_duration,
-    histnorm="probability density",
-    nbinsx=40,
-    name="Visit Duration Histogram",
-    opacity=0.6
-)
-
-# Uniform PDF
-uniform_fig.add_scatter(
-    x=x,
-    y=uniform_pdf,
-    mode="lines",
-    name="Uniform PDF",
-    line=dict(color="#4C72B0", width=3)
-)
-
-# KDE curve
-uniform_fig.add_scatter(
-    x=x,
-    y=kde_values,
-    mode="lines",
-    name="KDE (empirical)",
-    line=dict(color="#DD8452", width=3, dash="dash")
-)
-
-uniform_fig.update_layout(
-    title=f"Uniform Distribution with KDE for Visit Duration (a={a:.2f}, b={b:.2f})",
-    xaxis_title="Visit Duration (minutes)",
-    yaxis_title="Density",
-    bargap=0.05
-)
-
-
-content.append(builder.full_width_card(
-    "Retail Store DataFrame",
-    builder.render_dataframe_collapsible(df, initial_rows=10)
-))
-
-content.append(
-    builder.grid([
-        builder.card("Retail Dataframe Description:",
-                     builder.render_dict(df.describe().to_dict())),
-        builder.card("Information of the Housing Dataframe is:",
-                     builder.render_pre(df_info_str)),
-        builder.card("Optimized Dataframe report:",
-                     builder.render_pre(report))
+    content.append(builder.chart_grid([
+        plotRenderer.plot_to_card(bernouli_fig, " Bernoulli Plot PMF + KDE"),
+        plotRenderer.plot_to_card(binomial_fig, " Binomial Plot PMF + KDE"),
+        plotRenderer.plot_to_card(poisson_fig, " Poisson Plot PMF + KDE"),
+        plotRenderer.plot_to_card(normal_fig, " Normal Distribution Plot PDF + KDE"),
+        plotRenderer.plot_to_card(uniform_fig, " Uniform Distribution Plot PDF + KDE"),
     ]))
 
-content.append(builder.chart_grid([
-    plotRenderer.plot_to_card(bernouli_fig, " Bernoulli Plot PMF + KDE"),
-    plotRenderer.plot_to_card(binomial_fig, " Binomial Plot PMF + KDE"),
-    plotRenderer.plot_to_card(poisson_fig, " Poisson Plot PMF + KDE"),
-    plotRenderer.plot_to_card(normal_fig, " Normal Distribution Plot PDF + KDE"),
-    plotRenderer.plot_to_card(uniform_fig, " Uniform Distribution Plot PDF + KDE"),
-]))
+    html_doc = builder.build_page(
+        "Basic probability exercise Report",
+        "\n".join(content)
+    )
 
-html_doc = builder.build_page(
-    "Basic probability exercise Report",
-    "\n".join(content)
-)
-
-
-# html_doc is the string you already have
-output_path = ru.save_html_report(
-    __file__,
-    "basic_probability_exercise_report.html",   # file name
-    html_doc,
-    subfolder="reports",                # or 'reports' to keep files in a subdir
-    open_in_browser=True
-)
-print(f"Wrote report to: {output_path}")
+    # html_doc is the string you already have
+    output_path = ru.save_html_report(
+        __file__,
+        "basic_probability_exercise_report.html",   # file name
+        html_doc,
+        subfolder="reports",                # or 'reports' to keep files in a subdir
+        open_in_browser=True
+    )
+    print(f"Wrote report to: {output_path}")
 
 
 if __name__ == "__main__":
