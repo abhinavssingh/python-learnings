@@ -1,14 +1,18 @@
-# ML Logistic Regression Pipeline Report – Detailed Documentation
+# ML Logistic Regression Pipeline Report
 
 ## Overview
 
-This script builds a complete **end-to-end Machine Learning pipeline report** for classification using the Adult Census Income dataset. It performs:
+This implementation builds a complete end-to-end Machine Learning pipeline and reporting system for classification using the Adult Census Income dataset.
+It demonstrates a production-ready ML framework that combines:
 
-- Exploratory Data Analysis (EDA)
-- Data preprocessing
-- Model training and evaluation
-- Visualization
-- HTML report generation
+- ✅ Exploratory Data Analysis (EDA)
+- ✅ Config-driven data preprocessing
+- ✅ Wrapper-based model execution
+- ✅ Ensemble modeling (Parallel, Sequential, Stacking) ✅
+- ✅ SMOTE-based imbalance handling ✅
+- ✅ Metrics, artifacts, and observability
+- ✅ Visualization and HTML report generation
+- ✅ Standardized results via ResultBuilder ✅
 
 ---
 
@@ -18,23 +22,37 @@ This script builds a complete **end-to-end Machine Learning pipeline report** fo
 flowchart TD
     A[Data Load] --> B[EDA]
     B --> C[Preprocessor]
+
     C --> D[ClassificationModelUtility]
+
     D --> E[ModelRegistry]
-    E --> F[Wrapper]
-    F --> G[Pipeline]
+
+    E --> F[Wrapper / Ensemble Wrapper]
+
+    F --> G["Pipeline<br/>Preprocessor → SMOTE → Model"]
+
     G --> H[Train & Predict]
+
     H --> I[Metrics.classification]
-    I --> J[Artifacts]
+
+    I --> J[Artifacts + Imbalance]
+
+    J --> K[ResultBuilder]
+
+    K --> L[Results + Comparison + Visualization]
 ```
 
 ---
 
-## ✅ Key Changes (Refactoring)
+## ✅ Key Changes
 
-- ✅ Wrapper-first execution
-- ✅ Classification-only metrics
-- ✅ Artifact separation
-- ✅ Cleaner result structure
+- ✅ Wrapper-first execution model
+- ✅ Ensemble-native design (Voting, Boosting, Stacking)
+- ✅ Pipeline-first architecture (SMOTE safe insertion)
+- ✅ Artifact-aware evaluation
+- ✅ Result standardization via ResultBuilder
+- ✅ Baseline vs Ensemble vs Tuned comparison
+- ✅ Improved observability (metrics + imbalance tracking)
 
 ---
 
@@ -56,19 +74,19 @@ Features:
 
 ### 2. Exploratory Data Analysis (EDA)
 
-#### Key Insights Generated
+#### Insights Generated
 
-- Missing values detection (`?` handling)
-- Unique values per column
-- Top countries aggregation
-- Correlation matrix
+- Missing values detection (? handling)
+- Feature cardinality (unique counts)
+- Country aggregation
+- Correlation analysis
 
 #### Visualizations
 
 - Country distribution (Top 10 + Others)
 - Histograms (age, income, education)
-- Pie charts (marital status)
-- Bivariate plots (income vs features)
+- Pie charts (categorical features)
+- Bivariate analysis
 - Correlation heatmap
 
 ---
@@ -121,9 +139,11 @@ cm = ClassificationModelUtility(...)
 Responsibilities:
 
 - Data preparation
-- Model execution
-- Metric computation
-- Artifact generation
+- Pipeline construction
+- Wrapper execution
+- Ensemble orchestration
+- Metrics + artifacts extraction
+- Result standardization
 
 ---
 
