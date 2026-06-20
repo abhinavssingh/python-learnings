@@ -1,4 +1,5 @@
 import copy
+from collections import Counter
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -9,6 +10,7 @@ from skmultilearn.model_selection import iterative_train_test_split
 
 from lib.utility.logger import Logger
 from lib.utility.machinelearning.evaluation.ClassificationModelComparator import ClassificationModelComparator
+from lib.utility.machinelearning.pipeline.imbalance.SMOTEHandler import SMOTEHandler
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.ClassificationFormatter import ClassificationFormatter as cf
@@ -17,13 +19,14 @@ from lib.utility.machinelearning.tuning.ClassificationHyperparameterTuner import
 
 class ClassificationModelUtility:
 
-    def __init__(self, df, target_col, imputer=None, outlier_handler=None):
+    def __init__(self, df, target_col, imputer=None, outlier_handler=None, imbalance_config=None):
 
         self.df = df
         self.target_col = target_col
 
         self.imputer = imputer
         self.outlier_handler = outlier_handler
+        self.imbalance_config = imbalance_config
 
         self.X_train = None
         self.X_test = None
@@ -90,6 +93,18 @@ class ClassificationModelUtility:
 
     # ----------------------------
 
+    def _get_imbalance_handler(self):
+
+        if not self.imbalance_config:
+            return None
+
+        im_type = self.imbalance_config.get("type")
+
+        if im_type == "smote":
+            return SMOTEHandler(**self.imbalance_config.get("params", {}))
+
+        return None
+
     def run_experiment(self, model_name):
 
         wrapper = copy.deepcopy(self.registry.get_model(model_name))
@@ -98,10 +113,27 @@ class ClassificationModelUtility:
             if self.problem_type == "multilabel-indicator":
                 wrapper.model = OneVsRestClassifier(wrapper.model)
 
+            # ✅ Inject SMOTE
+
+            smote_handler = self._get_imbalance_handler()
+
+            if smote_handler:
+                wrapper.set_imbalance_handler(smote_handler)
+
+            # ✅ Build pipeline (P → P1 → P2 → P3)
             wrapper.build_pipeline(self.preprocessor)
 
             # ✅ TRAIN
             wrapper.train(self.X_train, self.y_train)
+
+            # ✅ Capture BEFORE distribution
+            class_dist_before = dict(Counter(self.y_train))
+
+            # ✅ Extract SMOTE summary after training
+            imbalance_summary = None
+
+            if wrapper.imbalance_handler:
+                imbalance_summary = wrapper.imbalance_handler.get_summary()
 
             # ✅ PREDICT (only if train succeeded)
             y_pred = wrapper.predict(self.X_test)
@@ -112,12 +144,27 @@ class ClassificationModelUtility:
 
             artifacts, metrics = self._extract_artifacts(metrics)
 
+            # ✅ Add imbalance info to artifacts
+            if imbalance_summary:
+                artifacts["imbalance"] = imbalance_summary
+            else:
+                artifacts["imbalance"] = {
+                    "method": None,
+                    "before": class_dist_before,
+                    "after": None
+                }
+
             result = {
                 "model": model_name,
                 "family": getattr(wrapper, "family", "unknown"),
                 "experiment": f"{model_name} | classification",
                 "mode": "train-test",
                 "type": "baseline",
+
+                # ✅ NEW FLAGS
+                "imbalance_applied": imbalance_summary is not None,
+                "imbalance_method": imbalance_summary.get("method") if imbalance_summary else None,
+
                 **metrics,
                 "artifacts": artifacts
             }
@@ -172,9 +219,13 @@ class ClassificationModelUtility:
             raise ValueError("Call prepare_data() before tuning")
 
         # ✅ get model
-        wrapper = self.registry.get_model(model_name)
-        wrapper.build_pipeline(self.preprocessor)
+        wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
+        smote_handler = self._get_imbalance_handler()
+        if smote_handler:
+            wrapper.set_imbalance_handler(smote_handler)
+
+        wrapper.build_pipeline(self.preprocessor)
         pipeline = wrapper.get_pipeline()
 
         # ✅ NEW: build param_config from kwargs if not provided
@@ -292,6 +343,16 @@ class ClassificationModelUtility:
                 row["has_roc_curve"] = True
             else:
                 row["has_roc_curve"] = False
+
+            if "imbalance" in artifacts:
+                imb = artifacts["imbalance"]
+                row["imbalance_method"] = imb.get("method")
+
+                # optional summary
+                if imb.get("before") and imb.get("after"):
+                    row["imbalance_changed"] = (
+                        str(imb["before"]) + " → " + str(imb["after"])
+                    )
 
             rows.append(row)
 

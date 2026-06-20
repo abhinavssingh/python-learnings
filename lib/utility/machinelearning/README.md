@@ -24,9 +24,9 @@ This repository provides a **modular, scalable, and loosely coupled machine lear
 ```mermaid
 flowchart TD
 
-    A["MLModelBase<br/>Core abstraction layer"] --> B["BaseModelWrapper<br/>Generic wrapper contract"]
+    A["MLModelBase<br/>Core abstraction layer"] --> B["BaseModelWrapper<br/>Execution + handler injection"]
 
-    B --> C["ClassificationModelWrapper<br/>Task-specific implementation"]
+    B --> C["ClassificationModelWrapper<br/>Pipeline composition (flatten + SMOTE)"]
 
     C --> D["Concrete Wrappers<br/>Logistic, RF, XGB, SVC, etc."]
 
@@ -34,7 +34,9 @@ flowchart TD
 
     E --> F["Utility Layer<br/>ClassificationModelUtility"]
 
-    F --> G["Visualizer<br/>Plots, ROC, Metrics Charts"]
+    F --> G["Evaluation + Artifacts<br/>Metrics, ROC, PR, CM, Imbalance ✅"]
+
+    G --> H["Visualizer<br/>Plots, Charts, Reports"]
 ```
 
 ### 🔷 High-Level Flow
@@ -48,28 +50,30 @@ flowchart TD
     B --> D[Preprocessor]
 
     C --> E[Fetch Wrapper]
-    E --> F[Deep Copy Wrapper]
+    E --> F[Deep Copy Wrapper ✅]
 
     D --> G[Preprocessing Pipeline]
 
-    F --> H["Build Pipeline<br/>(Preprocessor + Model)"]
+    F --> H["Inject Imbalance Handler (SMOTE) ✅"]
 
-    H --> I["Train<br/>pipeline.fit"]
+    H --> I["Build Pipeline<br/>(Flatten Preprocessor → SMOTE → Model) ✅"]
 
-    I --> J{Training Success?}
+    I --> J["Train<br/>pipeline.fit (SMOTE active)"]
 
-    J -->|Yes| K[Predict]
-    J -->|No| Z[Capture Error]
+    J --> K{Training Success?}
 
-    K --> L[Predict Proba]
+    K -->|Yes| L[Predict]
+    K -->|No| Z[Capture Error]
 
-    L --> M[Metrics Evaluation]
+    L --> M[Predict Proba]
 
-    M --> N[Extract Artifacts]
+    M --> N[Metrics Evaluation]
 
-    N --> O[Store Results]
+    N --> O[Extract Artifacts]
 
-    Z --> O
+    O --> P["Store Results<br/>+ Imbalance Summary ✅"]
+
+    Z --> P
 ```
 
 ---
@@ -83,6 +87,7 @@ sequenceDiagram
     participant MR as ModelRegistry
     participant W as Wrapper
     participant P as Pipeline
+    participant SM as SMOTEHandler
     participant MET as Metrics
 
     U->>CMU: run_all_models()
@@ -91,11 +96,15 @@ sequenceDiagram
         CMU->>MR: get_model(name)
         MR-->>CMU: Wrapper
 
-        CMU->>W: clone (deepcopy)
+        CMU->>W: deepcopy()
+        CMU->>W: inject SMOTEHandler ✅
         CMU->>W: build_pipeline()
 
         CMU->>W: train()
-        W->>P: fit()
+        W->>P: fit(X_train, y_train)
+
+        P->>SM: fit_resample() ✅ (training only)
+        P->>W: model.fit()
 
         alt Success
             CMU->>W: predict()
@@ -104,12 +113,14 @@ sequenceDiagram
             CMU->>W: evaluate()
             W->>MET: compute metrics
 
-            CMU->>CMU: extract artifacts
-            CMU->>CMU: append results
+            CMU->>SM: get_summary() ✅
+            CMU->>CMU: extract artifacts + imbalance
+
+            CMU->>CMU: store results
 
         else Failure
             CMU->>CMU: log error
-            CMU->>CMU: append failed result
+            CMU->>CMU: store failed result
         end
     end
 
@@ -124,6 +135,8 @@ flowchart TD
     A[Experiment Results List] --> B[Results DataFrame]
     A --> C[Artifacts DataFrame]
 
+    C --> C1[Imbalance Summary ✅]
+
     B --> D[Model Comparator]
 
     D --> E[Rank Models]
@@ -132,6 +145,8 @@ flowchart TD
 
     E --> H[Sorted Results]
     F --> I[Top Model]
+
+    C1 --> J[Before vs After Distribution]
 ```
 
 ### VISUALIZATION FLOW
@@ -149,9 +164,13 @@ flowchart TD
 
     F --> G[ROC Curves]
     F --> H[Confusion Matrix Plots]
+    F --> I[Imbalance Visualization ✅]
 
-    C --> I[PlotRenderer]
-    G --> I
+    I --> I1[Before vs After SMOTE]
+
+    C --> J[PlotRenderer]
+    G --> J
+    I --> J
 ```
 
 ### REPORT GENERATION FLOW
@@ -164,6 +183,8 @@ flowchart TD
     B --> C[Build Cards]
     B --> D[Build Grids]
     B --> E[Embed Charts]
+
+    E --> E1[Embed SMOTE Impact ✅]
 
     C --> F[HTML Document]
 
@@ -181,116 +202,143 @@ flowchart TD
 machinelearning/
 │
 ├── README.md
-│   # ✅ Updated: Wrapper-driven architecture + end-to-end flow + AutoML-ready
+│   # ✅ Architecture overview (Wrapper-driven + Pipeline + Imbalance-aware)
+│   # ✅ End-to-end flows + diagrams
+│   # ✅ AutoML-ready design principles
 │
 ├── base/
 │   ├── MLModelBase.py
-│   │   # ✅ Core abstraction (train / predict / evaluate contract)
+│   │   # ✅ Core abstraction (build_pipeline / train / predict contract)
 │   │
 │   ├── BaseModelWrapper.py
-│   │   # ✅ Central wrapper (pipeline + lifecycle execution)
+│   │   # ✅ Execution engine (pipeline lifecycle + handler injection)
 │   │
 │   ├── ClassificationModelWrapper.py
-│   │   # ✅ Classification wrapper (predict_proba + classification metrics)
+│   │   # ✅ Pipeline builder (flatten + SMOTE + model)
+│   │   # ✅ Supports predict_proba + classification evaluation
 │   │
-│   ├── LinearRegressionModelWrapper.py
-│       # ✅ Regression wrapper (regression-only evaluation)
+│   ├── RegressionModelWrapper.py
+│       # ✅ Simple pipeline (preprocessor + model)
+│       # ✅ Regression-only evaluation
 │
 ├── evaluation/
 │   ├── Metrics.py
-│   │   # ✅ PURE metrics layer (classification vs regression separated)
+│   │   # ✅ PURE metrics layer (classification vs regression separation)
+│   │   # ✅ Returns both numeric metrics + artifacts
 │   │
 │   ├── METRICS.md
-│   │   # ✅ Updated (artifact separation + task-aware metrics)
+│   │   # ✅ Updated (artifact separation + task-aware design)
 │   │
 │   ├── ModelComparator.py
-│   │   # ✅ Generic comparison logic (experiment-level comparison)
+│   │   # ✅ Generic comparison engine
+│   │   # ✅ Works across experiments
 │   │
 │   ├── ClassificationModelComparator.py
-│       # ✅ Classification ranking + best model selection
+│       # ✅ Ranking + best model selection (classification-specific)
 │
 ├── facade/
 │   ├── ClassificationModelUtility.py
-│   │   # ✅ Classification orchestration (wrapper-driven + artifact-aware)
+│   │   # ✅ Core orchestration layer
+│   │   # ✅ Wrapper-based execution
+│   │   # ✅ Imbalance-aware (SMOTE / future strategies)
+│   │   # ✅ Artifact-aware + result normalization
 │   │
 │   ├── CLASSIFICATIONMODELUTILITY.md
-│   │   # ✅ Updated (pipeline + metrics + artifacts + tuning flow)
+│   │   # ✅ FULL lifecycle documentation
+│   │   # ✅ Pipeline + SMOTE + metrics + tuning + artifacts
 │   │
-│   ├── LinearModelUtility.py
-│   │   # ✅ Regression orchestration (correct scoring + wrapper-based)
+│   ├── RegressionModelUtility.py
+│   │   # ✅ Regression orchestration
+│   │   # ✅ Clean separation from classification logic
 │   │
-│   ├── LinearModelUtility.md
-│       # ✅ Updated (regression separation + tuning fix)
+│   ├── RegressionModelUtility.md
+│       # ✅ Regression-specific workflow documentation
 │
 ├── models/
 │   ├── __init__.py
-│   │   # ✅ Model discovery entry (auto-registration)
+│   │   # ✅ Entry point for model discovery
 │   │
 │   ├── classification/
 │   │   ├── __init__.py
-│   │   │   # ✅ Registers classification models
+│   │   │   # ✅ Registers all classification wrappers
 │   │   │
 │   │   ├── LogisticRegressionWrapper.py
 │   │   ├── DecisionTreeClassifierWrapper.py
 │   │   ├── RandomForestWrapper.py
 │   │   ├── KNNClassifierWrapper.py
 │   │   ├── SVCWrapper.py
-│   │       # ✅ All implement: task="classification", family="*"
+│   │   ├── XGBoostWrapper.py
+│   │   │
+│   │       # ✅ All follow:
+│   │       # task="classification"
+│   │       # family="linear/tree/boosting"
 │   │
-│   ├── linear/
+│   ├── regression/
 │       ├── __init__.py
-│       │   # ✅ Registers regression models
+│       │   # ✅ Registers all regression wrappers
 │       │
 │       ├── LinearRegressionWrapper.py
 │       ├── RidgeWrapper.py
 │       ├── LassoWrapper.py
 │       ├── ElasticNetWrapper.py
-│           # ✅ All implement: task="regression", family="linear"
+│           # ✅ task="regression", family="linear"
 │
 ├── pipeline/
 │   ├── Preprocessor.py
-│   │   # ✅ PIPELINE BUILDER (not executor)
-│   │   # ✅ Combines: Imputer → Outlier → Transformer
+│   │   # ✅ PIPELINE BUILDER (NOT executor)
+│   │   # ✅ Combines: Imputer → Outlier → Encoder → Transformer
+│   │
+│   ├── imbalance/
+│   │   ├── BaseImbalanceHandler.py
+│   │   │   # ✅ Abstraction for imbalance strategies
+│   │   │
+│   │   ├── SMOTEHandler.py
+│   │   │   # ✅ Oversampling + before/after tracking ✅
+│   │   │
+│   │   ├── SMOTEENNHandler.py
+│   │   │   # ✅ Combined over + under sampling (future-ready)
+│   │   │
+│   │   ├── ImbalanceFactory.py
+│   │       # ✅ Config-driven strategy resolver (AutoML-ready 🚀)
 │   │
 │   ├── CustomImputer.py
-│   │   # ✅ Missing value handler (group-aware + results_ logging)
+│   │   # ✅ Missing value handler (group-aware + logging)
 │   │
 │   ├── CustomImputer.md
-│   │   # ✅ Updated (framework integration + pipeline safety)
+│   │   # ✅ Framework integration + pipeline safety
 │   │
 │   ├── OutlierHandler.py
-│   │   # ✅ Outlier handler (IQR/Z-score, no row deletion)
+│   │   # ✅ Outlier transformation (no row deletion)
 │   │
 │   ├── OutlierHandler.md
-│       # ✅ Updated (pipeline compatibility + logging)
+│       # ✅ Pipeline compatibility + observability
 │
 ├── registry/
 │   ├── ModelRegistry.py
 │       # ✅ Wrapper discovery engine
 │       # ✅ Task-aware (classification / regression)
-│       # ✅ Family-aware (linear / tree / boosting)
+│       # ✅ Family-aware filtering
 │
 ├── shared/
 │   ├── DataCleaner.py
-│   │   # ✅ CV results flattening + cleanup
+│   │   # ✅ Flatten CV outputs + normalize results
 │   │
 │   ├── Formatter.py
-│   │   # ✅ Experiment naming (standardized format)
+│   │   # ✅ Standardized experiment naming
 │   │
 │   ├── ClassificationFormatter.py
-│       # ✅ Artifact formatting (ROC / PR / CM → DataFrame/UI)
+│       # ✅ Artifact formatting (ROC / PR / CM / SMOTE summary ✅)
 │
 ├── tuning/
 │   ├── HyperparameterTuner.py
-│   │   # ✅ REGRESSION tuner
-│   │   # ✅ FIXED: scoring = neg_mean_squared_error
+│   │   # ✅ Regression tuner (correct scoring)
 │   │
 │   ├── HyperparameterTuner.md
-│   │   # ✅ Updated (regression-only tuning flow)
+│   │   # ✅ Regression workflow
 │   │
 │   ├── ClassificationHyperparameterTuner.py
 │       # ✅ Classification tuner
-│       # ✅ Wrapper-based execution + artifact-aware output
+│       # ✅ Wrapper-based + SMOTE-aware ✅
 │
 ├── visualization/
 │   ├── README.md
@@ -298,30 +346,30 @@ machinelearning/
 │   │
 │   ├── core/
 │   │   ├── MetricResolver.py
-│   │       # ✅ Dynamically selects best metrics for plots
+│   │       # ✅ Dynamically selects best metrics
 │   │
 │   ├── generic/
 │   │   ├── ClassificationPlots.py
-│   │   │   # ✅ Core plots (ROC, PR, multi-metric, comparisons)
+│   │   │   # ✅ ROC, PR, multi-metric, comparison
+│   │   │   # ✅ SMOTE impact visualization ✅
 │   │   │
 │   │   ├── CLASSIFICATIONPLOTS.md
-│   │   │   # ✅ Visualization documentation
 │   │   │
 │   │   ├── ModelPerformanceVisualizer.py
-│   │   │   # ✅ Visual orchestration layer (results + artifacts)
+│   │   │   # ✅ Combines results + artifacts
 │   │   │
 │   │   ├── ModelPerformanceVisualizer.md
-│   │       # ✅ Updated visualization docs
 │   │
 │   ├── advanced/
 │       ├── ComparisonPlots.py
-│       │   # ✅ Baseline vs tuned comparison
-│       │
 │       ├── HyperparameterPlots.py
-│       │   # ✅ Grid / Random search visualization
-│       │
 │       ├── OptimizationPlots.py
-│           # ✅ Optimization trends & performance curves
+│           # ✅ Optimization + trends
+│
+├── reports/
+│   ├── report_utils.py
+│       # ✅ HTML report generation utilities
+│
 ```
 
 ---

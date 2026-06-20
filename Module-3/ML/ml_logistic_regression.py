@@ -1,6 +1,7 @@
 import time
 
 import plotly.express as px
+import plotly.graph_objects as go
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
@@ -110,20 +111,42 @@ def main():
     # ===================================================================
     # filter for USA only to speed up the process because dataset is imbalanced and has many rows,
     # you can remove this filter to run on the full dataset but it will take much longer time to execute
-    df_usa = df[df['native.country'] == 'United-States']
+    # df_usa = df[df['native.country'] == 'United-States']
     # initializing imputer and outlier handler with custom settings
     imputer = CustomImputer(num_strategy="mode", groupby_cols=["native.country", "workclass", "occupation"])
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
     # initialize ClassificationModelUtility with the dataframe and target column
-    cm = cmu(df_usa, target_col="income", imputer=imputer, outlier_handler=outlier)
+    imbalance_config = {
+        "type": "smote",
+        "params": {
+            "k_neighbors": 5,
+            "sampling_strategy": "auto",
+            "random_state": 42
+        }
+    }
+
+    cm = cmu(df, target_col="income", imputer=imputer, outlier_handler=outlier, imbalance_config=imbalance_config)
 
     # prepare data (handle missing values, outliers, etc.)
     cm.prepare_data()
 
     # run all models with default settings
-    ml_results = cm.run_all_models()
+    # ml_results = cm.run_all_models()
 
+    models_to_run = ["LogisticRegression", "RandomForestClassifier", "XGBoost"]
+
+    for m in models_to_run:
+        cm.run_experiment(m)
+
+    imb = cm.results[0]["artifacts"]["imbalance"]
+
+    smote_fig = go.Figure(data=[
+        go.Bar(name="Before", x=list(imb["before"].keys()), y=list(imb["before"].values())),
+        go.Bar(name="After", x=list(imb["after"].keys()), y=list(imb["after"].values()))
+    ])
+
+    smote_fig.update_layout(title="Class Distribution Before vs After SMOTE", barmode="group")
     # ✅ tuning
 
     # cm.tune_model("LogisticRegression", C=[0.1, 1, 10], solver=["lbfgs"])
@@ -156,11 +179,10 @@ def main():
         builder.card("Missing Values (as '?'):", builder.render_series(missing_count)),
         builder.card("Unique Values Count per Column:", builder.render_dict(unique_values)),
         builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
-        builder.card("Train All Classification Models:", builder.render_dict(ml_results.to_dict())),
         builder.card("All Classification Models Results (Flat)", builder.render_dataframe(results_df)),
         # builder.card("Artifacts for all classification models:", builder.render_dataframe(artifacts_df)),
-        builder.card("Confusion Matrix for all classification models:", builder.render_dict(cm.get_all_confusion_matrices()))
-
+        builder.card("Confusion Matrix for all classification models:", builder.render_dict(cm.get_all_confusion_matrices())),
+        builder.card("SMOTE Impact (Before vs After)", builder.render_dict(cm.results[0]["artifacts"].get("imbalance")))
     ]))
 
     # ===================================================================
@@ -182,8 +204,10 @@ def main():
         plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="accuracy"), "Preprocessing Impact"),
         plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "Train vs KFold"),
         plotRenderer.plot_to_card(cplots.plot_best_model(results_df, metric="f1"), "Best Model (Annotated)"),
-        plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall", "roc_auc"]), "Multi-Metric Comparison"),
+        plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall", "roc_auc"]),
+                                  "Multi-Metric Comparison"),
         plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curves for All Models"),
+        plotRenderer.plot_to_card(smote_fig, "SMOTE Impact (Before vs After)"),
     ]))
 
     html_doc = builder.build_page(
