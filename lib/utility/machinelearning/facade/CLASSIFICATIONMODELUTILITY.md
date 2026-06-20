@@ -2,24 +2,38 @@
 
 ## Overview
 
-The ClassificationModelUtility is a high-level orchestration layer that manages end-to-end classification workflows in a unified and extensible manner. It coordinates data preparation, wrapper-based model execution, pipeline construction, imbalance handling (e.g., SMOTE), evaluation, hyperparameter tuning, and result management.
-The utility leverages a modular architecture built on top of:
+ClassificationModelUtility is a central orchestration layer that manages end-to-end classification workflows in a unified, extensible, and production-ready manner. It orchestrates the complete lifecycle of machine learning experiments—from data preparation to model evaluation and result standardization—through a clean, modular architecture.
+The utility coordinates:
 
-- Wrapper-based model abstraction (BaseModelWrapper, ClassificationModelWrapper)
-- Config-driven pipeline composition (Preprocessor → Imbalance Handler → Model)
-- Centralized model discovery via ModelRegistry
-
-It ensures:
-
-- ✅ Clean separation of concerns
-- ✅ CV-safe and pipeline-driven execution
-- ✅ Plug-and-play extensibility for new models and strategies
-- ✅ Built-in observability (metrics, artifacts, imbalance tracking)
-  By combining these capabilities, ClassificationModelUtility acts as the core orchestration engine, enabling scalable experimentation, consistent evaluation, and production-grade classification pipelines.rk.
+- Data preparation and preprocessing
+- Wrapper-driven model execution
+- Configurable pipeline construction
+- Imbalance handling (e.g., SMOTE)
+- Ensemble modeling (parallel, sequential, stacking)
+- Hyperparameter tuning
+- Metrics, artifacts, and result standardization via ResultBuilder
 
 ---
 
 ## Architecture
+
+### Summary
+
+```
+Data → Preprocess → Split
+        ↓
+Wrapper → Pipeline
+        ↓
+SMOTE ✅
+        ↓
+Model / Ensemble ✅
+        ↓
+Metrics + Artifacts ✅
+        ↓
+ResultBuilder ✅
+        ↓
+Results Store / Visualization
+```
 
 ### DATA PREPARATION FLOW
 
@@ -48,9 +62,9 @@ flowchart TD
 
     M --> N[Preprocessor Build]
 
-    N --> O["Feature Transformers Pipeline (Imputer + Encoder + Scaling)"]
+    N --> O["Feature Pipeline (Imputer + Encoder + Scaling)"]
 
-    O --> P[Ready for Model Pipeline ✅]
+    O --> P[Reusable Preprocessor]
 ```
 
 ### MODEL EXECUTION FLOW (Utility Layer)
@@ -63,30 +77,32 @@ flowchart TD
     B --> D[Preprocessor]
 
     C --> E[Fetch Model Wrapper]
-    E --> F[Deep Copy Wrapper ✅]
+    E --> F[Deep Copy Wrapper]
 
-    F --> G["Inject Imbalance Handler (SMOTE) ✅"]
+    F --> G["Inject Imbalance Handler (SMOTE)"]
 
-    G --> H[ClassificationModelWrapper.build_pipeline]
+    G --> H[Wrapper.build_pipeline]
 
-    H --> I[Flatten Preprocessor Steps ✅]
+    H --> I[Flatten Preprocessor Steps]
 
     I --> J[Pipeline Construction]
 
-    J --> J1[Preprocessor Steps]
-    J1 --> J2["SMOTE (fit_resample) ✅"]
-    J2 --> J3[Model]
+    J --> J1[Preprocessor]
+    J1 --> J2["SMOTE (fit_resample)"]
+    J2 --> J3[Model / Ensemble]
 
-    J3 --> K[Train Pipeline]
-    K --> L[Predict]
+    J3 --> K["Train Pipeline (fit)"]
+    K --> L["Predict (X_test)"]
 
-    L --> M[Predict Proba]
+    L --> M["Predict Proba (Safe)"]
 
     M --> N[Metrics.classification]
 
-    N --> O[Artifacts Extraction]
+    N --> O[Artifact Extraction]
 
-    O --> P[Results Store ✅]
+    O --> P[ResultBuilder]
+
+    P --> Q[Results Store]
 ```
 
 ### TRAINING & INFERENCE FLOW
@@ -94,7 +110,7 @@ flowchart TD
 ```mermaid
 flowchart TD
 
-    A[run_experiment] --> B[Get Wrapper from Registry]
+    A[run_experiment / run_ensemble] --> B[Get Wrapper from Registry]
 
     B --> C[Deep Copy Wrapper]
 
@@ -102,17 +118,17 @@ flowchart TD
     D -->|Yes| E[Wrap with OneVsRestClassifier]
     D -->|No| F[Continue]
 
-    E --> G["Inject SMOTE (Skip if multilabel ✅)"]
+    E --> G["Inject SMOTE (skip if multilabel)"]
     F --> G
 
     G --> H[Build Pipeline]
 
-    H --> I[Flatten Preprocessor Steps ✅]
+    H --> I[Flatten Preprocessor]
 
-    I --> J[Pipeline = Preprocessor → SMOTE → Model ✅]
+    I --> J[Pipeline = Preprocessor → SMOTE → Model]
 
     J --> K[Train Wrapper]
-    K --> L["Pipeline.fit (Train Only)"]
+    K --> L["Pipeline.fit (train only)"]
 
     L --> M{Training Success?}
 
@@ -122,6 +138,8 @@ flowchart TD
     N --> P[Predict Proba]
 
     P --> Q[Evaluate Metrics]
+
+    Q --> R[ResultBuilder]
 ```
 
 ### ARTIFACT EXTRACTION FLOW
@@ -142,8 +160,8 @@ flowchart TD
 
     B --> I{SMOTE Applied?}
 
-    I -->|Yes| J[Extract Imbalance Summary ✅]
-    I -->|No| K[Skip Imbalance Info]
+    I -->|Yes| J[Extract Imbalance Summary]
+    I -->|No| K[Skip]
 
     J --> J1[Before vs After Distribution]
 
@@ -158,22 +176,27 @@ flowchart TD
 
 ---
 
-## ✅ Key Responsibilities (Refactored)
+## ✅ Key Responsibilities
 
-- Data preparation, preprocessing, and splitting
-- Dynamic model execution via Wrapper-based architecture
-- Config-driven imbalance handling (SMOTE / future strategies)
-- Pipeline construction with flattened preprocessing + SMOTE + model
-- Metric computation using Metrics.classification (classification-specific)
-- Artifact extraction:
+- ✅ Data preparation, preprocessing, and splitting
+- ✅ Wrapper-based model execution
+- ✅ Ensemble modeling:
+  - Parallel (Voting, Bagging)
+  - Sequential (Boosting)
+  - Stacking (Meta-learning)
+- ✅ Config-driven imbalance handling (SMOTE, future strategies)
+- ✅ Pipeline construction:
+  `Preprocessor → SMOTE → Model / Ensemble`
+- ✅ Metric computation via Metrics.classification
+- ✅ Artifact extraction:
   - ROC Curve
   - PR Curve
-  - Confusion Matrix (conditional)
-  - Imbalance summary (before vs after SMOTE) ✅
-
-- Hyperparameter tuning via ClassificationHyperparameterTuner
-- Result aggregation, normalization, ranking, and comparison
-- Failure-safe execution (graceful error capture per model)
+  - Confusion Matrix
+- ✅ Imbalance summary
+- ✅ Hyperparameter tuning (ClassificationHyperparameterTuner)
+  ✅ Result standardization via ResultBuilder ✅
+  ✅ Model comparison, ranking, and analysis
+  ✅ Failure-safe execution (error isolation per model)
 
 ---
 

@@ -2,6 +2,8 @@ import time
 
 import plotly.express as px
 import plotly.graph_objects as go
+from matplotlib import cm
+from sklearn.ensemble import AdaBoostClassifier
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
@@ -167,6 +169,41 @@ def main():
 
     # models_ranked = cm.rank_models(metric="f1")
     # models_comparison = cm.compare_models()
+
+    # parallel ensemble model
+
+    config = {
+        "type": "parallel",
+        "method": "voting",
+        "voting": "soft",
+        "model_names": ["LogisticRegression", "RandomForestClassifier", "XGBoost"]
+    }
+
+    cm.run_ensemble(config)
+
+    # sequential ensemble model
+
+    sequential_config = {
+        "type": "sequential",
+        "method": "adaboost",
+        "model": AdaBoostClassifier()
+    }
+
+    cm.run_ensemble(sequential_config)
+
+    # stack ensemble
+    stack_config = {
+        "type": "stacking",
+        "model_names": [
+            "LogisticRegression",
+            "RandomForestClassifier",
+            "XGBoost"
+        ],
+        # ✅ Meta learner
+        "meta_model": "LogisticRegression",
+    }
+
+    cm.run_ensemble(stack_config)
 
     results_df = cm.get_results_df()
     # artifacts_df = cm.get_artifacts_df()
