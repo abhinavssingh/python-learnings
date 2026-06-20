@@ -2,7 +2,13 @@
 
 ## ✅ Overview
 
-`Preprocessor` is a **central pipeline builder** that ensures consistent feature preparation across all models.
+Preprocessor is a central pipeline builder responsible for constructing a consistent, reusable, and configurable feature transformation pipeline across all machine learning workflows.
+It supports both:
+
+- ✅ Supervised learning
+- ✅ Unsupervised learning
+
+using a mode-driven design.
 
 ---
 
@@ -18,29 +24,34 @@ flowchart TD
     D --> F[Categorical Pipeline]
 
     E --> E1[StandardScaler]
-    F --> F1[OneHotEncoder]
+
+    F --> F1[Encoder Selection]
+    F1 --> F2["OneHotEncoder (Supervised)"]
+    F1 --> F3["OrdinalEncoder (Unsupervised)"]
 
     E1 --> G[Combined Features]
-    F1 --> G
+    F2 --> G
+    F3 --> G
 
     G --> H[Processed Data]
 ```
 
 ---
 
-## ✅ Key Responsibilities (Refactored)
+## ✅ Key Responsibilities
 
-- Pipeline creation (NOT transformation itself)
-- Integration of preprocessing components
-- Separation of numeric & categorical logic
-- Ensure pipeline compatibility
+- ✅ Build preprocessing pipeline (NOT execute transformations directly)
+- ✅ Integrate imputation and outlier handling
+- ✅ Separate numeric and categorical transformations
+- ✅ Dynamically adjust encoding strategy based on mode
+- ✅ Ensure compatibility with Wrapper + Utility layers
 
 ---
 
 ## ⚙️ Constructor
 
 ```python
-Preprocessor(X, imputer=None, outlier_handler=None)
+Preprocessor(X, imputer=None, outlier_handler=None,mode="supervised" )
 ```
 
 ---
@@ -65,6 +76,25 @@ CustomImputer → OutlierHandler
 
 - Numeric → StandardScaler
 - Categorical → OneHotEncoder
+
+---
+
+## Why Mode Matters
+
+### Supervised Mode
+
+OneHotEncoder
+
+    Preserves categorical independence
+    Ideal for tree + linear models
+
+### Unsupervised Mode
+
+OrdinalEncoder
+
+    Prevents high dimensionality explosion
+    Maintains distance consistency
+    Critical for clustering algorithms
 
 ---
 

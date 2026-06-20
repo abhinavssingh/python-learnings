@@ -3,8 +3,10 @@ from typing import Literal
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
+    calinski_harabasz_score,
     classification_report,
     confusion_matrix,
+    davies_bouldin_score,
     f1_score,
     log_loss,
     mean_squared_error,
@@ -15,6 +17,7 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
     root_mean_squared_error,
+    silhouette_score,
 )
 from sklearn.preprocessing import label_binarize
 from sklearn.utils.multiclass import type_of_target
@@ -180,3 +183,22 @@ class Metrics:
                 pass
 
         return result
+
+    @staticmethod
+    def unsupervised(X, labels):
+
+        unique_labels = set(labels)
+
+        # ✅ Edge case: single cluster
+        if len(unique_labels) <= 1:
+            return {
+                "silhouette_score": None,
+                "davies_bouldin": None,
+                "calinski_harabasz": None
+            }
+
+        return {
+            "silhouette_score": silhouette_score(X, labels),
+            "davies_bouldin": davies_bouldin_score(X, labels),
+            "calinski_harabasz": calinski_harabasz_score(X, labels)
+        }

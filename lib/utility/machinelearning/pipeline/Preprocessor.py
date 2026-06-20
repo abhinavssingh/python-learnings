@@ -1,7 +1,7 @@
 from sklearn import set_config
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
 # ✅ Ensure DataFrame output globally
 set_config(transform_output="pandas")
@@ -13,10 +13,11 @@ class Preprocessor:
     Supports optional imputer + outlier handler.
     """
 
-    def __init__(self, X, imputer=None, outlier_handler=None):
+    def __init__(self, X, imputer=None, outlier_handler=None, mode="supervised"):
         self.X = X
         self.imputer = imputer
         self.outlier_handler = outlier_handler
+        self.mode = mode
 
     def build(self):
 
@@ -28,13 +29,22 @@ class Preprocessor:
             ("scaler", StandardScaler())
         ])
 
-        # ✅ Categorical pipeline
-        categorical_pipeline = Pipeline([
-            ("encoder", OneHotEncoder(
-                handle_unknown="ignore",
-                sparse_output=False
-            ))
-        ])
+        if self.mode == "unsupervised":
+
+            categorical_pipeline = Pipeline([
+                ("encoder", OrdinalEncoder(
+                    handle_unknown="use_encoded_value",
+                    unknown_value=-1
+                ))
+            ])
+
+        else:
+            categorical_pipeline = Pipeline([
+                ("encoder", OneHotEncoder(
+                    handle_unknown="ignore",
+                    sparse_output=False
+                ))
+            ])
 
         # ✅ Column transformer
         column_transform = ColumnTransformer(
