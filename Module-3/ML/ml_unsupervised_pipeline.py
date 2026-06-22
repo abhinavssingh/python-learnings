@@ -10,13 +10,13 @@ from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.UnsupervisedModelUtility import UnsupervisedModelUtility
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
+from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
 
     print("Running Unsupervised ML Pipeline Report...")
-
     start_time = time.perf_counter()
 
     content = []
@@ -24,7 +24,7 @@ def main():
     plotRenderer = PlotRenderer()
 
     # ========================================================
-    # ✅ LOAD DATA
+    # LOAD DATA
     # ========================================================
     df, report = dl.read_dataset(
         "adultcensusincome.csv",
@@ -36,7 +36,7 @@ def main():
     df_info = dfh.get_dataframe_info_str(df)
 
     # ========================================================
-    # ✅ INIT UTILITY
+    # INIT UTILITY
     # ========================================================
     imputer = CustomImputer(num_strategy="median")
     outlier = OutlierHandler(method="iqr", factor=1.5)
@@ -48,25 +48,30 @@ def main():
     )
 
     # ========================================================
-    # ✅ PREPARE DATA (CONSISTENCY ✅)
+    # PREPROCESS + RUN
     # ========================================================
     um.prepare_data()
 
-    # ========================================================
-    # ✅ RUN MODELS
-    # ========================================================
     um.run_experiment("KMeans")
     um.run_experiment("DBSCAN")
 
     results_df = um.get_results_df()
 
+    # ✅ VISUAL ENGINE (IMPORTANT)
+    viz = VisualizerEngine(
+        um.results,
+        um.artifacts if hasattr(um, "artifacts") else []
+    )
+
+    dashboard = viz.render_all()
+
     # ========================================================
-    # ✅ GET PROCESSED DATA
+    # PROCESSED DATA
     # ========================================================
     X_processed = um.preprocessor.transform(um.X)
 
     # ========================================================
-    # ✅ PCA (VISUALIZATION ONLY)
+    # PCA
     # ========================================================
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X_processed)
@@ -81,39 +86,33 @@ def main():
     )
 
     # ========================================================
-    # ✅ SAFE LABEL EXTRACTION ✅
+    # CLUSTER VISUALIZATION
     # ========================================================
     kmeans_labels = um.get_labels("KMeans")
     dbscan_labels = um.get_labels("DBSCAN")
 
-    kmeans_fig = None
-    dbscan_fig = None
+    kmeans_fig = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        color=[str(x) for x in kmeans_labels] if kmeans_labels is not None else None,
+        title="KMeans Clusters"
+    )
 
-    if kmeans_labels is not None:
-        kmeans_fig = px.scatter(
-            pca_df,
-            x="PC1",
-            y="PC2",
-            color=[str(x) for x in kmeans_labels],
-            title="KMeans Clusters"
-        )
-
-    if dbscan_labels is not None:
-        dbscan_fig = px.scatter(
-            pca_df,
-            x="PC1",
-            y="PC2",
-            color=[str(x) for x in dbscan_labels],
-            title="DBSCAN Clusters"
-        )
+    dbscan_fig = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        color=[str(x) for x in dbscan_labels] if dbscan_labels is not None else None,
+        title="DBSCAN Clusters"
+    )
 
     # ========================================================
-    # ✅ ELBOW CURVE
+    # ELBOW CURVE
     # ========================================================
     from sklearn.cluster import KMeans
 
     inertia = []
-
     for k in range(2, 10):
         km = KMeans(n_clusters=k, random_state=42)
         km.fit(X_processed)
@@ -126,7 +125,7 @@ def main():
     )
 
     # ========================================================
-    # ✅ DASHBOARD
+    # REPORT CONTENT
     # ========================================================
     content.append(builder.grid([
         builder.card("Data Info", builder.render_pre(df_info)),
@@ -134,15 +133,35 @@ def main():
         builder.card("Unsupervised Results", builder.render_dataframe(results_df)),
     ]))
 
+    # ========================================================
+    # ✅ VISUALIZATION (ENHANCED ✅)
+    # ========================================================
     content.append(builder.chart_grid([
+
+        # ✅ Generic evaluation (NEW ✅)
+        plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
+        plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
+        plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
+        plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
+
+        # ✅ PCA + clustering
         plotRenderer.plot_to_card(pca_fig, "PCA Projection"),
-        plotRenderer.plot_to_card(elbow_fig, "Elbow Curve"),
         plotRenderer.plot_to_card(kmeans_fig, "KMeans Clusters"),
-        plotRenderer.plot_to_card(dbscan_fig, "DBSCAN Clusters")
+        plotRenderer.plot_to_card(dbscan_fig, "DBSCAN Clusters"),
+
+        # ✅ elbow
+        plotRenderer.plot_to_card(elbow_fig, "Elbow Curve"),
+
+        # ✅ Task-specific (if any)
+        *[
+            plotRenderer.plot_to_card(fig, title)
+            for title, fig in dashboard["task_specific"].items()
+        ]
+
     ]))
 
     # ========================================================
-    # ✅ HTML REPORT
+    # REPORT
     # ========================================================
     html_doc = builder.build_page(
         "Unsupervised ML Pipeline Report",

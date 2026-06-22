@@ -1,93 +1,41 @@
-import pandas as pd
+from typing import Optional
+
+from .BaseComparator import BaseComparator
 
 
-class ClassificationModelComparator:
-    """
-    Comparator for classification model results.
-    Supports ranking, best model selection, and comparison.
-    """
+class ClassificationModelComparator(BaseComparator):
 
-    def __init__(self, results):
-        """
-        results: list of dict OR DataFrame
-        """
-        self.df = pd.DataFrame(results)
+    DEFAULT_METRIC = "f1_weighted"   # ✅ better than accuracy
 
-        if self.df.empty:
-            raise ValueError("No results available for comparison")
+    # ✅ FIXED signature (matches BaseComparator)
+    def rank(self, metric: str = None, ascending: Optional[bool] = None):
 
-    # ---------------------------------------------------
-    # INTERNAL: VALIDATE METRIC
-    # ---------------------------------------------------
-    def _validate_metric(self, metric):
-        if metric not in self.df.columns:
-            raise ValueError(f"Metric '{metric}' not found in results")
-        return metric
+        metric = metric or self.DEFAULT_METRIC
 
-    # ---------------------------------------------------
-    # RANK MODELS
-    # ---------------------------------------------------
-    def rank(self, metric="accuracy", ascending=False):
-        """
-        Rank models based on metric.
-        """
-        metric = self._validate_metric(metric)
+        # ✅ classification-specific default (higher is better)
+        if ascending is None:
+            ascending = False
 
-        df_sorted = self.df.sort_values(by=metric, ascending=ascending)
+        return super().rank(metric, ascending)
 
-        df_sorted["rank"] = range(1, len(df_sorted) + 1)
+    def best_model(self, metric: str = None):
 
-        return df_sorted
+        metric = metric or self.DEFAULT_METRIC
+        return super().best_model(metric)
 
-    # ---------------------------------------------------
-    # BEST MODEL
-    # ---------------------------------------------------
-    def best_model(self, metric="accuracy"):
-        """
-        Get best performing model.
-        """
-        metric = self._validate_metric(metric)
+    def compare(self, metric: str = None):
 
-        best_idx = self.df[metric].idxmax()
+        metric = metric or self.DEFAULT_METRIC
+        return self.rank(metric)
 
-        return self.df.loc[best_idx]
+    def best_per_model(self, metric: str = None):
 
-    # ---------------------------------------------------
-    # COMPARE MODELS
-    # ---------------------------------------------------
-    def compare(self):
-        """
-        Returns full DataFrame (clean view).
-        """
-        return self.df.sort_values(by="accuracy", ascending=False)
+        metric = metric or self.DEFAULT_METRIC
+        return super().best_per_model(metric)
 
-    # ---------------------------------------------------
-    # BEST PER MODEL (important for tuning)
-    # ---------------------------------------------------
-    def best_per_model(self, metric="accuracy"):
-        """
-        Get best configuration per model.
-        """
-        metric = self._validate_metric(metric)
-
-        idx = self.df.groupby("model")[metric].idxmax()
-
-        return self.df.loc[idx].sort_values(metric, ascending=False)
-
-    # ---------------------------------------------------
-    # FILTER BY MODE
-    # ---------------------------------------------------
+    # ✅ Filtering utilities
     def filter_mode(self, mode):
-        """
-        Filter results by mode (train-test, k-fold, tuning)
-        """
         return self.df[self.df["mode"] == mode]
 
-    # ---------------------------------------------------
-    # FILTER BY TYPE
-    # ---------------------------------------------------
     def filter_type(self, type_):
-        """
-        Filter by baseline / tuned
-        """
         return self.df[self.df["type"] == type_]

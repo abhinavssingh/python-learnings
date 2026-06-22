@@ -11,7 +11,7 @@ from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
-from lib.utility.machinelearning.visualization.generic.ClassificationPlots import ClassificationPlots as cp
+from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
@@ -26,7 +26,6 @@ def main():
     content = []
     builder = HtmlBuilder()
     plotRenderer = PlotRenderer()
-    cplots = cp()
 
     df, report = dl.read_dataset("adultcensusincome.csv", optimize=False, handle_unnamed="drop", return_report=True)
     df_info = dfh.get_dataframe_info_str(df)
@@ -207,6 +206,15 @@ def main():
 
     results_df = cm.get_results_df()
     # artifacts_df = cm.get_artifacts_df()
+
+    plot_data = cm.get_plot_data()  # ✅ get_plot_data to extract necessary data for visualizations
+
+    viz = VisualizerEngine(
+        cm.results,
+        plot_data
+    )
+
+    dashboard = viz.render_all()
     # ===================================================================
     # RESULTS SECTION 1: Basic Info & Train All Results
     # ===================================================================
@@ -217,7 +225,6 @@ def main():
         builder.card("Unique Values Count per Column:", builder.render_dict(unique_values)),
         builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
         builder.card("All Classification Models Results (Flat)", builder.render_dataframe(results_df)),
-        # builder.card("Artifacts for all classification models:", builder.render_dataframe(artifacts_df)),
         builder.card("Confusion Matrix for all classification models:", builder.render_dict(cm.get_all_confusion_matrices())),
         builder.card("SMOTE Impact (Before vs After)", builder.render_dict(cm.results[0]["artifacts"].get("imbalance")))
     ]))
@@ -227,26 +234,39 @@ def main():
     # ===================================================================
 
     content.append(builder.chart_grid([
+        # ✅ EDA (unchanged)
         plotRenderer.plot_to_card(country_bar_fig, "Top 10 Countries + Others"),
-        plotRenderer.plot_to_card(hist_age_fig, " Census Age Distribution"),
+        plotRenderer.plot_to_card(hist_age_fig, "Census Age Distribution"),
         plotRenderer.plot_to_card(hist_income_fig, "Census Income Distribution"),
         plotRenderer.plot_to_card(hist_education_fig, "Census Education Distribution"),
-        plotRenderer.plot_to_card(hist_education_num_fig, "Census Education Number Distribution"),
+        plotRenderer.plot_to_card(hist_education_num_fig, "Education Number Distribution"),
         plotRenderer.plot_to_card(marrital_pie_fig, "Marital Status Distribution"),
+
+        # ✅ Bivariate
         plotRenderer.plot_to_card(age_income_hist_fig, "Income vs Age"),
         plotRenderer.plot_to_card(education_income_hist_fig, "Income vs Education"),
         plotRenderer.plot_to_card(marital_status_hist_fig, "Income vs Marital Status"),
         plotRenderer.plot_to_card(sex_income_hist_fig, "Income vs Sex"),
-        plotRenderer.plot_to_card(nuemric_corr_fig, "Numeric Correlation Heatmap"),
-        plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="accuracy"), "Preprocessing Impact"),
-        plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "Train vs KFold"),
-        plotRenderer.plot_to_card(cplots.plot_best_model(results_df, metric="f1"), "Best Model (Annotated)"),
-        plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df, metrics=["accuracy", "f1", "precision", "recall", "roc_auc"]),
-                                  "Multi-Metric Comparison"),
-        plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curves for All Models"),
-        plotRenderer.plot_to_card(smote_fig, "SMOTE Impact (Before vs After)"),
-    ]))
 
+        # ✅ Correlation
+        plotRenderer.plot_to_card(nuemric_corr_fig, "Correlation Heatmap"),
+
+        # ✅ ✅ NEW ENGINE-DRIVEN VISUALIZATION
+        plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
+        plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
+        plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
+        plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
+
+        # ✅ Task-specific (classification plots)
+        *[
+            plotRenderer.plot_to_card(fig, title)
+            for title, fig in dashboard["task_specific"].items()
+        ],
+
+        # ✅ SMOTE (KEEP)
+        plotRenderer.plot_to_card(smote_fig, "SMOTE Impact (Before vs After)"),
+
+    ]))
     html_doc = builder.build_page(
         "ML Logistic Regression Pipeline Report",
         "\n".join(content))

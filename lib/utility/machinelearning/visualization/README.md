@@ -1,266 +1,226 @@
-# Machine Learning Visualization Refactoring Guide
+# 📊 Visualization Module README
 
-## 📌 Overview
+## ✅ Overview
 
-This document explains the **complete refactoring of the plotting/visualization layer** in a modular ML framework.
+The **Visualization module** is the final layer in the ML framework responsible for transforming evaluation results into **interactive, interpretable, and dashboard-ready visual insights**.
 
-The goal was to move from a **monolithic visualizer** to a **scalable, extensible, production-grade architecture**.
-
----
-
-# 🚨 Problem Before Refactoring
-
-The original `ModelPerformanceVisualizer`:
-
-- ❌ Contained 10+ plotting functions (God class)
-- ❌ Mixed responsibilities (data cleaning + plotting + transformation)
-- ❌ Hardcoded metrics (R2, MSE)
-- ❌ Not reusable for classification models
-- ❌ Crashed with missing columns / NaN
-
----
-
-# ✅ Refactored Architecture
+It sits on top of:
 
 ```
-visualization/
-│
-├── core/
-│   ├── DataCleaner.py
-│   ├── MetricResolver.py
-│
-├── generic/
-│   ├── ModelPerformanceVisualizer.py
-│
-├── advanced/
-│   ├── ComparisonPlots.py
-│   ├── OptimizationPlots.py
-│   ├── HyperparameterPlots.py
+Pipeline → Evaluation (Metrics + Comparator) → Visualization → Reporting
 ```
 
 ---
 
-# 🧩 Core Components
+## ✅ Architecture
 
-## ✅ 1. DataCleaner
+```
+Results + Artifacts
+        ↓
+VisualizerEngine  (Core Orchestrator)
+        ↓
+├── Generic Plots
+│     ├── ComparisonPlots
+│     └── DistributionPlots
+│
+├── Task-Specific Plots
+│     ├── ClassificationPlots
+│     ├── RegressionPlots
+│     └── ClusteringPlots
+│
+└── Advanced Exploration
+      └── DimensionalityPlots (PCA, t-SNE)
+```
 
-Handles:
-- Missing values
-- Numeric column validation
-- Safe preprocessing for visualization
+---
 
-### Key Design
+## ✅ Core Components
+
+### 🔹 1. VisualizerEngine (Core Layer)
+
+Responsible for:
+
+- Routing visualization based on task
+- Selecting metrics using `MetricResolver`
+- Combining generic + task-specific plots
+- Producing unified dashboard output
 
 ```python
-numeric_cols = df.select_dtypes(include=["number"])
-```
-
-✅ Prevents crashes like:
-```
-TypeError: median on string dtype
+viz = VisualizerEngine(results, artifacts)
+dashboard = viz.render_all()
 ```
 
 ---
 
-## ✅ 2. MetricResolver
+### 🔹 2. Generic Visualization Layer
 
-Detects metrics dynamically:
+#### ✅ ComparisonPlots
 
-- Regression → R2, MSE
-- Classification → accuracy, f1
-
-### Benefit
-
-✔ No hardcoded metrics
-✔ Works for all ML problems
-
----
-
-# 🔷 Generic Visualizer
-
-## ✅ ModelPerformanceVisualizer
-
-Responsibilities:
-- Generic scatter plots
-- Bar charts
-- Auto visualization
-
-### ✅ Features
-
-- Dynamic metric selection
-- Safe handling of missing values
-- Model-agnostic visualization
-
----
-
-# 📊 Advanced Plot Modules
-
-## ✅ 1. ComparisonPlots
-
-Handles model comparisons:
-
-- All model comparison
-- Best model highlighting
+- Model comparison (multi-metric, dual-axis)
 - Ranking
-- Mode comparison
+- Best model highlight
 - Preprocessing impact
 
----
+#### ✅ DistributionPlots
 
-## ✅ 2. OptimizationPlots
-
-Handles tuning visualizations:
-
-- Grid search animation
-- Optimization tracking
-- Iterative improvements
+- Metric distribution
+- Residual distribution
+- Class distribution
+- Cluster distribution
 
 ---
 
-## ✅ 3. HyperparameterPlots
+### 🔹 3. Task-Specific Visualization
 
-Handles hyperparameter visualization:
+| Module              | Responsibility             |
+| ------------------- | -------------------------- |
+| ClassificationPlots | ROC, multi-metric, scatter |
+| RegressionPlots     | R², RMSE                   |
+| ClusteringPlots     | Cluster metrics            |
 
-- 3D parameter surfaces
-- Scatter plots
+---
 
-### ✅ Key Improvement
+### 🔹 4. Dimensionality Visualization
 
-Automatic parameter detection:
+#### ✅ DimensionalityPlots
+
+- PCA (2D / 3D)
+- t-SNE
+
+Used for:
+
+- cluster visualization
+- high-dimensional data exploration
+
+---
+
+## ✅ Input Contract
+
+All visualization components rely on two inputs:
+
+### ✅ Results
+
+Structured list of model outputs:
 
 ```python
-param_cols = [col for col in df.columns if col.startswith("param_")]
+{
+    "model": "RandomForest",
+    "experiment": "RF | kfold=5",
+    "task": "classification",
+    "accuracy": 0.92,
+    "f1_weighted": 0.91
+}
 ```
 
 ---
 
-# 🔥 Key Design Improvements
+### ✅ Artifacts
 
-## ✅ 1. Separation of Concerns
+Additional model outputs:
 
-| Component | Responsibility |
-|----------|--------------|
-| DataCleaner | Data cleaning |
-| MetricResolver | Metric detection |
-| Generic Visualizer | Basic plots |
-| Advanced Plots | Specialized plots |
+- ROC curves
+- confusion matrix
+- clustering labels
+- embeddings
 
 ---
 
-## ✅ 2. Dynamic Schema Handling
+## ✅ Output Contract
 
-Before:
-```python
-symbol="imputer"  # ❌ crashes if missing
-```
-
-After:
-```python
-if "imputer" in df.columns:
-```
-
----
-
-## ✅ 3. Flattened Hyperparameters
-
-Before:
-```python
-best_params = {"model__alpha": 10}
-```
-
-After:
-```python
-param_model__alpha = 10
-```
-
-✅ Enables:
-- plotting
-- filtering
-- grouping
-
----
-
-## ✅ 4. Tuned Data Filtering
+`VisualizerEngine.render_all()` returns:
 
 ```python
-df = df[df["type"] == "tuned"]
-```
-
-✅ Prevents baseline noise
-
----
-
-## ✅ 5. Safe Data Cleaning
-
-```python
-existing_cols = [col for col in required_cols if col in df.columns]
-```
-
-✅ Prevents KeyError
-
----
-
-# ⚠️ Common Issues & Fixes
-
-## ❌ Missing Columns
-
-Fix:
-```python
-if col in df.columns
+{
+    "comparison": fig,
+    "ranking": fig,
+    "best_model": fig,
+    "distribution": fig,
+    "task_specific": {
+        "plot_name": fig
+    }
+}
 ```
 
 ---
 
-## ❌ NaN Values in Plotly
+## ✅ Design Principles
 
-Fix:
+- ✅ Separation of concerns
+- ✅ Experiment-first visualization (not just model)
+- ✅ Metric-driven plotting (via MetricResolver)
+- ✅ Stateless functional design
+- ✅ Plug-and-play architecture
+- ✅ Scalable across ML paradigms
+
+---
+
+## ✅ Supported ML Types
+
+| Type           | Supported |
+| -------------- | --------- |
+| Classification | ✅        |
+| Regression     | ✅        |
+| Multi-class    | ✅        |
+| Multi-label    | ✅        |
+| Unsupervised   | ✅        |
+
+---
+
+## ✅ Example Usage (Pipeline Integration)
+
 ```python
-df[col] = df[col].fillna(df[col].median())
+viz = VisualizerEngine(results, artifacts)
+
+dashboard = viz.render_all()
+
+content.append(
+    plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison")
+)
 ```
 
 ---
 
-## ❌ Hyperparameter Plot Empty
+## ✅ Dashboard Integration
 
-Cause:
-- Params not flattened
+Works with:
 
-Fix:
-```python
-for k, v in best_params.items():
-    result[f"param_{k}"] = v
-```
+- ✅ HTML Builder (Tailwind UI)
+- ✅ PlotRenderer
+- ✅ Export to HTML report
 
 ---
 
-# 🚀 Final Outcome
+## ✅ Best Practices
 
-| Capability | Status |
-|----------|--------|
-| Regression plots | ✅ |
-| Classification plots | ✅ |
-| Hyperparameter visualization | ✅ |
-| Auto plotting | ✅ |
-| Robust error handling | ✅ |
+- Always include `experiment` in results
+- Always pass artifacts separately
+- Avoid hardcoding metrics
+- Use MetricResolver for consistency
 
 ---
 
-# 🏁 Conclusion
+## ✅ Future Enhancements
 
-The refactored system is now:
-
-✅ Modular
-✅ Scalable
-✅ Extensible
-✅ Production-ready
+- ✅ Toggle views (model vs experiment)
+- ✅ Interactive filtering
+- ✅ Explainability plots
+- ✅ Auto dashboard templates
 
 ---
 
-# 🚀 Future Enhancements
+## ✅ Summary
 
-- AutoML visual dashboard
-- Streamlit UI
-- Experiment tracking system
-- SHAP explanations integration
+The Visualization module provides a **complete, scalable, and production-ready system** for rendering insights across all machine learning workflows.
+
+It ensures:
+
+- ✅ consistency
+- ✅ extensibility
+- ✅ interpretability
+- ✅ seamless integration with reporting
 
 ---
+
+## 🚀 Final Thought
+
+This module acts as the **presentation layer of your ML framework**, turning raw metrics into actionable insights.

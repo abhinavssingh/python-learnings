@@ -353,25 +353,31 @@ class LinearModelUtility:
     # ---------------------------------------------------
     # RESULT UTILITIES
     # ---------------------------------------------------
+
     def get_results_df(self):
         df = pd.DataFrame(self.results)
         return df.drop(columns=["artifacts"], errors="ignore")
 
-    def rank_models(self, metric="r2", ascending=False):
-        return ModelComparator(self.results).rank(metric, ascending)
+    def rank_models(self, metric=None, ascending=None):
+        comparator = ModelComparator.get_comparator(self.results)
+        return comparator.rank(metric, ascending)
 
-    def get_best_model(self, metric="r2"):
-        best = ModelComparator(self.results).best_model(metric)
+    def get_best_model(self, metric=None):
+        comparator = ModelComparator.get_comparator(self.results)
+
+        best = comparator.best_model(metric)
         if best is None:
             return None
+
         return {k: v for k, v in best.items() if k != "artifacts"}
 
-    def compare_models(self):
-        return ModelComparator(self.results).compare()
-
+    def compare_models(self, metric=None):
+        comparator = ModelComparator.get_comparator(self.results)
+        return comparator.compare(metric)
     # ---------------------------------------------------
     # INTERNAL
     # ---------------------------------------------------
+
     def _extract_artifacts(self, metrics):
 
         # ✅ future extension (residuals, plots etc.)

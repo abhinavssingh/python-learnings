@@ -6,7 +6,7 @@ The Metrics class is a centralized evaluation engine responsible for computing m
 
 - ✅ Classification
 - ✅ Regression
-- ✅ Unsupervised Learning (NEW)
+- ✅ Unsupervised Learning
 
 It strictly focuses on metric computation only, without any UI, formatting, or reporting logic.
 
@@ -64,24 +64,29 @@ Metrics.classification(
 )
 ```
 
-### Core Metrics
+### Core Metrics (Scalar)
 
-- Accuracy
-- Precision
-- Recall
-- F1 Score
+- ✅ Accuracy
+- ✅ Precision (weighted)
+- ✅ Recall (weighted)
+- ✅ F1 (weighted) → default ranking metric
+- ✅ F1 (macro) → imbalance-aware
+- ✅ F1 (micro) → global performance
 
-### Advanced Metrics
+### Advanced Metrics (Scalar)
 
-- ROC-AUC
-- Log Loss
-  - Computed only if probabilities are available.
-- PR Curve
-- ROC Curve
-- Classification Report
-- Confusion Matrix
-  - Included only if enabled
-  - Raw output (no formatting)
+- ✅ ROC-AUC (binary, multiclass, multilabel supported)
+- ✅ Log Loss (requires probabilities)
+- ✅ PR-AUC (binary classification) ✅
+
+### Artifacts (Heavy Objects)
+
+These are not part of final results_df (removed later):
+
+- ✅ Confusion Matrix
+- ✅ Classification Report
+- ✅ ROC Curve
+- ✅ Precision-Recall Curve
 
 ### Problem Type Handling
 
@@ -210,6 +215,32 @@ raw_metrics = wrapper.evaluate(X_processed, labels)
 metrics = \_normalize_metrics(raw_metrics)
 result = ResultBuilder.build(..., \*\*metrics)
 ```
+
+## Comparator Integration
+
+Metrics are designed to work directly with ModelComparator:
+
+```Python
+comp = ModelComparator.get_comparator(results)
+
+comp.rank("f1_weighted")
+comp.rank("roc_auc")
+comp.rank("RMSE")
+comp.rank("silhouette_score")
+```
+
+### Metric Behavior
+
+| Metric           | Direction  |
+| ---------------- | ---------- |
+| accuracy         | ↑ maximize |
+| f1_weighted      | ↑ maximize |
+| roc_auc          | ↑ maximize |
+| pr_auc           | ↑ maximize |
+| R2               | ↑ maximize |
+| RMSE / MSE       | ↓ minimize |
+| davies_bouldin   | ↓ minimize |
+| silhouette_score | ↑ maximize |
 
 ## DESIGN HIGHLIGHTS
 

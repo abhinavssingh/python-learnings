@@ -6,35 +6,35 @@ from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
-from lib.utility.machinelearning.visualization.generic.ClassificationPlots import ClassificationPlots as cp
+from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
 
     print("Running Multi-class Classification Pipeline...")
-
     start_time = time.perf_counter()
 
     content = []
     builder = HtmlBuilder()
     plotRenderer = PlotRenderer()
-    cplots = cp()
 
     # ---------------------------------------------------
     # LOAD DATA
     # ---------------------------------------------------
-    df, report = dl.read_dataset("adultcensusincome.csv", optimize=False, handle_unnamed="drop", return_report=True)
+    df, report = dl.read_dataset(
+        "adultcensusincome.csv",
+        optimize=False,
+        handle_unnamed="drop",
+        return_report=True
+    )
 
     df_info = dfh.get_dataframe_info_str(df)
 
-    df_usa = df[df['native.country'] == 'United-States']
     # ---------------------------------------------------
     # ✅ MULTI-CLASS TARGET
     # ---------------------------------------------------
-    # Instead of binary income → use multi-class target
-    # Example: education levels
-    target_col = "education"   # ✅ multi-class
+    target_col = "education"
 
     # ---------------------------------------------------
     # PREPROCESSING
@@ -50,7 +50,7 @@ def main():
     # INIT MODEL UTILITY
     # ---------------------------------------------------
     cm = cmu(
-        df_usa,
+        df,
         target_col=target_col,
         imputer=imputer,
         outlier_handler=outlier
@@ -61,26 +61,26 @@ def main():
     # ---------------------------------------------------
     # RUN MODELS
     # ---------------------------------------------------
-    results_df = cm.run_all_models()
+    cm.run_all_models()
 
     # ---------------------------------------------------
-    # ✅ OPTIONAL TUNING
+    # EVALUATION
     # ---------------------------------------------------
-    # cm.tune_model(
-    #     "DecisionTreeClassifier",
-    #     max_depth=[5, 10, 15]
-    # )
-
-    # ---------------------------------------------------
-    # ✅ MODEL COMPARISON
-    # ---------------------------------------------------
-    # ranked = cm.rank_models(metric="f1")
-    best_model = cm.get_best_model(metric="f1")
+    best_model = cm.get_best_model(metric="f1_macro")
 
     results_df = cm.get_results_df()
+    plot_data = cm.get_plot_data()  # ✅ get_plot_data to extract necessary data for visualizations
+
+    # ✅ IMPORTANT: pass BOTH results + artifacts
+    viz = VisualizerEngine(
+        cm.results,
+        plot_data
+    )
+
+    dashboard = viz.render_all()
 
     # ---------------------------------------------------
-    # ✅ VISUALIZATION
+    # REPORT CONTENT
     # ---------------------------------------------------
     content.append(builder.grid([
         builder.card("Data Info", builder.render_pre(df_info)),
@@ -88,27 +88,33 @@ def main():
         builder.card("Best Model", builder.render_dict(best_model)),
     ]))
 
-    content.append(builder.chart_grid([
-        plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "F1 Score Comparison"),
-        plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df), "Multi-Metric Comparison"),
-        plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curve Comparison"),
-    ]))
+    # ---------------------------------------------------
+    # ✅ VISUALIZATION (NEW ✅)
+    # ---------------------------------------------------
+    content.append(
+        builder.chart_grid([
 
-    # ---------------------------------------------------
-    # REPORT
-    # ---------------------------------------------------
-    html_doc = builder.build_page(
-        "Multi-Class Classification Report",
-        "\n".join(content)
+            # ✅ Generic plots
+            plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
+            plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
+            plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
+            plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
+
+            # ✅ Task-specific (classification)
+            *[
+                plotRenderer.plot_to_card(fig, title)
+                for title, fig in dashboard["task_specific"].items()
+            ]
+
+        ])
     )
 
-    output_path = ru.save_html_report(
-        __file__,
-        "ml_multiclass_report.html",
-        html_doc,
-        subfolder="reports",
-        open_in_browser=True
-    )
+    # ---------------------------------------------------
+    # REPORT OUTPUT
+    # ---------------------------------------------------
+    html_doc = builder.build_page("Multi-Class Classification Report", "\n".join(content))
+
+    output_path = ru.save_html_report(__file__, "ml_multiclass_report.html", html_doc, subfolder="reports", open_in_browser=True)
 
     print(f"Wrote report to: {output_path}")
 

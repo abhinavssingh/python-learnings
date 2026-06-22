@@ -367,6 +367,9 @@ class ClassificationModelUtility:
             # ✅ ROC AUC summary only (optional)
             if "roc_curve" in artifacts:
                 row["has_roc_curve"] = True
+                row["roc_curve"] = artifacts["roc_curve"]
+                row["roc_auc"] = r.get("roc_auc")
+
             else:
                 row["has_roc_curve"] = False
 
@@ -560,3 +563,36 @@ class ClassificationModelUtility:
         self.results.append(result)
 
         return result
+
+    # ======================================================
+    # Plot Data Extraction for Visualization
+    # ======================================================
+    def get_plot_data(self):
+
+        plot_rows = []
+
+        for r in self.results:
+
+            artifacts = r.get("artifacts", {})
+
+            row = {
+                "model": r["model"],
+                "roc_auc": r.get("roc_auc"),
+                "pr_auc": r.get("pr_auc"),
+            }
+
+            if artifacts.get("roc_curve"):
+                row["roc_curve"] = artifacts["roc_curve"]
+
+            if artifacts.get("pr_curve"):
+                row["pr_curve"] = artifacts["pr_curve"]
+
+            # ✅ ADD THIS BLOCK (IMPORTANT)
+            if "best_threshold" in r:
+                row["best_threshold"] = r.get("best_threshold")
+                row["best_fpr"] = r.get("best_fpr")
+                row["best_tpr"] = r.get("best_tpr")
+
+            plot_rows.append(row)
+
+        return plot_rows

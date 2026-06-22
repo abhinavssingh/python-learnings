@@ -8,65 +8,60 @@ from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
-from lib.utility.machinelearning.visualization.generic.ClassificationPlots import ClassificationPlots as cp
+from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
 
     print("Running Multi-label Classification Pipeline...")
-
     start_time = time.perf_counter()
 
     content = []
     builder = HtmlBuilder()
     plotRenderer = PlotRenderer()
-    cplots = cp()
 
     # ---------------------------------------------------
     # LOAD DATA
     # ---------------------------------------------------
-    df, report = dl.read_dataset("adultcensusincome.csv", optimize=False, handle_unnamed="drop", return_report=True)
-
-    # ✅ ALWAYS reset after filtering (CRITICAL)
-    df_usa = df[df['native.country'] == 'United-States'].copy().reset_index(drop=True)
-
-    # ✅ CREATE LABELS
-    df_usa["labels"] = df_usa.apply(
-        lambda x: list(filter(None, [
-
-            # income
-            "high_income" if x["income"] == ">50K" else None,
-
-            # education
-            "high_edu" if x["education.num"] >= 10 else None,
-            "low_edu" if x["education.num"] < 6 else None,
-
-            # age group
-            "senior" if x["age"] > 50 else None,
-            "young" if x["age"] < 30 else None,
-
-            # work class
-            "private_emp" if x["workclass"] == "Private" else None,
-
-        ])), axis=1
+    df, report = dl.read_dataset(
+        "adultcensusincome.csv",
+        optimize=False,
+        handle_unnamed="drop",
+        return_report=True
     )
 
-    # ✅ MULTI-LABEL ENCODING
+    # ---------------------------------------------------
+    # ✅ CREATE MULTI-LABEL TARGET
+    # ---------------------------------------------------
+    df["labels"] = df.apply(
+        lambda x: list(filter(None, [
+
+            "high_income" if x["income"] == ">50K" else None,
+            "high_edu" if x["education.num"] >= 10 else None,
+            "low_edu" if x["education.num"] < 6 else None,
+            "senior" if x["age"] > 50 else None,
+            "young" if x["age"] < 30 else None,
+            "private_emp" if x["workclass"] == "Private" else None,
+
+        ])),
+        axis=1
+    )
+
     mlb = MultiLabelBinarizer()
 
-    y = pd.DataFrame(mlb.fit_transform(df_usa["labels"]), columns=mlb.classes_).reset_index(drop=True)
+    y = pd.DataFrame(
+        mlb.fit_transform(df["labels"]),
+        columns=mlb.classes_
+    ).reset_index(drop=True)
 
-    # ✅ REMOVE BAD LABELS (CRITICAL)
+    # ✅ Remove invalid labels
     y = y.loc[:, y.nunique() > 1]
 
     # ✅ FEATURES
-    X = df_usa.drop(columns=["labels", "income"]).reset_index(drop=True)
+    X = df.drop(columns=["labels", "income"]).reset_index(drop=True)
 
-    # ✅ CONCAT SAFE
     df_ml = pd.concat([X, y], axis=1)
-
-    # ✅ EXTRA SAFETY (no harm)
     df_ml[y.columns] = df_ml[y.columns].fillna(0).astype(int)
 
     target_cols = list(y.columns)
@@ -82,11 +77,11 @@ def main():
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
     # ---------------------------------------------------
-    # INIT CLASSIFICATION UTILITY
+    # INIT UTILITY
     # ---------------------------------------------------
     cm = cmu(
         df_ml,
-        target_col=target_cols,   # ✅ MULTI-LABEL SUPPORT
+        target_col=target_cols,
         imputer=imputer,
         outlier_handler=outlier
     )
@@ -96,29 +91,51 @@ def main():
     # ---------------------------------------------------
     # RUN MODELS
     # ---------------------------------------------------
-    results = cm.run_all_models()
+    cm.run_all_models()
+
     results_df = cm.get_results_df()
-    print(results_df.columns.tolist())
 
     # ---------------------------------------------------
-    # MODEL ANALYSIS
+    # ✅ MODEL ANALYSIS
     # ---------------------------------------------------
-    ranked = cm.rank_models(metric="f1")
-    best_model = cm.get_best_model(metric="f1")
+    best_model = cm.get_best_model(metric="f1_weighted")
+    plot_data = cm.get_plot_data()  # ✅ get_plot_data to extract necessary data for visualizations
+
+    # ✅ Visualizer Engine (CRITICAL ✅)
+    viz = VisualizerEngine(
+        cm.results,
+        plot_data
+    )
+
+    dashboard = viz.render_all()
 
     # ---------------------------------------------------
-    # VISUALIZATION
+    # REPORT CONTENT
     # ---------------------------------------------------
     content.append(builder.grid([
         builder.card("Results", builder.render_dataframe(results_df)),
         builder.card("Best Model", builder.render_dict(best_model)),
     ]))
 
-    content.append(builder.chart_grid([
-        plotRenderer.plot_to_card(cplots.plot_bar(results_df, metric="f1"), "F1 Score Comparison"),
-        plotRenderer.plot_to_card(cplots.plot_multi_metrics(results_df), "Multi-Metric Comparison"),
-        # plotRenderer.plot_to_card(cplots.plot_roc_all_models(cm.results), "ROC Curve Comparison"),
-    ]))
+    # ---------------------------------------------------
+    # ✅ VISUALIZATION (UPDATED ✅)
+    # ---------------------------------------------------
+    content.append(
+        builder.chart_grid([
+
+            # ✅ Generic plots
+            plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
+            plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
+            plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
+            plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
+
+            # ✅ Task-specific (classification)
+            *[
+                plotRenderer.plot_to_card(fig, title)
+                for title, fig in dashboard["task_specific"].items()
+            ]
+        ])
+    )
 
     # ---------------------------------------------------
     # REPORT

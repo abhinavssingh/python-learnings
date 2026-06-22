@@ -9,60 +9,67 @@ from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.LinearModelUtility import LinearModelUtility as lmu
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
-from lib.utility.machinelearning.visualization.advanced.ComparisonPlots import ComparisonPlots
 from lib.utility.machinelearning.visualization.advanced.HyperparameterPlots import HyperparameterPlots
 from lib.utility.machinelearning.visualization.advanced.OptimizationPlots import OptimizationPlots
+from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 
 def main():
-    # your current script code goes here
-    print("Running ml linear regression pipeline report...")
 
-    # Start the timer
+    print("Running ml linear regression pipeline report...")
     start_time = time.perf_counter()
 
-    # initialization and set variable
     content = []
     builder = HtmlBuilder()
     plotRenderer = PlotRenderer()
-    cmp = ComparisonPlots()
+
+    # ✅ Visualization components
+    viz = None
     opt = OptimizationPlots()
     hp = HyperparameterPlots()
 
-    df, report = dl.read_dataset("marketing_data.csv", optimize=False, handle_unnamed="drop", return_report=True)
+    # --------------------------------------------------
+    # ✅ LOAD DATA
+    # --------------------------------------------------
+    df, report = dl.read_dataset(
+        "marketing_data.csv",
+        optimize=False,
+        handle_unnamed="drop",
+        return_report=True
+    )
 
-    # Ensure Income is numeric (remove $ and commas if needed)
     df['Income'] = df['Income'].replace('[\\$,]', '', regex=True).astype(float)
-
-    # convert Formatted Date column to date time
     df['Dt_Customer'] = pd.to_datetime(df['Dt_Customer'])
 
-    # Select columns that contain 'Mnt' and calculate row-wise sum
     Total_Mnt = df.loc[:, df.columns.str.contains('Mnt')].sum(axis=1)
 
     df = dfh.insert_column_after(
-        df, after_col="MntGoldProds", new_col="TotalSpend", values=Total_Mnt, inplace=True)
+        df,
+        after_col="MntGoldProds",
+        new_col="TotalSpend",
+        values=Total_Mnt,
+        inplace=True
+    )
 
     df_info = dfh.get_dataframe_info_str(df)
 
-    # initializing imputer and outlier handler with custom settings
+    # --------------------------------------------------
+    # ✅ PIPELINE SETUP
+    # --------------------------------------------------
     imputer = CustomImputer(num_strategy="mean", groupby_cols=["Education", "Marital_Status"])
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
-    # initialize LinearModelUtility with the dataframe and target column
     lm = lmu(df, target_col="TotalSpend", imputer=imputer, outlier_handler=outlier)
 
-    # prepare data (handle missing values, outliers, etc.)
     lm.prepare_data()
 
-    # run all models with default settings
+    # --------------------------------------------------
+    # ✅ MODEL EXECUTION
+    # --------------------------------------------------
     ml_results = lm.run_all_models()
-
-    # run K-Fold cross-validation for all models
     ml_kfold_results = lm.run_experiment(model_name="LinearRegression", k_fold=5)
 
-    # run selected models with different parameters
     configs = [
         {"model_name": "Ridge", "k_fold": 5},
         {"model_name": "Lasso", "k_fold": 5},
@@ -70,83 +77,119 @@ def main():
         {"model_name": "Ridge", "imputer": imputer},
         {"model_name": "Ridge", "outlier_handler": outlier},
     ]
+
     ml_selected_results = lm.run_experiments(configs)
 
-    # define parameter grid for Ridge regressionand perform grid search
+    # ✅ tuning
     param_grid = {"model__alpha": [0.1, 1.0, 10.0, 100.0]}
     ridge_grid_result = lm.grid_search_cv(model_name="Ridge", param_grid=param_grid)
 
-    # tuned both grid search and random search for Ridge and ElasticNet respectively
-    ridge_tuned_result = lm.tune_model(model_name="Ridge", param_grid=param_grid, search_type="grid",)
+    ridge_tuned_result = lm.tune_model(
+        model_name="Ridge",
+        param_grid=param_grid,
+        search_type="grid"
+    )
 
     param_dist = {
         "model__alpha": np.linspace(0.01, 1, 20),
         "model__l1_ratio": np.linspace(0.1, 0.9, 10)
     }
-    elasticnet_tuned_result = lm.tune_model(model_name="ElasticNet", param_grid=param_dist, search_type="random", n_iter=15)
 
+    elasticnet_tuned_result = lm.tune_model(
+        model_name="ElasticNet",
+        param_grid=param_dist,
+        search_type="random",
+        n_iter=15
+    )
+
+    # --------------------------------------------------
+    # ✅ EVALUATION
+    # --------------------------------------------------
     ranking = lm.rank_models("R2")
     best_model = lm.get_best_model("R2")
     comparison = lm.compare_models()
     results_df = lm.get_results_df()
 
-    # use for the large dataset
-    content.append(builder.full_width_card("Original Marketing Data",
-                                           builder.render_dataframe_collapsible(df, initial_rows=15)))
+    # ✅ Initialize visualizer AFTER results
+    viz = VisualizerEngine(lm.results, lm.artifacts if hasattr(lm, "artifacts") else {})
 
-    # ===================================================================
-    # RESULTS SECTION 1: Basic Info & Train All Results
-    # ===================================================================
+    dashboard = viz.render_all()
+
+    # --------------------------------------------------
+    # ✅ REPORT SECTION 1 (DATA + RESULTS)
+    # --------------------------------------------------
+    content.append(
+        builder.full_width_card(
+            "Original Marketing Data",
+            builder.render_dataframe_collapsible(df, initial_rows=15)
+        )
+    )
+
     content.append(builder.grid([
-        builder.card("Dataframe Information:", builder.render_pre(df_info)),
-        builder.card("Train All (all 5 models)", builder.render_dataframe(ml_results)),
-        builder.card("Train LinearRegression models with K-Fold (k=5):", builder.render_dict(ml_kfold_results)),
-        builder.card("Train Selected models with different parameters:", builder.render_dict(ml_selected_results.to_dict())),
-        builder.card("Ridge Grid Search Result:", builder.render_dict(ridge_grid_result)),
-        builder.card("Ridge Tuned Result (Grid Search):", builder.render_dataframe(pd.DataFrame(ridge_tuned_result))),
-        builder.card("ElasticNet Tuned Result (Random Search):", builder.render_dataframe(pd.DataFrame(elasticnet_tuned_result))),
-        builder.card("Model Ranking (R2)", builder.render_dataframe(ranking)),
+        builder.card("Dataframe Info", builder.render_pre(df_info)),
+        builder.card("All Models", builder.render_dataframe(ml_results)),
+        builder.card("KFold Results", builder.render_dict(ml_kfold_results)),
+        builder.card("Selected Models", builder.render_dict(ml_selected_results.to_dict())),
+        builder.card("Grid Search", builder.render_dict(ridge_grid_result)),
+        builder.card("Ridge Tuned", builder.render_dataframe(pd.DataFrame(ridge_tuned_result))),
+        builder.card("ElasticNet Tuned", builder.render_dataframe(pd.DataFrame(elasticnet_tuned_result))),
+        builder.card("Ranking", builder.render_dataframe(ranking)),
         builder.card("Best Model", builder.render_dict(best_model)),
-        builder.card("Model Comparison Summary", builder.render_dataframe(comparison)),
-        builder.card("All Results (Flat)", builder.render_dataframe(results_df)),
+        builder.card("Comparison", builder.render_dataframe(comparison)),
+        builder.card("All Results", builder.render_dataframe(results_df)),
     ]))
 
-    # ===================================================================
-    # VISUALIZATION SECTION: Model Comparisons
-    # ===================================================================
-
+    # --------------------------------------------------
+    # ✅ VISUALIZATION SECTION (NEW ✅)
+    # --------------------------------------------------
     content.append(builder.chart_grid([
-        plotRenderer.plot_to_card(cmp.plot_preprocessing_impact(results_df, "MSE", "R2"), "Preprocessing Impact"),
-        plotRenderer.plot_to_card(cmp.plot_mode_comparison(results_df, metric="R2"), "Train vs KFold"),
-        plotRenderer.plot_to_card(cmp.plot_best_model_highlight(results_df, metric="R2"), "Best Model (Annotated)"),
-        plotRenderer.plot_to_card(opt.plot_optimization_animation(results_df, "MSE", "R2"), "Optimization Animation"),
-        plotRenderer.plot_to_card(hp.plot_3d_surface(results_df, "param_model__alpha", "param_model__l1_ratio"),
-                                  "3D Hyperparameter Surface"),
-        plotRenderer.plot_to_card(opt.plot_search_animation(results_df, model="Ridge", mode="gridsearch"),
-                                  "Grid Search Animation"),
 
+        plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
+        plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
+        plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
+        plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
+
+        # ✅ Example task-specific charts (regression)
+        *[
+            plotRenderer.plot_to_card(fig, title)
+            for title, fig in dashboard["task_specific"].items()
+        ],
+
+        # ✅ Advanced plots (kept)
+        plotRenderer.plot_to_card(
+            opt.plot_optimization_animation(results_df, "MSE", "R2"),
+            "Optimization Animation"
+        ),
+
+        plotRenderer.plot_to_card(
+            hp.plot_3d_surface(results_df, "param_model__alpha", "param_model__l1_ratio"),
+            "Hyperparameter Surface"
+        ),
     ]))
 
+    # --------------------------------------------------
+    # ✅ FINAL HTML
+    # --------------------------------------------------
     html_doc = builder.build_page(
         "ML Linear Regression Pipeline Report",
-        "\n".join(content))
+        "\n".join(content)
+    )
 
-    # html_doc is the string you already have
     output_path = ru.save_html_report(
         __file__,
-        "ml_linear_regression_pipeline_report.html",   # file name
+        "ml_linear_regression_pipeline_report.html",
         html_doc,
-        subfolder="reports",                # or 'reports' to keep files in a subdir
+        subfolder="reports",
         open_in_browser=True
     )
 
     print(f"Wrote report to: {output_path}")
 
-    # End the timer
+    # --------------------------------------------------
+    # ✅ EXECUTION TIME
+    # --------------------------------------------------
     end_time = time.perf_counter()
-    execution_time = end_time - start_time
-
-    print(f"Execution time: {execution_time:.6f} seconds")
+    print(f"Execution time: {end_time - start_time:.6f} seconds")
 
 
 if __name__ == "__main__":
