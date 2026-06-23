@@ -1,0 +1,23 @@
+{
+    "model": "Ensemble_Stacking_LogisticRegression",
+    "task": "classification",
+    "feature_names": [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education",
+        "education.num",
+        "marital.status",
+        "occupation",
+        "relationship",
+        "sex",
+        "capital.gain",
+        "capital.loss",
+        "hours.per.week",
+        "native.country"
+    ],
+    "problem_type": "binary",
+    "threshold": 0.2736559824793783,
+    "family": "ensemble",
+    "experiment": "Ensemble_Stacking_LogisticRegression | classification"
+}

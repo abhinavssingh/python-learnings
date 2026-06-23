@@ -1,0 +1,22 @@
+{
+    "model": "KMeans",
+    "task": "unsupervised",
+    "feature_names": [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education",
+        "education.num",
+        "marital.status",
+        "occupation",
+        "relationship",
+        "sex",
+        "capital.gain",
+        "capital.loss",
+        "hours.per.week",
+        "native.country",
+        "income"
+    ],
+    "family": "clustering",
+    "experiment": "KMeans | unsupervised"
+}

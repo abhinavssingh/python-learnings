@@ -2,6 +2,7 @@ import time
 
 import pandas as pd
 import plotly.express as px
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 from lib.html import HtmlBuilder, PlotRenderer
@@ -54,13 +55,16 @@ def main():
 
     um.run_experiment("KMeans")
     um.run_experiment("DBSCAN")
+    best_model = um.get_best_model(metric="silhouette_score")
+    um.save_model(best_model["experiment"], "saved_models/unsupervised/best_model")
 
     results_df = um.get_results_df()
+    plot_data = um.get_plot_data()
 
     # ✅ VISUAL ENGINE (IMPORTANT)
     viz = VisualizerEngine(
         um.results,
-        um.artifacts if hasattr(um, "artifacts") else []
+        plot_data
     )
 
     dashboard = viz.render_all()
@@ -110,7 +114,6 @@ def main():
     # ========================================================
     # ELBOW CURVE
     # ========================================================
-    from sklearn.cluster import KMeans
 
     inertia = []
     for k in range(2, 10):

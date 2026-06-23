@@ -1,10 +1,14 @@
 import copy
+import json
+import os
 
+import joblib
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict, train_test_split
 
 from lib.utility.logger import Logger
 from lib.utility.machinelearning.evaluation.ModelComparator import ModelComparator
+from lib.utility.machinelearning.inference.InferenceFactory import InferenceFactory
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.Formatter import Formatter
@@ -31,6 +35,7 @@ class LinearModelUtility:
         self.registry = ModelRegistry()
         self.preprocessor = None
         self.task = "regression"
+        self.trained_models = {}
 
     # ---------------------------------------------------
     # DATA PREPARATION
@@ -88,16 +93,21 @@ class LinearModelUtility:
         if k_fold:
 
             kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
+            pipeline = wrapper.get_pipeline()
 
+            # ✅ CV predictions (evaluation only)
             y_pred = cross_val_predict(
-                wrapper.get_pipeline(),
+                pipeline,
                 self.X_train,
                 self.y_train,
                 cv=kf,
-                n_jobs=-1
+                n_jobs=8
             )
 
             metrics = wrapper.evaluate(self.y_train, y_pred)
+
+            # ✅ TRAIN FINAL MODEL ON FULL DATA (MANDATORY)
+            wrapper.train(self.X_train, self.y_train)
 
         # ✅ -------------------------
         # TRAIN-TEST CASE
@@ -108,11 +118,16 @@ class LinearModelUtility:
 
             y_pred = wrapper.predict(self.X_test)
 
+            # ✅ inference pipeline for later use (optional)
+            reg_model = InferenceFactory.load("saved_models/regression/best_model")
+            reg_preds = reg_model.predict(self.X_test)
+
             metrics = wrapper.evaluate(self.y_test, y_pred)
 
-        # ✅ artifact extraction (future-ready)
+        # ✅ artifact extraction
         artifacts, metrics = self._extract_artifacts(metrics)
 
+        # ✅ BUILD RESULT
         result = {
             "model": model_name,
             "task": getattr(wrapper, "task", "regression"),
@@ -125,12 +140,18 @@ class LinearModelUtility:
             "artifacts": artifacts
         }
 
+        # ✅ ✅ STORE WRAPPER + RESULT TOGETHER (CRITICAL CHANGE)
+        self.trained_models[exp_name] = {
+            "wrapper": wrapper,
+            "result": result
+        }
+
         self.results.append(result)
         return result
-
     # ---------------------------------------------------
     # RUN ALL MODELS
     # ---------------------------------------------------
+
     def run_all_models(self, k_fold=None):
 
         models = self.registry.get_models_by_task("linear regression")
@@ -190,19 +211,22 @@ class LinearModelUtility:
 
                 # ✅ K-FOLD
                 if k_fold:
-                    from sklearn.model_selection import KFold, cross_val_predict
 
                     kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
+                    pipeline = wrapper.get_pipeline()
 
                     y_pred = cross_val_predict(
-                        wrapper.get_pipeline(),
+                        pipeline,
                         self.X_train,
                         self.y_train,
                         cv=kf,
-                        n_jobs=-1
+                        n_jobs=8
                     )
 
                     metrics = wrapper.evaluate(self.y_train, y_pred)
+
+                    # ✅ TRAIN FINAL MODEL ON FULL DATA (MANDATORY)
+                    wrapper.train(self.X_train, self.y_train)
 
                 # ✅ TRAIN-TEST
                 else:
@@ -223,6 +247,12 @@ class LinearModelUtility:
                     "type": "custom",
                     **metrics,
                     "artifacts": artifacts
+                }
+
+                # STORE WRAPPER + RESULT TOGETHER (CRITICAL CHANGE)
+                self.trained_models[exp_name] = {
+                    "wrapper": wrapper,
+                    "result": result
                 }
 
             except Exception as e:
@@ -256,7 +286,6 @@ class LinearModelUtility:
 
             pipeline = wrapper.get_pipeline()
 
-            # ✅ 🚨 CRITICAL FIX: enforce regression scoring
             scoring = scoring or "neg_mean_squared_error"
 
             Logger.info(f"Starting GridSearchCV for {model_name} with params: {param_grid} and cv={cv}")
@@ -273,6 +302,8 @@ class LinearModelUtility:
             grid.fit(self.X_train, self.y_train)
 
             best_model = grid.best_estimator_
+
+            exp_id = f"{model_name} | gridsearch"
 
             y_pred = best_model.predict(self.X_test)
 
@@ -293,6 +324,11 @@ class LinearModelUtility:
                 "best_score_cv": grid.best_score_,
                 **metrics,
                 "artifacts": artifacts
+            }
+
+            self.trained_models[exp_id] = {
+                "pipeline": best_model,
+                "result": result
             }
 
         except Exception as e:
@@ -323,32 +359,58 @@ class LinearModelUtility:
             self.y_test
         )
 
-        # ✅ FIX: use wrapper-based API + keyword args (important)
+        # ✅ Run tuning
         if search_type == "grid":
             results = tuner.grid_search(
-                wrapper=wrapper, model_name=model_name, param_grid=param_grid, cv=cv)
+                wrapper=wrapper,
+                model_name=model_name,
+                param_grid=param_grid,
+                cv=cv
+            )
 
         elif search_type == "random":
-            results = tuner.random_search(wrapper=wrapper, model_name=model_name,
-                                          param_dist=param_grid, n_iter=n_iter, cv=cv)
+            results = tuner.random_search(
+                wrapper=wrapper,
+                model_name=model_name,
+                param_dist=param_grid,
+                n_iter=n_iter,
+                cv=cv
+            )
 
         else:
             raise ValueError(f"Unsupported search_type: {search_type}")
 
-        # ✅ enrich results (minimal change from your version)
-        for row in results:
+        final_results = []
+
+        # ✅ Process each result row
+        for i, row in enumerate(results):
+
+            exp_name = f"{model_name} | {search_type} | run_{i}"
+
+            # ✅ enrich result
             row.update({
                 "model": model_name,
                 "task": getattr(wrapper, "task", "regression"),
                 "family": getattr(wrapper, "family", "unknown"),
                 "type": row.get("type", "tuned"),
-                "search_type": search_type
+                "search_type": search_type,
+                "experiment": exp_name
             })
 
-        # ✅ persist
-        self.results.extend(results)
+            best_pipeline = row.get("best_estimator") or row.get("pipeline")
 
-        return results
+            if best_pipeline is not None:
+                self.trained_models[exp_name] = {
+                    "pipeline": best_pipeline,
+                    "result": row
+                }
+
+            final_results.append(row)
+
+        # ✅ persist results
+        self.results.extend(final_results)
+
+        return final_results
 
     # ---------------------------------------------------
     # RESULT UTILITIES
@@ -393,3 +455,40 @@ class LinearModelUtility:
                 numeric_metrics[key] = val
 
         return artifacts, numeric_metrics
+
+    # ---------------------------------------------------
+    # MODEL PERSISTENCE
+    # ---------------------------------------------------
+
+    def save_model(self, exp_id, path):
+
+        if exp_id not in self.trained_models:
+            raise ValueError(f"{exp_id} not found")
+
+        model_obj = self.trained_models[exp_id]
+
+        # ✅ Support both cases
+        if "pipeline" in model_obj:
+            pipeline = model_obj["pipeline"]   # ✅ tuned/grid case
+        else:
+            wrapper = model_obj["wrapper"]
+            pipeline = wrapper.get_pipeline()  # ✅ baseline case
+
+        result = model_obj["result"]
+
+        os.makedirs(path, exist_ok=True)
+
+        joblib.dump(pipeline, f"{path}/pipeline.pkl")
+
+        metadata = {
+            "model": result.get("model"),
+            "task": result.get("task"),
+            "feature_names": list(self.X_train.columns),
+            "family": result.get("family"),
+            "experiment": exp_id
+        }
+
+        with open(f"{path}/metadata.json", "w") as f:
+            json.dump(metadata, f, indent=4)
+
+        Logger.info(f"✅ Model saved: {exp_id}")

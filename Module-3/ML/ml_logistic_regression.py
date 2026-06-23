@@ -209,6 +209,9 @@ def main():
 
     plot_data = cm.get_plot_data()  # ✅ get_plot_data to extract necessary data for visualizations
 
+    best_model = cm.get_best_model(metric="f1_macro")
+    cm.save_model(best_model["experiment"], "saved_models/classification/best_model")
+
     viz = VisualizerEngine(
         cm.results,
         plot_data

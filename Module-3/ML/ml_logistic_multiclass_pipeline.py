@@ -67,7 +67,7 @@ def main():
     # EVALUATION
     # ---------------------------------------------------
     best_model = cm.get_best_model(metric="f1_macro")
-
+    cm.save_model(best_model["experiment"], "saved_models/multiclass_classification/best_model")
     results_df = cm.get_results_df()
     plot_data = cm.get_plot_data()  # ✅ get_plot_data to extract necessary data for visualizations
 

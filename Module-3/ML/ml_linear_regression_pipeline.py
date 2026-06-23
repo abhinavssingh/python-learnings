@@ -106,7 +106,8 @@ def main():
     # ✅ EVALUATION
     # --------------------------------------------------
     ranking = lm.rank_models("R2")
-    best_model = lm.get_best_model("R2")
+    best_model = lm.get_best_model(metric="R2")
+    lm.save_model(best_model["experiment"], "saved_models/regression/best_model")
     comparison = lm.compare_models()
     results_df = lm.get_results_df()
 

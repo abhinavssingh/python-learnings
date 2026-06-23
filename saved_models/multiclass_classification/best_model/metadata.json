@@ -1,0 +1,23 @@
+{
+    "model": "GradientBoosting",
+    "task": "classification",
+    "feature_names": [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education.num",
+        "marital.status",
+        "occupation",
+        "relationship",
+        "sex",
+        "capital.gain",
+        "capital.loss",
+        "hours.per.week",
+        "native.country",
+        "income"
+    ],
+    "problem_type": "multiclass",
+    "threshold": null,
+    "family": "boosting",
+    "experiment": "GradientBoosting | classification"
+}

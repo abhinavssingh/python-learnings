@@ -1,6 +1,9 @@
 import copy
+import json
+import os
 from collections import Counter
 
+import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
@@ -13,6 +16,7 @@ from lib.utility.machinelearning.base.ParallelEnsembleWrapper import ParallelEns
 from lib.utility.machinelearning.base.SequentialEnsembleWrapper import SequentialEnsembleWrapper
 from lib.utility.machinelearning.base.StackingEnsembleWrapper import StackingEnsembleWrapper
 from lib.utility.machinelearning.evaluation.ClassificationModelComparator import ClassificationModelComparator
+from lib.utility.machinelearning.inference.InferenceFactory import InferenceFactory
 from lib.utility.machinelearning.pipeline.imbalance.SMOTEHandler import SMOTEHandler
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
@@ -42,6 +46,7 @@ class ClassificationModelUtility:
         self.registry = ModelRegistry()
         self.preprocessor = None
         self.problem_type = None
+        self.trained_models = {}
 
     # ----------------------------
     # Data Preparation
@@ -131,7 +136,6 @@ class ClassificationModelUtility:
             if smote_handler:
                 wrapper.set_imbalance_handler(smote_handler)
 
-            # ✅ Build pipeline (P → P1 → P2 → P3)
             wrapper.build_pipeline(self.preprocessor)
 
             # ✅ TRAIN
@@ -155,6 +159,12 @@ class ClassificationModelUtility:
 
             artifacts, metrics = self._extract_artifacts(metrics)
 
+            # ✅ inference pipeline for later use (optional)
+            clf_model = InferenceFactory.load("saved_models/classification/best_model")
+            clf_preds = clf_model.predict(self.X_test)
+            clf_proba = clf_model.predict_proba(self.X_test)
+            clf_final = clf_model.predict_with_threshold(self.X_test)
+
             # ✅ Add imbalance info to artifacts
             if imbalance_summary:
                 artifacts["imbalance"] = imbalance_summary
@@ -173,6 +183,13 @@ class ClassificationModelUtility:
                 artifacts=artifacts,
                 **metrics
             )
+
+            # STORE WRAPPER + RESULT TOGETHER (CRITICAL CHANGE)
+            exp_id = result["experiment"]
+            self.trained_models[exp_id] = {
+                "wrapper": wrapper,
+                "result": result
+            }
 
         except Exception as e:
 
@@ -267,8 +284,8 @@ class ClassificationModelUtility:
             imbalance_summary = wrapper.imbalance_handler.get_summary()
 
         # ✅ Normalize using ResultBuilder ✅
-        for row in raw_results:
-
+        for i, row in enumerate(raw_results):
+            exp_id = f"{model_name} | {search_type} | run_{i}"
             artifacts = row.get("artifacts", {})
 
             # ✅ Remove artifacts from metrics dict (clean separation)
@@ -277,7 +294,7 @@ class ClassificationModelUtility:
             result = ResultBuilder.build(
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
-                experiment=exp_name,
+                experiment=exp_id,
                 mode="cv",
                 result_type="tuned",
                 imbalance_summary=imbalance_summary,
@@ -293,6 +310,14 @@ class ClassificationModelUtility:
 
                 **metrics
             )
+
+            best_pipeline = row.get("best_estimator") or row.get("pipeline")
+
+            if best_pipeline is not None:
+                self.trained_models[exp_id] = {
+                    "pipeline": best_pipeline,
+                    "result": result
+                }
 
             final_results.append(result)
 
@@ -562,6 +587,13 @@ class ClassificationModelUtility:
 
         self.results.append(result)
 
+        # ✅ STORE
+        exp_id = result["experiment"]
+        self.trained_models[exp_id] = {
+            "wrapper": wrapper,
+            "result": result
+        }
+
         return result
 
     # ======================================================
@@ -596,3 +628,41 @@ class ClassificationModelUtility:
             plot_rows.append(row)
 
         return plot_rows
+
+    # ---------------------------------------------------
+    # MODEL PERSISTENCE
+    # ---------------------------------------------------
+    def save_model(self, exp_id, path):
+
+        if exp_id not in self.trained_models:
+            raise ValueError(f"{exp_id} not found")
+
+        model_obj = self.trained_models[exp_id]
+
+        # ✅ Support both wrapper and pipeline
+        if "pipeline" in model_obj:
+            pipeline = model_obj["pipeline"]
+            result = model_obj["result"]
+        else:
+            wrapper = model_obj["wrapper"]
+            pipeline = wrapper.get_pipeline()
+            result = model_obj["result"]
+
+        os.makedirs(path, exist_ok=True)
+
+        joblib.dump(pipeline, f"{path}/pipeline.pkl")
+
+        metadata = {
+            "model": result.get("model"),
+            "task": result.get("task"),
+            "feature_names": list(self.X_train.columns),
+            "problem_type": result.get("problem_type"),
+            "threshold": result.get("best_threshold"),
+            "family": result.get("family"),
+            "experiment": exp_id
+        }
+
+        with open(f"{path}/metadata.json", "w") as f:
+            json.dump(metadata, f, indent=4)
+
+        Logger.info(f"✅ Model saved: {exp_id}")
