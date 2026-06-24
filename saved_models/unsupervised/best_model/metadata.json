@@ -1,6 +1,8 @@
 {
     "model": "KMeans",
     "task": "unsupervised",
+    "family": "clustering",
+    "experiment": "KMeans | unsupervised",
     "feature_names": [
         "age",
         "workclass",
@@ -17,6 +19,9 @@
         "native.country",
         "income"
     ],
-    "family": "clustering",
-    "experiment": "KMeans | unsupervised"
+    "inference_version": "v1",
+    "pipeline_type": "sklearn_pipeline",
+    "validated": false,
+    "extra": {},
+    "n_features": 14
 }

@@ -20,61 +20,65 @@ The utility coordinates:
 ### Summary
 
 ```
-Data → Preprocess → Split
+Data → Feature Selection
+        ↓
+Split (Pipeline Script)
+        ↓
+Utility (Orchestration Only)
+        ↓
+Preprocessor (Pipeline-Bound)
         ↓
 Wrapper → Pipeline
         ↓
-SMOTE ✅
+SMOTE / Imbalance
         ↓
-Model / Ensemble ✅
+Model / Ensemble
         ↓
-Metrics + Artifacts ✅
+Metrics + Artifacts
         ↓
-ResultBuilder ✅
+ResultBuilder
+        ↓
+Model Save + Validation
         ↓
 Results Store / Visualization
+        ↓
+Inference Pipeline (Decoupled)
 ```
 
 ### DATA PREPARATION FLOW
 
 ```mermaid
 flowchart TD
-    A[Input Dataset] --> B[DataLoader]
-    B --> C[DataFrameHelper]
 
-    C --> D[ClassificationModelUtility.prepare_data]
+    A[Input Dataset] --> B[Feature Selection / Cleaning]
 
-    D --> E[Imputer]
-    E --> F[OutlierHandler]
+    B --> C[Pipeline Script]
 
-    F --> G[Target Extraction]
+    C --> D[Train-Test Split]
+    D --> E[X_train, X_test, y_train, y_test]
 
-    G --> H[Label Encoding]
-    H --> I[Problem Type Detection]
+    E --> F[ClassificationModelUtility.prepare_data]
 
-    I --> J{Problem Type}
+    F --> G["Label Encoding (Train Only)"]
+    G --> H[Problem Type Detection]
 
-    J -->|Binary / Multiclass| K[Train-Test Split]
-    J -->|Multilabel| L[Iterative Train-Test Split]
+    H --> I[Feature Validation]
+    I --> J["Preprocessor Build (Pipeline Only)"]
 
-    K --> M[X_train, X_test, y_train, y_test]
-    L --> M
+    J --> K["Feature Pipeline (Imputer + Encoder + Scaling)"]
 
-    M --> N[Preprocessor Build]
-
-    N --> O["Feature Pipeline (Imputer + Encoder + Scaling)"]
-
-    O --> P[Reusable Preprocessor]
+    K --> L[Reusable Preprocessor]
 ```
 
 ### MODEL EXECUTION FLOW (Utility Layer)
 
 ```mermaid
 flowchart TD
-    A[User API / Script] --> B[ClassificationModelUtility]
+
+    A[User Pipeline Script] --> B["Utility Layer (Classification / Regression / Unsupervised)"]
 
     B --> C[ModelRegistry]
-    B --> D[Preprocessor]
+    B --> D["Preprocessor (Pre-built)"]
 
     C --> E[Fetch Model Wrapper]
     E --> F[Deep Copy Wrapper]
@@ -83,26 +87,26 @@ flowchart TD
 
     G --> H[Wrapper.build_pipeline]
 
-    H --> I[Flatten Preprocessor Steps]
+    H --> I[Pipeline Construction]
 
-    I --> J[Pipeline Construction]
+    I --> I1[Preprocessor]
+    I1 --> I2["SMOTE / Resampling"]
+    I2 --> I3[Model / Ensemble]
 
-    J --> J1[Preprocessor]
-    J1 --> J2["SMOTE (fit_resample)"]
-    J2 --> J3[Model / Ensemble]
+    I3 --> J["Pipeline.fit (Train Only)"]
 
-    J3 --> K["Train Pipeline (fit)"]
-    K --> L["Predict (X_test)"]
+    J --> K["Predict (X_test)"]
+    K --> L["Predict Proba (Safe)"]
 
-    L --> M["Predict Proba (Safe)"]
+    L --> M[Metrics Evaluation]
 
-    M --> N[Metrics.classification]
+    M --> N[Artifact Extraction]
 
-    N --> O[Artifact Extraction]
+    N --> O[ResultBuilder]
 
-    O --> P[ResultBuilder]
+    O --> P[Results Store]
 
-    P --> Q[Results Store]
+    P --> Q[Trained Models Registry]
 ```
 
 ### TRAINING & INFERENCE FLOW
@@ -110,36 +114,39 @@ flowchart TD
 ```mermaid
 flowchart TD
 
-    A[run_experiment / run_ensemble] --> B[Get Wrapper from Registry]
+    A[Pipeline Script] --> B[Split Data]
+    B --> C[Utility Initialization]
 
-    B --> C[Deep Copy Wrapper]
+    C --> D["Prepare Data (No Split)"]
 
-    C --> D{Multilabel?}
-    D -->|Yes| E[Wrap with OneVsRestClassifier]
-    D -->|No| F[Continue]
+    D --> E[Get Wrapper from Registry]
+    E --> F[Deep Copy Wrapper]
 
-    E --> G["Inject SMOTE (skip if multilabel)"]
-    F --> G
+    F --> G{Multilabel?}
+    G -->|Yes| H[Wrap with OneVsRestClassifier]
+    G -->|No| I[Continue]
 
-    G --> H[Build Pipeline]
+    H --> J["Inject SMOTE (if applicable)"]
+    I --> J
 
-    H --> I[Flatten Preprocessor]
+    J --> K[Build Pipeline]
 
-    I --> J[Pipeline = Preprocessor → SMOTE → Model]
+    K --> L["Pipeline = Preprocessor → SMOTE → Model"]
 
-    J --> K[Train Wrapper]
-    K --> L["Pipeline.fit (train only)"]
+    L --> M["Train (fit)"]
 
-    L --> M{Training Success?}
+    M --> N{Success?}
+    N -->|Yes| O["Predict(X_test)"]
+    N -->|No| P[Capture Error]
 
-    M -->|Yes| N["Predict(X_test)"]
-    M -->|No| O[Capture Error]
+    O --> Q[Predict Proba]
+    Q --> R[Metrics Evaluation]
 
-    N --> P[Predict Proba]
+    R --> S[ResultBuilder]
 
-    P --> Q[Evaluate Metrics]
+    S --> T["Save Model (pipeline.pkl + metadata)"]
 
-    Q --> R[ResultBuilder]
+    T --> U[Validate Inference]
 ```
 
 ### ARTIFACT EXTRACTION FLOW

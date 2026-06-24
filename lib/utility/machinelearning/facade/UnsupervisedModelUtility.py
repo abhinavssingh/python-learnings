@@ -5,8 +5,10 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.metrics import adjusted_rand_score
 
 from lib.utility.logger import Logger
+from lib.utility.machinelearning.inference.InferenceFactory import InferenceFactory
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.ResultBuilder import ResultBuilder
@@ -14,33 +16,55 @@ from lib.utility.machinelearning.shared.ResultBuilder import ResultBuilder
 
 class UnsupervisedModelUtility:
 
-    def __init__(self, df, imputer=None, outlier_handler=None):
+    def __init__(self, X, imputer=None, outlier_handler=None):
+        """
+        ✅ Unsupervised utility expects pre-structured feature data
+        """
 
-        self.df = df
+        if X is None:
+            raise ValueError("X (input features) must be provided")
+
+        self.X = X
+
         self.imputer = imputer
         self.outlier_handler = outlier_handler
 
         self.results = []
         self.registry = ModelRegistry()
 
-        # ✅ internal state
-        self.X = None
-        self.labels_store = {}   # ✅ store labels OUTSIDE results
-
         self.preprocessor = None
         self.trained_models = {}
+
+        # ✅ store labels separately (good design ✅)
+        self.labels_store = {}
 
     # ======================================================
     # ✅ PREPARE DATA (CONSISTENCY WITH CLASSIFICATION ✅)
     # ======================================================
+
     def prepare_data(self):
+        """
+        ✅ Prepare unsupervised data
 
-        df = self.df.copy()
+        Assumes:
+        - X is already prepared (no raw df handling)
+        """
 
-        # ✅ no target, no split
-        self.X = df
+        # ✅ ----------------------------------
+        # Validate input
+        # ✅ ----------------------------------
+        if not isinstance(self.X, pd.DataFrame):
+            raise ValueError("X must be a pandas DataFrame")
 
-        # ✅ build pipeline (same pattern ✅)
+        if self.X.shape[0] == 0:
+            raise ValueError("X is empty")
+
+        # ✅ store feature names (important ✅)
+        self.feature_names = list(self.X.columns)
+
+        # ✅ ----------------------------------
+        # Build preprocessor (pipeline ONLY ✅)
+        # ✅ ----------------------------------
         self.preprocessor = Preprocessor(
             self.X,
             imputer=self.imputer,
@@ -59,45 +83,35 @@ class UnsupervisedModelUtility:
         wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
         try:
-            # ==================================================
-            # ✅ BUILD PIPELINE
-            # ==================================================
             wrapper.build_pipeline(self.preprocessor)
 
-            # ==================================================
-            # ✅ FIT + PREDICT
-            # ==================================================
-            output = wrapper.predict(self.X)
+            pipeline = wrapper.get_pipeline()
 
-            # ✅ processed data for evaluation
-            X_processed = self.preprocessor.transform(self.X)
+            if hasattr(pipeline, "fit_predict"):
+                output = pipeline.fit_predict(self.X)
+            else:
+                pipeline.fit(self.X)
+                output = pipeline.predict(self.X)
 
             raw_metrics = {}
             extra = {}
             labels = None
 
-            # ==================================================
-            # ✅ CLUSTERING FLOW
-            # ==================================================
             if wrapper.family == "clustering":
 
                 labels = output
 
-                # ✅ evaluation (same style as classification)
+                # ✅ evaluation using SAME processed pipeline
+                X_processed = pipeline[:-1].transform(self.X) if hasattr(pipeline, "__getitem__") else self.X
+
                 raw_metrics = wrapper.evaluate(X_processed, labels)
 
-                # ✅ meta info (keep lightweight ✅)
+                # ✅ lightweight metadata
                 extra = {
                     "n_clusters": len(set(labels)),
                     "noise_points": int((labels == -1).sum()) if -1 in labels else 0
                 }
 
-                # ✅ store labels separately (NOT in results ✅)
-                self.labels_store[model_name] = labels
-
-            # ==================================================
-            # ✅ DIMENSIONALITY FLOW
-            # ==================================================
             elif wrapper.family == "dimensionality":
 
                 raw_metrics = {}
@@ -107,15 +121,10 @@ class UnsupervisedModelUtility:
                     "n_components": output.shape[1]
                 }
 
-            # ==================================================
-            # ✅ NORMALIZE OUTPUT (ALIGN WITH CLASSIFICATION ✅)
-            # ==================================================
             metrics = self._normalize_metrics(raw_metrics)
 
-            # ==================================================
-            # ✅ BUILD RESULT (CLEAN ✅)
-            # ==================================================
             exp_id = f"{model_name} | unsupervised"
+
             result = ResultBuilder.build(
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
@@ -126,10 +135,14 @@ class UnsupervisedModelUtility:
                 **metrics
             )
 
+            # ✅ ✅ STORE LABELS CORRECTLY (FIX ✅)
+            if labels is not None:
+                self.labels_store[exp_id] = labels
+
         except Exception as e:
 
-            # ✅ failure-safe execution (aligned ✅)
             exp_id = f"{model_name} | unsupervised"
+
             result = ResultBuilder.build(
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
@@ -138,18 +151,21 @@ class UnsupervisedModelUtility:
                 extra={"error": str(e)}
             )
 
+        # ✅ STORE RESULT
         self.results.append(result)
-        # STORE WRAPPER + RESULT TOGETHER (CRITICAL CHANGE)
+
+        # ✅ STORE MODEL
         exp_id = result["experiment"]
         self.trained_models[exp_id] = {
             "wrapper": wrapper,
             "result": result
         }
-        return result
 
+        return result
     # ======================================================
     # ✅ RUN MULTIPLE MODELS
     # ======================================================
+
     def run_all_models(self, model_names):
 
         results = []
@@ -327,12 +343,18 @@ class UnsupervisedModelUtility:
         joblib.dump(pipeline, os.path.join(path, "pipeline.pkl"))
 
         # ✅ metadata
+
         metadata = {
             "model": result.get("model"),
             "task": "unsupervised",
-            "feature_names": list(self.X.columns),
             "family": result.get("family"),
-            "experiment": exp_id
+            "experiment": exp_id,
+            "feature_names": list(self.X.columns),
+            "inference_version": "v1",
+            "pipeline_type": "sklearn_pipeline",
+            "validated": False,
+            "extra": result.get("extra", {}),
+            "n_features": len(self.X.columns)
         }
 
         with open(os.path.join(path, "metadata.json"), "w") as f:
@@ -345,3 +367,26 @@ class UnsupervisedModelUtility:
             np.save(os.path.join(path, "labels.npy"), np.asarray(labels))
 
         Logger.info(f"✅ Model saved: {exp_id}")
+
+    def validate_inference_pipeline(self, exp_id, model_path):
+        if exp_id not in self.trained_models:
+            raise ValueError(f"{exp_id} not found")
+
+        if exp_id not in self.labels_store:
+            raise ValueError(f"No stored labels found for {exp_id}")
+
+        # ✅ TRAINING LABELS (stored, DO NOT recompute)
+        train_labels = self.labels_store[exp_id]
+
+        # ✅ INFERENCE LABELS
+        inf_model = InferenceFactory.load(model_path)
+        inf_labels = inf_model.predict(self.X)
+
+        # ✅ CLUSTER-SAFE COMPARISON
+        score = adjusted_rand_score(train_labels, inf_labels)
+
+        return {
+            "status": "PASS" if score > 0.99 else "FAIL",
+            "adjusted_rand_score": float(score),
+            "note": "Permutation-invariant validation (correct for clustering)"
+        }

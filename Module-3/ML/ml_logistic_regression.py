@@ -2,13 +2,13 @@ import time
 
 import plotly.express as px
 import plotly.graph_objects as go
-from matplotlib import cm
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.model_selection import train_test_split
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
-from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
+from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
 from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
@@ -127,11 +127,15 @@ def main():
         }
     }
 
-    cm = cmu(df, target_col="income", imputer=imputer, outlier_handler=outlier, imbalance_config=imbalance_config)
+    X = df.drop("income", axis=1)
+    y = df["income"]
 
-    # prepare data (handle missing values, outliers, etc.)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+    cm = ClassificationModelUtility(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test,
+                                    imputer=imputer, outlier_handler=outlier, imbalance_config=imbalance_config)
+
     cm.prepare_data()
-
     # run all models with default settings
     # ml_results = cm.run_all_models()
 
@@ -218,6 +222,9 @@ def main():
     )
 
     dashboard = viz.render_all()
+
+    validation = cm.validate_inference_pipeline(exp_id=best_model["experiment"], model_path="saved_models/classification/best_model")
+
     # ===================================================================
     # RESULTS SECTION 1: Basic Info & Train All Results
     # ===================================================================
@@ -229,7 +236,8 @@ def main():
         builder.card("Univariate Analysis:", builder.render_pre(univariate_pre)),
         builder.card("All Classification Models Results (Flat)", builder.render_dataframe(results_df)),
         builder.card("Confusion Matrix for all classification models:", builder.render_dict(cm.get_all_confusion_matrices())),
-        builder.card("SMOTE Impact (Before vs After)", builder.render_dict(cm.results[0]["artifacts"].get("imbalance")))
+        builder.card("SMOTE Impact (Before vs After)", builder.render_dict(cm.results[0]["artifacts"].get("imbalance"))),
+        builder.card("Inference Pipeline Validation:", builder.render_dict(validation)),
     ]))
 
     # ===================================================================

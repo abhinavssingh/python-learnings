@@ -29,8 +29,8 @@ flowchart TD
 
     B --> C["Task Wrappers<br/>Classification / Regression / Unsupervised"]
 
-    C --> C1["ClassificationModelWrapper<br/>Pipeline (Preprocessor → SMOTE → Model → Eval)"]
-    C --> C2["RegressionModelWrapper<br/>Pipeline (Preprocessor → Model → Eval)"]
+    C --> C1["ClassificationModelWrapper<br/>Pipeline (Preprocessor → SMOTE → Model)"]
+    C --> C2["RegressionModelWrapper<br/>Pipeline (Preprocessor → Model)"]
     C --> C3["UnsupervisedModelWrapper<br/>Pipeline (Preprocessor → Model → fit_predict)"]
 
     C1 --> D["Concrete Wrappers<br/>LR, RF, XGB, SVC"]
@@ -42,17 +42,23 @@ flowchart TD
     D --> F["ModelRegistry<br/>Dynamic discovery + factory"]
     E --> F
 
-    F --> G["Utility Layer<br/>Classification / Regression / Unsupervised Utilities"]
+    F --> G["Utility Layer (Orchestration Only)<br/>Classification / Regression / Unsupervised"]
 
-    G --> H["Evaluation Layer<br/>Metrics + Artifacts (ROC, PR, CM, Clusters)"]
+    G --> H["Evaluation Layer<br/>Metrics + Artifacts"]
 
-    H --> I["ResultBuilder<br/>Standardized Results + Artifacts"]
+    H --> I["ResultBuilder<br/>Standardized Results"]
 
-    I --> J["Comparator Layer<br/>Ranking + Best Model Selection"]
+    I --> J["Comparator Layer<br/>Ranking + Best Model"]
 
-    J --> K["VisualizerEngine <br/>Unified Visualization Layer"]
+    J --> K["VisualizerEngine<br/>Visualization + Insights"]
 
-    K --> L["Reporting Layer<br/>HTML Dashboard / Reports"]
+    K --> L["Reporting Layer<br/>Dashboards / Reports"]
+
+    G --> M["Model Persistence<br/>pipeline.pkl + metadata.json"]
+
+    M --> N["Inference Layer<br/>InferenceFactory + Pipelines"]
+
+    N --> O["Validation Layer<br/>Prediction / Proba / ARI Checks"]
 ```
 
 ### 🔷 High-Level Flow
@@ -60,28 +66,33 @@ flowchart TD
 ```mermaid
 flowchart TD
 
-    A[User Script / API] --> B["ModelUtility (Classification / Regression / Unsupervised)"]
+    A[User Script / API ✅] --> A1[Feature Selection]
+
+    A1 --> A2[Train-Test Split]
+
+    A2 --> B["ModelUtility (Orchestration Only)"]
 
     B --> C[ModelRegistry]
-    B --> D[Preprocessor Builder]
+    B --> D["Preprocessor Builder (Pipeline Only)"]
 
     C --> E[Fetch Wrapper]
     E --> F[Deep Copy Wrapper]
 
     D --> G[Reusable Preprocessor]
 
-    F --> H["Inject Imbalance Handler (ONLY for classification)"]
+    F --> H["Inject Handlers<br/>SMOTE (classification only)"]
 
-    H --> I["Build Pipeline<br/>Preprocessor → SMOTE (optional) → Model"]
+    H --> I["Build Pipeline<br/>Preprocessor → SMOTE → Model"]
 
-    I --> J["Train / Fit<br/>SMOTE applies only during training"]
+    I --> J["Train / Fit (train data only)"]
 
     J --> K{Execution Success?}
 
-    K -->|Yes| L[Predict / fit_predict]
+    K -->|Yes| L["Predict / fit_predict"]
+
     K -->|No| Z[Capture Error]
 
-    L --> M["Predict Proba (Safe if available)"]
+    L --> M["Predict Proba (if available)"]
 
     M --> N[Metrics Evaluation]
 
@@ -89,7 +100,15 @@ flowchart TD
 
     O --> P["ResultBuilder (Standardization)"]
 
-    P --> Q["Store Results<br/>+ Artifacts + Imbalance Metadata"]
+    P --> Q["Store Results + Artifacts"]
+
+    Q --> R["Save Model (pipeline.pkl + metadata.json)"]
+
+    R --> S["Inference Pipeline Load"]
+
+    S --> T["Validation Engine"]
+
+    T --> U["metadata.validated = True/False"]
 
     Z --> Q
 ```
@@ -100,19 +119,27 @@ flowchart TD
 
 ```mermaid
 sequenceDiagram
+
     participant U as User
+    participant PS as Pipeline Script
     participant MU as ModelUtility
     participant MR as ModelRegistry
     participant W as Wrapper
     participant P as Pipeline
-    participant SM as SMOTEHandler
-    participant MET as Metrics
+    participant SM as SMOTE
+    participant INF as InferenceFactory
+    participant VAL as ValidationEngine
     participant RB as ResultBuilder
+
+    U->>PS: Prepare data
+    PS->>PS: Split dataset (X_train, X_test)
+
+    PS->>MU: Initialize utility
 
     U->>MU: run_all_models()
 
-    loop For each experiment/model
-        MU->>MR: get_model(name)
+    loop For each model
+        MU->>MR: get_model()
         MR-->>MU: Wrapper
 
         MU->>W: deepcopy()
@@ -123,23 +150,27 @@ sequenceDiagram
         W->>P: fit(X_train, y_train)
 
         P->>SM: fit_resample() (train only)
-
         P->>W: model.fit()
 
         alt Success
-            MU->>W: predict()/fit_predict()
-            MU->>W: predict_proba() (if supported)
-
-            MU->>W: evaluate()
-            W->>MET: compute metrics + artifacts
-
-            MU->>MU: collect artifacts
+            MU->>W: predict(X_test)
+            MU->>W: predict_proba()
 
             MU->>RB: build(result)
             MU->>MU: store results
 
+            MU->>MU: save_model()
+
+            MU->>INF: load(model)
+            INF-->>MU: inference pipeline
+
+            MU->>VAL: validate(predictions)
+
+            VAL-->>MU: PASS / FAIL
+
+            MU->>MU: update metadata.validated
+
         else Failure
-            MU->>MU: capture error
             MU->>RB: build(failure result)
         end
     end
@@ -165,12 +196,19 @@ flowchart TD
     F --> I[Top Model Insights]
 
     C --> J[Artifacts Analysis]
+
     J --> J1[ROC / PR Curves]
     J --> J2[Confusion Matrix]
-    J --> J3[SMOTE Before vs After]
-    J --> J4[Cluster Labels / Scores]
+    J --> J3["Imbalance (SMOTE) Effects"]
+    J --> J4[Cluster Labels / Evaluation]
 
     G --> K[Baseline vs Ensemble vs Tuned]
+
+    I --> L[Save Best Model]
+
+    L --> M[Inference Pipeline]
+
+    M --> N["Validation Output (validation.json)"]
 ```
 
 ### VISUALIZATION FLOW
@@ -215,6 +253,37 @@ flowchart TD
 
     G --> H[Saved File]
     H --> I[Auto Open in Browser]
+```
+
+### INFERENCE & VALIDATION FLOW
+
+```mermaid
+flowchart TD
+
+    A["Saved Model (pipeline.pkl + metadata.json)"] --> B[InferenceFactory.load]
+
+    B --> C[Inference Pipeline]
+
+    C --> D["Input Data (Raw DataFrame)"]
+
+    D --> E[Pipeline.predict]
+
+    E --> F[Predictions]
+
+    F --> G[Validation Engine]
+
+    G --> H{Task Type}
+
+    H -->|Regression| I["Compare Predictions (np.allclose)"]
+    H -->|Classification| J[Compare Pred + Proba]
+    H -->|Clustering| K[Adjusted Rand Score]
+
+    I --> L[Validation Status]
+    J --> L
+    K --> L
+
+    L --> M[validation.json]
+    L --> N[metadata.validated = True/False]
 ```
 
 ---

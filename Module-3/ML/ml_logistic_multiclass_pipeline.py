@@ -1,9 +1,11 @@
 import time
 
+from sklearn.model_selection import train_test_split
+
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
-from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility as cmu
+from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
 from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
@@ -49,12 +51,13 @@ def main():
     # ---------------------------------------------------
     # INIT MODEL UTILITY
     # ---------------------------------------------------
-    cm = cmu(
-        df,
-        target_col=target_col,
-        imputer=imputer,
-        outlier_handler=outlier
-    )
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+    cm = ClassificationModelUtility(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test,
+                                    imputer=imputer, outlier_handler=outlier)
 
     cm.prepare_data()
 
@@ -78,6 +81,7 @@ def main():
     )
 
     dashboard = viz.render_all()
+    validation = cm.validate_inference_pipeline(exp_id=best_model["experiment"], model_path="saved_models/multiclass_classification/best_model")
 
     # ---------------------------------------------------
     # REPORT CONTENT
@@ -86,10 +90,11 @@ def main():
         builder.card("Data Info", builder.render_pre(df_info)),
         builder.card("Model Results", builder.render_dataframe(results_df)),
         builder.card("Best Model", builder.render_dict(best_model)),
+        builder.card("Validation", builder.render_dict(validation)),
     ]))
 
     # ---------------------------------------------------
-    # ✅ VISUALIZATION (NEW ✅)
+    # ✅ VISUALIZATION
     # ---------------------------------------------------
     content.append(
         builder.chart_grid([

@@ -42,15 +42,11 @@ def main():
     imputer = CustomImputer(num_strategy="median")
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
-    um = UnsupervisedModelUtility(
-        df,
-        imputer=imputer,
-        outlier_handler=outlier
-    )
+    # ✅ explicit feature input
+    X = df.copy()   # or df[selected_features] if needed
 
-    # ========================================================
-    # PREPROCESS + RUN
-    # ========================================================
+    um = UnsupervisedModelUtility(X=X, imputer=imputer, outlier_handler=outlier)
+
     um.prepare_data()
 
     um.run_experiment("KMeans")
@@ -127,6 +123,7 @@ def main():
         title="Elbow Method"
     )
 
+    validation_results = um.validate_inference_pipeline(best_model["experiment"], "saved_models/unsupervised/best_model")
     # ========================================================
     # REPORT CONTENT
     # ========================================================
@@ -134,6 +131,7 @@ def main():
         builder.card("Data Info", builder.render_pre(df_info)),
         builder.card("Processed Data", builder.render_dataframe(pd.DataFrame(X_processed).head())),
         builder.card("Unsupervised Results", builder.render_dataframe(results_df)),
+        builder.card("Validation Results", builder.render_dict(validation_results))
     ]))
 
     # ========================================================

@@ -4,12 +4,11 @@ import os
 from collections import Counter
 
 import joblib
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import type_of_target
-from skmultilearn.model_selection import iterative_train_test_split
 
 from lib.utility.logger import Logger
 from lib.utility.machinelearning.base.ParallelEnsembleWrapper import ParallelEnsembleWrapper
@@ -27,75 +26,75 @@ from lib.utility.machinelearning.tuning.ClassificationHyperparameterTuner import
 
 class ClassificationModelUtility:
 
-    def __init__(self, df, target_col, imputer=None, outlier_handler=None, imbalance_config=None):
+    def __init__(self, X_train=None, y_train=None, X_test=None,
+                 y_test=None, imputer=None, outlier_handler=None, imbalance_config=None):
 
-        self.df = df
-        self.target_col = target_col
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
 
         self.imputer = imputer
         self.outlier_handler = outlier_handler
         self.imbalance_config = imbalance_config
 
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-
         self.results = []
-
         self.registry = ModelRegistry()
+
         self.preprocessor = None
         self.problem_type = None
+        self.label_encoder = None
         self.trained_models = {}
 
     # ----------------------------
     # Data Preparation
     # ----------------------------
-    def prepare_data(self, test_size=0.2, random_state=42):
 
-        df = self.df.copy()
+    def prepare_data(self):
+        """
+        ✅ Prepare data for training (pre-split data only)
 
-        if self.imputer:
-            df = self.imputer.fit_transform(df)
+        Assumes:
+        - X_train, y_train already provided
+        - X_test, y_test optional (for evaluation)
+        """
 
-        if self.outlier_handler:
-            df = self.outlier_handler.fit_transform(df)
+        # ✅ ----------------------------------
+        # Validate input
+        # ✅ ----------------------------------
+        if self.X_train is None or self.y_train is None:
+            raise ValueError("X_train and y_train must be provided (external split required)")
 
-        X = df.drop(self.target_col, axis=1)
-
-        y = df[self.target_col]
-
-        # ✅ FIX: encode string labels → numeric
-
-        self.label_encoder = None
+        # ✅ ----------------------------------
+        # Label encoding (train → test consistent)
+        # ✅ ----------------------------------
+        y = self.y_train
 
         if isinstance(y, pd.Series) and not pd.api.types.is_numeric_dtype(y):
             self.label_encoder = LabelEncoder()
-            y = self.label_encoder.fit_transform(y)
 
-        self.problem_type = type_of_target(y)
+            self.y_train = self.label_encoder.fit_transform(y)
+
+            if self.y_test is not None:
+                self.y_test = self.label_encoder.transform(self.y_test)
+
+        # ✅ ----------------------------------
+        # Detect problem type
+        # ✅ ----------------------------------
+        self.problem_type = type_of_target(self.y_train)
+
         Logger.info(f"Detected problem type: {self.problem_type}")
 
+        # ✅ ----------------------------------
+        # Multilabel sanity check
+        # ✅ ----------------------------------
         if self.problem_type == "multilabel-indicator":
+            if not isinstance(self.y_train, (pd.DataFrame)):
+                raise ValueError("Multilabel task requires y_train as DataFrame")
 
-            X_np = X.values
-            y_np = y.values
-
-            X_train, y_train, X_test, y_test = iterative_train_test_split(
-                X_np, y_np, test_size=test_size
-            )
-
-            self.X_train = pd.DataFrame(X_train, columns=X.columns)
-            self.X_test = pd.DataFrame(X_test, columns=X.columns)
-            self.y_train = pd.DataFrame(y_train, columns=y.columns)
-            self.y_test = pd.DataFrame(y_test, columns=y.columns)
-
-        else:
-
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-                X, y, test_size=test_size, random_state=random_state
-            )
-
+        # ✅ ----------------------------------
+        # Build preprocessor (ONLY HERE ✅)
+        # ✅ ----------------------------------
         self.preprocessor = Preprocessor(
             self.X_train,
             imputer=self.imputer,
@@ -158,12 +157,6 @@ class ClassificationModelUtility:
             metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
 
             artifacts, metrics = self._extract_artifacts(metrics)
-
-            # ✅ inference pipeline for later use (optional)
-            clf_model = InferenceFactory.load("saved_models/classification/best_model")
-            clf_preds = clf_model.predict(self.X_test)
-            clf_proba = clf_model.predict_proba(self.X_test)
-            clf_final = clf_model.predict_with_threshold(self.X_test)
 
             # ✅ Add imbalance info to artifacts
             if imbalance_summary:
@@ -655,14 +648,146 @@ class ClassificationModelUtility:
         metadata = {
             "model": result.get("model"),
             "task": result.get("task"),
+            "family": result.get("family"),
+            "experiment": exp_id,
             "feature_names": list(self.X_train.columns),
+            "inference_version": "v1",
+            "pipeline_type": "sklearn_pipeline",
+            "validated": False,
+            "extra": result.get("extra", {}),
             "problem_type": result.get("problem_type"),
             "threshold": result.get("best_threshold"),
-            "family": result.get("family"),
-            "experiment": exp_id
         }
 
         with open(f"{path}/metadata.json", "w") as f:
             json.dump(metadata, f, indent=4)
 
         Logger.info(f"✅ Model saved: {exp_id}")
+
+    def validate_inference_pipeline(self, exp_id, model_path,
+                                    atol=1e-6, rtol=1e-5, validate_proba=True, validate_threshold=True):
+        """
+        ✅ Validate inference pipeline against trained model
+
+        Supports:
+        - binary
+        - multiclass
+        - multilabel
+
+        Checks:
+        - predictions
+        - probabilities (optional)
+        - threshold predictions (optional)
+        """
+
+        if exp_id not in self.trained_models:
+            raise ValueError(f"{exp_id} not found in trained models")
+
+        model_obj = self.trained_models[exp_id]
+
+        # ✅ ----------------------------------
+        # 1. TRAINING predictions
+        # ✅ ----------------------------------
+        if "wrapper" in model_obj:
+            wrapper = model_obj["wrapper"]
+            train_preds = wrapper.predict(self.X_test)
+
+            train_proba = None
+            if validate_proba and hasattr(wrapper, "predict_proba"):
+                try:
+                    train_proba = wrapper.predict_proba(self.X_test)
+                except BaseException:
+                    pass
+
+        else:
+            pipeline = model_obj["pipeline"]
+            train_preds = pipeline.predict(self.X_test)
+
+            train_proba = None
+            if validate_proba and hasattr(pipeline, "predict_proba"):
+                try:
+                    train_proba = pipeline.predict_proba(self.X_test)
+                except BaseException:
+                    pass
+
+        # ✅ ----------------------------------
+        # 2. INFERENCE predictions
+        # ✅ ----------------------------------
+        inf_model = InferenceFactory.load(model_path)
+
+        inf_preds = inf_model.predict(self.X_test)
+
+        inf_proba = None
+        if validate_proba and hasattr(inf_model, "predict_proba"):
+            try:
+                inf_proba = inf_model.predict_proba(self.X_test)
+            except BaseException:
+                pass
+
+        inf_threshold_preds = None
+        if validate_threshold and hasattr(inf_model, "predict_with_threshold"):
+            try:
+                inf_threshold_preds = inf_model.predict_with_threshold(self.X_test)
+            except BaseException:
+                pass
+
+        # ✅ ----------------------------------
+        # 3. VALIDATION
+        # ✅ ----------------------------------
+        result = {
+            "exp_id": exp_id,
+            "sample_size": len(train_preds)
+        }
+
+        # ✅ Predictions check
+        preds_match = np.array_equal(train_preds, inf_preds)
+        result["predictions_match"] = preds_match
+
+        # ✅ Probability check
+        proba_match = None
+        if train_proba is not None and inf_proba is not None:
+            proba_match = np.allclose(train_proba, inf_proba, atol=atol, rtol=rtol)
+            result["proba_match"] = proba_match
+
+        # ✅ Threshold check
+        threshold_match = None
+
+        if inf_threshold_preds is not None:
+
+            # ✅ get TRAIN threshold predictions properly
+            train_threshold_preds = None
+
+            if hasattr(wrapper, "predict_with_threshold"):
+                try:
+                    train_threshold_preds = wrapper.predict_with_threshold(self.X_test)
+                except BaseException:
+                    pass
+
+            # ✅ compare threshold outputs ONLY
+            if train_threshold_preds is not None:
+                threshold_match = np.array_equal(train_threshold_preds, inf_threshold_preds)
+
+            result["threshold_match"] = threshold_match
+
+        # ✅ Final status
+        is_valid = preds_match and (proba_match if proba_match is not None else True) and (threshold_match if threshold_match is not None else True)
+
+        result["status"] = "PASS" if is_valid else "FAIL"
+
+        # ✅ Diagnostics if fail
+        if not is_valid:
+            diff = None
+            try:
+                diff = np.abs(train_preds - inf_preds)
+            except BaseException:
+                pass
+
+            result.update({
+                "max_diff": float(np.max(diff)) if diff is not None else None,
+                "mismatch_indices": (
+                    list(np.where(train_preds != inf_preds)[0][:10])
+                    if not preds_match else []
+                )
+            })
+
+        return result

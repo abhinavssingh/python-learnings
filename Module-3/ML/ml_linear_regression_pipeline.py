@@ -2,11 +2,12 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
-from lib.utility.machinelearning.facade.LinearModelUtility import LinearModelUtility as lmu
+from lib.utility.machinelearning.facade.LinearModelUtility import LinearModelUtility
 from lib.utility.machinelearning.pipeline.CustomImputer import CustomImputer
 from lib.utility.machinelearning.pipeline.OutlierHandler import OutlierHandler
 from lib.utility.machinelearning.visualization.advanced.HyperparameterPlots import HyperparameterPlots
@@ -57,10 +58,18 @@ def main():
     # --------------------------------------------------
     # ✅ PIPELINE SETUP
     # --------------------------------------------------
+    # ✅ CONFIG
     imputer = CustomImputer(num_strategy="mean", groupby_cols=["Education", "Marital_Status"])
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
-    lm = lmu(df, target_col="TotalSpend", imputer=imputer, outlier_handler=outlier)
+    # ✅ SPLIT data
+    X = df.drop("TotalSpend", axis=1)
+    y = df["TotalSpend"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # ✅ PASS SPLIT DATA
+    lm = LinearModelUtility(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test, imputer=imputer, outlier_handler=outlier)
 
     lm.prepare_data()
 
@@ -116,6 +125,9 @@ def main():
 
     dashboard = viz.render_all()
 
+    # ✅ VALIDATE
+    validation = lm.validate_inference_pipeline(exp_id=best_model["experiment"], model_path="saved_models/regression/best_model")
+
     # --------------------------------------------------
     # ✅ REPORT SECTION 1 (DATA + RESULTS)
     # --------------------------------------------------
@@ -138,6 +150,7 @@ def main():
         builder.card("Best Model", builder.render_dict(best_model)),
         builder.card("Comparison", builder.render_dataframe(comparison)),
         builder.card("All Results", builder.render_dataframe(results_df)),
+        builder.card("Inference Validation", builder.render_dict(validation))
     ]))
 
     # --------------------------------------------------

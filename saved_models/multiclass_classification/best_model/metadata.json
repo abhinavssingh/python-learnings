@@ -1,6 +1,8 @@
 {
     "model": "GradientBoosting",
     "task": "classification",
+    "family": "boosting",
+    "experiment": "GradientBoosting | classification",
     "feature_names": [
         "age",
         "workclass",
@@ -16,8 +18,10 @@
         "native.country",
         "income"
     ],
+    "inference_version": "v1",
+    "pipeline_type": "sklearn_pipeline",
+    "validated": false,
+    "extra": {},
     "problem_type": "multiclass",
-    "threshold": null,
-    "family": "boosting",
-    "experiment": "GradientBoosting | classification"
+    "threshold": null
 }

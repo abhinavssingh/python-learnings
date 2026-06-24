@@ -22,41 +22,76 @@ It acts as a **facade** coordinating:
 
 ```mermaid
 flowchart TD
-    A[User API] --> B[LinearModelUtility]
+
+    A[User Script / API] --> A1["Data Split (External)"]
+
+    A1 --> B["LinearModelUtility (Orchestration Only)"]
 
     B --> C[ModelRegistry]
-    B --> D[Preprocessor]
+    B --> D[Preprocessor Builder]
 
     C --> E[Get Regression Wrapper]
-    E --> F[Build Pipeline]
+    E --> F[Deep Copy Wrapper]
 
-    F --> G[Train]
-    G --> H[Predict]
+    D --> G[Reusable Preprocessor]
 
-    H --> I[Metrics.regression]
-    I --> J[Artifacts Extraction]
+    F --> H[Build Pipeline]
 
-    J --> K[Results Store]
+    H --> I["Pipeline = Preprocessor → Model"]
+
+    I --> J["Train (fit on X_train)"]
+
+    J --> K["Predict (X_test)"]
+
+    K --> L[Metrics.regression]
+
+    L --> M[Artifacts Extraction]
+
+    M --> N[ResultBuilder]
+
+    N --> O[Results Store]
+
+    O --> P["Save Model (pipeline.pkl + metadata)"]
+
+    P --> Q[Load via InferenceFactory]
+
+    Q --> R[Inference Predict]
+
+    R --> S["Validation (Prediction Match)"]
+
+    S --> T["metadata.validated = True/False"]
 ```
 
 ---
 
 ## ✅ Key Responsibilities (Refactored)
 
-- Data preparation and splitting
-- Model execution via wrapper abstraction
-- Regression metric computation using `Metrics.regression`
-- Hyperparameter tuning with **regression scoring only**
-- Artifact extraction (future extensibility)
-- Result normalization and storage
-- Experiment tracking (baseline + tuned)
+- ✅ Consumes pre-split data (X_train, y_train, X_test, y_test) — splitting handled externally
+- ✅ Builds pipeline-driven preprocessing via Preprocessor (no raw data mutation)
+- ✅ Executes models via wrapper abstraction + sklearn pipeline
+- ✅ Supports baseline, tuned, and ensemble experiments
+- ✅ Computes regression metrics using Metrics.regression
+- ✅ Performs hyperparameter tuning (grid/random) with regression scoring
+- ✅ Handles artifact extraction (extensible for residuals, plots, etc.)
+- ✅ Stores experiment results + trained models
+- ✅ Persists models as pipeline.pkl + metadata.json
+- ✅ Validates inference pipeline (prediction consistency check)
+- ✅ Maintains metadata-driven deployment readiness
 
 ---
 
 ## 🚀 Constructor
 
 ```python
-lm = LinearModelUtility(df, target_col, imputer=None, outlier_handler=None)
+lm = LinearModelUtility(
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+    imputer=imputer,
+    outlier_handler=outlier
+)
+
 ```
 
 ---
@@ -64,8 +99,21 @@ lm = LinearModelUtility(df, target_col, imputer=None, outlier_handler=None)
 ## 📊 Data Preparation
 
 ```python
-lm.prepare_data(test_size=0.2)
+lm.prepare_data()
 ```
+
+✅ What it does now
+
+- ✅ Validates input (X_train, y_train)
+- ✅ Ensures DataFrame-only flow (prevents feature mismatch issues)
+- ✅ Builds reusable preprocessing pipeline
+
+`Plain TextPreprocessor = Imputer → Encoder →Show more lines`
+
+✅ Stores:
+
+- self.preprocessor (used in wrapper pipeline)
+- feature_names (for inference consistency)
 
 ### Features
 

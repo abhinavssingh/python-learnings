@@ -17,58 +17,93 @@ It ensures:
 
 ```mermaid
 flowchart TD
-    A[Raw Dataset] --> B["prepare_data()"]
 
-    B --> C[Preprocessor Initialized]
-    C --> D["Pipeline Built (Preprocessor + Model)"]
+    A["Input Features (X DataFrame)"] --> B["prepare_data()"]
+
+    B --> C["Validate Input (DataFrame)"]
+    C --> D[Preprocessor Built]
 
     D --> E["run_experiment()"]
-    E --> F["wrapper.predict()"]
 
-    F --> G["Pipeline.fit_predict()"]
-    G --> H["Transformed Data (internal)"]
-    G --> I[Labels / Output]
+    E --> F[Get Wrapper from Registry]
+    F --> G[Deep Copy Wrapper]
 
-    I --> J["Evaluation (Metrics.unsupervised)"]
-    H --> J
+    G --> H[Build Pipeline]
 
-    J --> K[Normalize Metrics]
-    K --> L[ResultBuilder]
-    L --> M[Results DataFrame]
+    H --> I["Pipeline = Preprocessor → Model"]
 
-    I --> N["labels_store (for visualization)"]
+    I --> J{Supports fit_predict?}
+
+    J -->|Yes| K["Pipeline.fit_predict(X)"]
+    J -->|No| L["Pipeline.fit(X) → predict(X)"]
+
+    K --> M[Labels / Output]
+    L --> M
+
+    I --> N["Transformed Data (internal via pipeline)"]
+
+    M --> O["Evaluation (Metrics.unsupervised)"]
+    N --> O
+
+    O --> P[Normalize Metrics]
+
+    P --> Q[ResultBuilder]
+
+    Q --> R[Results DataFrame]
+
+    M --> S["labels_store (exp_id-based)"]
+
+    R --> T["Save Model (pipeline.pkl + metadata)"]
+
+    T --> U[Inference Pipeline Load]
+
+    U --> V["predict(X)"]
+
+    V --> W["Validation (ARI Score)"]
+
+    W --> X["metadata.validated = True/False"]
 ```
 
 ---
 
 ## ✅ Key Responsibilities
 
-- Manage unsupervised ML lifecycle
-- Build preprocessing pipeline
-- Execute clustering/dimensionality models
-- Standardize outputs via ResultBuilder
-- Store labels separately for visualization
+- ✅ Manages unsupervised ML lifecycle (clustering & dimensionality reduction)
+- ✅ Accepts pre-prepared feature data (X DataFrame) — no raw dataset handling
+  ✅ Builds pipeline-driven preprocessing via Preprocessor (no external transformation)
+- ✅ Executes models using wrapper abstraction + sklearn pipeline (fit_predict / predict)
+- ✅ Computes unsupervised metrics via Metrics.unsupervised (e.g., silhouette, etc.)
+- ✅ Stores labels separately (labels_store) for visualization and validation
+- ✅ Standardizes outputs via ResultBuilder
+- ✅ Stores experiment results and trained pipelines
+- ✅ Persists models as pipeline.pkl + metadata.json
+- ✅ Validates inference pipeline using cluster-safe comparison (ARI score)
+- ✅ Supports metadata-driven deployment readiness
 
 ---
 
 ## ⚙️ Constructor
 
 ```python
-UnsupervisedModelUtility(df, imputer=None, outlier_handler=None)
+um = UnsupervisedModelUtility(
+    X=X,imputer=imputer,outlier_handler=outlier
+)
+
 ```
 
 ---
 
 ## ✅ Internal State
 
-| Attribute    | Description                    |
-| ------------ | ------------------------------ |
-| df           | Raw dataset                    |
-| X            | Working dataset                |
-| preprocessor | Built preprocessing pipeline   |
-| results      | Stores experiment outputs      |
-| labels_store | Stores model labels separately |
-| registry     | ModelRegistry instance         |
+| Attribute      | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| X              | Input feature dataset (DataFrame)                          |
+| feature_names  | Column names for inference consistency                     |
+| preprocessor   | Built preprocessing pipeline (pipeline-first)              |
+| results        | Stores experiment outputs                                  |
+| labels_store   | Stores model labels separately (keyed by exp_id)           |
+| registry       | ModelRegistry instance                                     |
+| trained_models | Stores wrapper/pipeline + result for reuse and persistence |
 
 ---
 

@@ -3,8 +3,9 @@ import json
 import os
 
 import joblib
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict, train_test_split
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict
 
 from lib.utility.logger import Logger
 from lib.utility.machinelearning.evaluation.ModelComparator import ModelComparator
@@ -17,47 +18,27 @@ from lib.utility.machinelearning.tuning.HyperparameterTuner import Hyperparamete
 
 class LinearModelUtility:
 
-    def __init__(self, df, target_col, imputer=None, outlier_handler=None):
+    def __init__(self, X_train, y_train, X_test=None, y_test=None,
+                 imputer=None, outlier_handler=None):
 
-        self.df = df
-        self.target_col = target_col
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
 
         self.imputer = imputer
         self.outlier_handler = outlier_handler
 
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-
-        self.results = []
-
-        self.registry = ModelRegistry()
         self.preprocessor = None
-        self.task = "regression"
+        self.results = []
         self.trained_models = {}
+        self.registry = ModelRegistry()
 
     # ---------------------------------------------------
     # DATA PREPARATION
     # ---------------------------------------------------
-    def prepare_data(self, test_size=0.2, random_state=42):
 
-        df = self.df.copy()
-
-        if self.imputer:
-            df = self.imputer.fit_transform(df)
-
-        if self.outlier_handler:
-            df = self.outlier_handler.fit_transform(df)
-
-        X = df.drop(self.target_col, axis=1)
-        y = df[self.target_col]
-
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
-        )
-
-        # ✅ FIX: use TRAIN DATA ONLY
+    def prepare_data(self):
         self.preprocessor = Preprocessor(
             self.X_train,
             imputer=self.imputer,
@@ -115,13 +96,7 @@ class LinearModelUtility:
         else:
 
             wrapper.train(self.X_train, self.y_train)
-
             y_pred = wrapper.predict(self.X_test)
-
-            # ✅ inference pipeline for later use (optional)
-            reg_model = InferenceFactory.load("saved_models/regression/best_model")
-            reg_preds = reg_model.predict(self.X_test)
-
             metrics = wrapper.evaluate(self.y_test, y_pred)
 
         # ✅ artifact extraction
@@ -483,12 +458,87 @@ class LinearModelUtility:
         metadata = {
             "model": result.get("model"),
             "task": result.get("task"),
-            "feature_names": list(self.X_train.columns),
             "family": result.get("family"),
-            "experiment": exp_id
+            "experiment": exp_id,
+            "feature_names": list(self.X_train.columns),
+            "inference_version": "v1",
+            "pipeline_type": "sklearn_pipeline",
+            "validated": False,
+            "extra": result.get("extra", {}),
+            "target_mean": float(self.y_train.mean())
         }
 
         with open(f"{path}/metadata.json", "w") as f:
             json.dump(metadata, f, indent=4)
 
         Logger.info(f"✅ Model saved: {exp_id}")
+
+    def validate_inference_pipeline(self, exp_id, model_path, atol=1e-6, rtol=1e-5):
+        """
+        ✅ Validates that saved inference pipeline produces identical predictions
+        as the trained model pipeline.
+
+        Parameters
+        ----------
+        exp_id : str
+            Experiment ID used during training
+        model_path : str
+            Path where model is saved (contains pipeline.pkl)
+        atol : float
+            Absolute tolerance for comparison
+        rtol : float
+            Relative tolerance for comparison
+
+        Returns
+        -------
+        dict
+            Validation status and diagnostics
+        """
+
+        if exp_id not in self.trained_models:
+            raise ValueError(f"{exp_id} not found in trained models")
+
+        model_obj = self.trained_models[exp_id]
+
+        # ✅ ----------------------------------
+        # 1. Get TRAINING predictions
+        # ✅ ----------------------------------
+        if "wrapper" in model_obj:
+            wrapper = model_obj["wrapper"]
+            train_preds = wrapper.predict(self.X_test)
+        elif "pipeline" in model_obj:
+            pipeline = model_obj["pipeline"]
+            train_preds = pipeline.predict(self.X_test)
+        else:
+            raise ValueError("Invalid model object structure")
+
+        # ✅ ----------------------------------
+        # 2. Get INFERENCE predictions
+        # ✅ ----------------------------------
+        inference_model = InferenceFactory.load(model_path)
+        inf_preds = inference_model.predict(self.X_test)
+
+        # ✅ ----------------------------------
+        # 3. Compare predictions
+        # ✅ ----------------------------------
+        is_match = np.allclose(train_preds, inf_preds, atol=atol, rtol=rtol)
+
+        result = {
+            "status": "PASS" if is_match else "FAIL",
+            "exp_id": exp_id,
+            "sample_size": len(train_preds)
+        }
+
+        # ✅ ----------------------------------
+        # 4. Diagnostics if FAIL
+        # ✅ ----------------------------------
+        if not is_match:
+            diff = np.abs(train_preds - inf_preds)
+
+            result.update({
+                "max_diff": float(np.max(diff)),
+                "mean_diff": float(np.mean(diff)),
+                "sample_mismatch_indices": list(np.where(diff > atol)[0][:10])
+            })
+
+        return result

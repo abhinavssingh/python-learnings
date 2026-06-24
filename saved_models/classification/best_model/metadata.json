@@ -1,6 +1,8 @@
 {
     "model": "Ensemble_Stacking_LogisticRegression",
     "task": "classification",
+    "family": "ensemble",
+    "experiment": "Ensemble_Stacking_LogisticRegression | classification",
     "feature_names": [
         "age",
         "workclass",
@@ -16,8 +18,10 @@
         "hours.per.week",
         "native.country"
     ],
+    "inference_version": "v1",
+    "pipeline_type": "sklearn_pipeline",
+    "validated": false,
+    "extra": {},
     "problem_type": "binary",
-    "threshold": 0.2736559824793783,
-    "family": "ensemble",
-    "experiment": "Ensemble_Stacking_LogisticRegression | classification"
+    "threshold": 0.38636421484062605
 }
