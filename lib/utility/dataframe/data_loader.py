@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 from pathlib import Path
 from typing import Any, Literal, Union, overload
 
@@ -19,10 +20,26 @@ class DataLoader:
     - Optionally optimize DataFrame dtypes
     """
 
+    @staticmethod
+    def _log_exceptions(method_name: str):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    Logger.error(f"DataLoader.{method_name} failed: {e}")
+                    raise
+
+            return wrapper
+
+        return decorator
+
     # ===============================
     # Project root resolution
     # ===============================
     @staticmethod
+    @_log_exceptions.__func__("_get_project_root")
     def _get_project_root() -> Path:
         """Find project root by locating settings.json."""
         current = Path(__file__).resolve()
@@ -37,6 +54,7 @@ class DataLoader:
     # Dataset path resolution
     # ===============================
     @classmethod
+    @_log_exceptions.__func__("get_dataset_path")
     def get_dataset_path(cls, filename: str) -> Path:
         """
         Return the absolute Path of a dataset file stored in /datasets.
@@ -50,6 +68,7 @@ class DataLoader:
         return dataset_path
 
     @staticmethod
+    @_log_exceptions.__func__("_handle_unnamed_columns")
     def _handle_unnamed_columns(
         df: pd.DataFrame,
         *,
@@ -140,6 +159,7 @@ class DataLoader:
 
     @overload
     @classmethod
+    @_log_exceptions.__func__("read_dataset")
     def read_dataset(
         cls,
         filename: str,

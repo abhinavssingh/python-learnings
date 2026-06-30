@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import webbrowser
+from functools import wraps
 from pathlib import Path
 from typing import Optional, Union
 
+from lib.utility.logger import Logger
 
 StrPath = Union[str, os.PathLike]
 
@@ -20,10 +22,26 @@ class ReportUtils:
     - Saving and opening HTML reports
     """
 
+    @staticmethod
+    def _log_exceptions(method_name: str):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    Logger.error(f"ReportUtils.{method_name} failed: {e}")
+                    raise
+
+            return wrapper
+
+        return decorator
+
     # -------------------------------------------------
     # Script / path helpers
     # -------------------------------------------------
     @staticmethod
+    @_log_exceptions.__func__("script_dir")
     def script_dir(file_dunder: str) -> Path:
         """
         Return the absolute directory containing the given script.
@@ -34,6 +52,7 @@ class ReportUtils:
         return Path(file_dunder).resolve().parent
 
     @staticmethod
+    @_log_exceptions.__func__("ensure_dir")
     def ensure_dir(path: StrPath) -> Path:
         """
         Create the directory if it does not exist and return it as Path.
@@ -46,6 +65,7 @@ class ReportUtils:
     # Output path construction
     # -------------------------------------------------
     @staticmethod
+    @_log_exceptions.__func__("build_output_path")
     def build_output_path(
         script_file: str,
         filename: str,
@@ -67,6 +87,7 @@ class ReportUtils:
     # Report utilities
     # -------------------------------------------------
     @staticmethod
+    @_log_exceptions.__func__("save_html_report")
     def save_html_report(
         script_file: str,
         filename: str,

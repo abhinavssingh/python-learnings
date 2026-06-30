@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from functools import wraps
 from typing import Any, Callable, Iterable, Literal, Optional, Set, Union
 
 import numpy as np
@@ -19,10 +20,26 @@ class DataFrameHelper:
     dtype optimization, and inspection.
     """
 
+    @staticmethod
+    def _log_exceptions(method_name: str):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    Logger.error(f"DataFrameHelper.{method_name} failed: {e}")
+                    raise
+
+            return wrapper
+
+        return decorator
+
     # ===============================
     # Column insertion utilities
     # ===============================
     @staticmethod
+    @_log_exceptions.__func__("insert_column_after")
     def insert_column_after(
         df: pd.DataFrame,
         after_col: str,
@@ -88,6 +105,7 @@ class DataFrameHelper:
     }
 
     @staticmethod
+    @_log_exceptions.__func__("add_fiscal_calendar")
     def add_fiscal_calendar(
         df: pd.DataFrame,
         date_col: str,
@@ -242,6 +260,7 @@ class DataFrameHelper:
     # ===============================
 
     @staticmethod
+    @_log_exceptions.__func__("optimize_numeric_dtypes")
     def optimize_numeric_dtypes(
         df: pd.DataFrame,
     ) -> tuple[pd.DataFrame, dict[str, tuple[str, str]]]:
@@ -317,6 +336,7 @@ class DataFrameHelper:
     # DataFrame inspection
     # ===============================
     @staticmethod
+    @_log_exceptions.__func__("get_dataframe_info_str")
     def get_dataframe_info_str(df: pd.DataFrame) -> str:
         """
         Return the output of DataFrame.info() as a string.
@@ -331,6 +351,7 @@ class DataFrameHelper:
     # using itertuples by default for better performance, with an option for iterrows.
     # ===============================================================================
     @staticmethod
+    @_log_exceptions.__func__("dataframe_rows_as_pre")
     def dataframe_rows_as_pre(
         df: pd.DataFrame,
         method: Literal["itertuples", "iterrows"] = "itertuples",
@@ -385,6 +406,7 @@ class DataFrameHelper:
     # Null check + optimization
     # ===============================
     @staticmethod
+    @_log_exceptions.__func__("null_check_and_optimize")
     def null_check_and_optimize(
         df: pd.DataFrame,
         *,
@@ -494,6 +516,7 @@ class DataFrameHelper:
         return optimized_df, pre_text
 
     @staticmethod
+    @_log_exceptions.__func__("find_iqr_outliers")
     def find_iqr_outliers(
         df: pd.DataFrame,
         columns: Iterable[str],
@@ -600,6 +623,7 @@ class DataFrameHelper:
         return df_outliers.loc[~mask].copy()
 
     @staticmethod
+    @_log_exceptions.__func__("country_to_iso3")
     def country_to_iso3(country_name):
         try:
             return pycountry.countries.lookup(country_name).alpha_3
@@ -607,6 +631,7 @@ class DataFrameHelper:
             return None
 
     @staticmethod
+    @_log_exceptions.__func__("check_nan_inf")
     def check_nan_inf(df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns a DataFrame with NaN_count, Inf_count, and Total_issues per column.
