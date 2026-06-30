@@ -1,8 +1,9 @@
-from lib.utility.machinelearning._logging import ExceptionLoggingMixin
 from sklearn import set_config
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
 
 # ✅ Ensure DataFrame output globally
 set_config(transform_output="pandas")
@@ -22,7 +23,8 @@ class Preprocessor(ExceptionLoggingMixin):
 
     def build(self):
 
-        num_cols = self.X.select_dtypes(include=["int64", "float64"]).columns
+        # Include all numeric types after dataset optimization (e.g., uint8, float16).
+        num_cols = self.X.select_dtypes(include=["number", "bool"]).columns
         cat_cols = self.X.select_dtypes(include=["object", "category", "string"]).columns
 
         numeric_pipeline = Pipeline([

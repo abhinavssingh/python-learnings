@@ -112,8 +112,90 @@ def section_data_quality(df):
 
 
 # ============================================================================
-# SECTION 2: UNSUPERVISED CLUSTERING (Left Employees Only)
+# SECTION 2: EDA Analysis & Visualizations
 # ============================================================================
+
+def section_eda_visualizations(df):
+    """
+    Generate exploratory data analysis visualizations.
+
+    Returns dict with histogram, correlation, and pair plot figures
+    """
+    hist_fig_1 = px.histogram(
+        df, x="salary", opacity=0.7, barmode="overlay",
+        title="Salary Distribution"
+    )
+
+    hist_fig_2 = px.histogram(
+        df, x="satisfaction_level", marginal="box", opacity=0.7, barmode="overlay",
+        title="Satisfaction Level Distribution"
+    )
+
+    hist_fig_3 = px.histogram(
+        df, x="last_evaluation", marginal="box", opacity=0.7, barmode="overlay",
+        title="Last Evaluation Distribution"
+    )
+
+    hist_fig_4 = px.histogram(
+        df, x="average_montly_hours", marginal="box", opacity=0.7, barmode="overlay",
+        title="Average Monthly Hours Distribution"
+    )
+
+    hist_fig_5 = px.histogram(
+        df, x="number_project", color="left", barmode="group",
+        title="Employee Project Count by Attrition"
+    )
+
+    # Correlation matrix
+    num_columns = df.select_dtypes(include=['number']).columns
+    corr_fig = px.imshow(
+        df[num_columns].corr(),
+        text_auto=True,
+        color_continuous_scale='RdBu',
+        title='Correlation Matrix'
+    )
+
+    label_map = {
+        "number_project": "No of Projects",
+        "average_montly_hours": "Avg Mnthly Hours",
+        "last_evaluation": "Last Evaluation",
+        "satisfaction_level": "Satisfaction Level",
+        "time_spend_company": "No of Years",
+        "Work_accident": "Work Accident",
+        "promotion_last_5years": "Promo LstY5rs",
+        "left": "Left Company",
+        "salary": "Salary"
+    }
+
+    corr_fig.update_xaxes(
+        ticktext=[label_map.get(col, col) for col in num_columns],
+        tickvals=list(range(len(num_columns)))
+    )
+    corr_fig.update_yaxes(
+        ticktext=[label_map.get(col, col) for col in num_columns],
+        tickvals=list(range(len(num_columns)))
+    )
+
+    # Pair plot
+    pair_plot_fig = px.scatter_matrix(
+        df[["number_project", "average_montly_hours", "last_evaluation"]],
+        title='Pair Plot of Numerical Features'
+    )
+
+    return {
+        "hist_salary": hist_fig_1,
+        "hist_satisfaction": hist_fig_2,
+        "hist_evaluation": hist_fig_3,
+        "hist_hours": hist_fig_4,
+        "hist_projects": hist_fig_5,
+        "corr_matrix": corr_fig,
+        "pair_plot": pair_plot_fig,
+    }
+
+# ============================================================================
+# SECTION 3: UNSUPERVISED CLUSTERING (Left Employees Only)
+# ============================================================================
+
 
 def section_unsupervised_clustering(df):
     """
@@ -188,7 +270,7 @@ def section_unsupervised_clustering(df):
 
 
 # ============================================================================
-# SECTION 3: CLASSIFICATION PIPELINE (Turnover Prediction)
+# SECTION 4: CLASSIFICATION PIPELINE (Turnover Prediction)
 # ============================================================================
 
 def section_classification_pipeline(df):
@@ -270,7 +352,7 @@ def section_classification_pipeline(df):
 
 
 # ============================================================================
-# SECTION 4: RETENTION RISK SCORING & HR RECOMMENDATIONS
+# SECTION 5: RETENTION RISK SCORING & HR RECOMMENDATIONS
 # ============================================================================
 
 def section_risk_scoring(cls_util, best_model, X_test, y_test):
@@ -329,88 +411,6 @@ def section_risk_scoring(cls_util, best_model, X_test, y_test):
 
 
 # ============================================================================
-# SECTION 5: EDA VISUALIZATIONS
-# ============================================================================
-
-def section_eda_visualizations(df):
-    """
-    Generate exploratory data analysis visualizations.
-
-    Returns dict with histogram, correlation, and pair plot figures
-    """
-    hist_fig_1 = px.histogram(
-        df, x="salary", opacity=0.7, barmode="overlay",
-        title="Salary Distribution"
-    )
-
-    hist_fig_2 = px.histogram(
-        df, x="satisfaction_level", marginal="box", opacity=0.7, barmode="overlay",
-        title="Satisfaction Level Distribution"
-    )
-
-    hist_fig_3 = px.histogram(
-        df, x="last_evaluation", marginal="box", opacity=0.7, barmode="overlay",
-        title="Last Evaluation Distribution"
-    )
-
-    hist_fig_4 = px.histogram(
-        df, x="average_montly_hours", marginal="box", opacity=0.7, barmode="overlay",
-        title="Average Monthly Hours Distribution"
-    )
-
-    hist_fig_5 = px.histogram(
-        df, x="number_project", color="left", barmode="group",
-        title="Employee Project Count by Attrition"
-    )
-
-    # Correlation matrix
-    num_columns = df.select_dtypes(include=['number']).columns
-    corr_fig = px.imshow(
-        df[num_columns].corr(),
-        text_auto=True,
-        color_continuous_scale='RdBu',
-        title='Correlation Matrix'
-    )
-
-    label_map = {
-        "number_project": "No of Projects",
-        "average_montly_hours": "Avg Mnthly Hours",
-        "last_evaluation": "Last Evaluation",
-        "satisfaction_level": "Satisfaction Level",
-        "time_spend_company": "No of Years",
-        "Work_accident": "Work Accident",
-        "promotion_last_5years": "Promo LstY5rs",
-        "left": "Left Company",
-        "salary": "Salary"
-    }
-
-    corr_fig.update_xaxes(
-        ticktext=[label_map.get(col, col) for col in num_columns],
-        tickvals=list(range(len(num_columns)))
-    )
-    corr_fig.update_yaxes(
-        ticktext=[label_map.get(col, col) for col in num_columns],
-        tickvals=list(range(len(num_columns)))
-    )
-
-    # Pair plot
-    pair_plot_fig = px.scatter_matrix(
-        df[["number_project", "average_montly_hours", "last_evaluation"]],
-        title='Pair Plot of Numerical Features'
-    )
-
-    return {
-        "hist_salary": hist_fig_1,
-        "hist_satisfaction": hist_fig_2,
-        "hist_evaluation": hist_fig_3,
-        "hist_hours": hist_fig_4,
-        "hist_projects": hist_fig_5,
-        "corr_matrix": corr_fig,
-        "pair_plot": pair_plot_fig,
-    }
-
-
-# ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
@@ -446,69 +446,23 @@ def main():
     # ================================================================
     # SECTION 1: DATA QUALITY
     # ================================================================
-    print("[1/5] Data Quality Assessment...")
     quality_data = section_data_quality(df)
-
-    content.append(
-        builder.full_width_card(
-            "Original HR Employee Data",
-            builder.render_dataframe_collapsible(df, initial_rows=15)
-        )
-    )
-
-    content.append(builder.grid([
-        builder.card("Dataframe Info", builder.render_pre(quality_data["df_info"])),
-        builder.card("Dataframe Description", builder.render_dict(df.describe().to_dict())),
-        builder.card("Dataframe Optimization Report", builder.render_pre(report)),
-        builder.card("Data Quality Summary", builder.render_dict(quality_data["quality_summary"])),
-        builder.card("Missing Value Report", builder.render_dataframe(quality_data["missing_report"])),
-    ]))
 
     # ================================================================
     # SECTION 2: UNSUPERVISED CLUSTERING
     # ================================================================
-    print("[2/5] Unsupervised Clustering (Left Employees)...")
     cluster_data = section_unsupervised_clustering(df)
     um = cluster_data["um"]
 
     # Get framework results (standardized schema)
     unsupervised_results_df = um.get_results_df()
-    unsupervised_plot_data = um.get_plot_data()
 
     # Visualization via VisualizerEngine (framework)
-    viz = VisualizerEngine(um.results, unsupervised_plot_data)
     # dashboard = viz.render_all()
-
-    content.append(builder.grid([
-        builder.card(
-            "Selected Columns for Clustering",
-            builder.render_dataframe_collapsible(cluster_data["employee_subset"], initial_rows=15)
-        ),
-        builder.card(
-            "KMeans Cluster Assignments (Left Employees)",
-            builder.render_dataframe_collapsible(cluster_data["left_cluster_df"], initial_rows=20)
-        ),
-        builder.card(
-            "Cluster Summary & Behavioral Patterns",
-            builder.render_dataframe(cluster_data["cluster_summary"])
-        ),
-        builder.card("Unsupervised Results (Framework StandardizedSchema)",
-                     builder.render_dataframe(unsupervised_results_df)),
-    ]))
-
-    # Framework visualizations
-    content.append(builder.chart_grid([
-        # plot_renderer.plot_to_card(dashboard.get("comparison"), "Unsupervised Model Comparison"),
-        # plot_renderer.plot_to_card(dashboard.get("ranking"), "Unsupervised Model Ranking"),
-        # plot_renderer.plot_to_card(dashboard.get("best_model"), "Best Unsupervised Model"),
-        # plot_renderer.plot_to_card(dashboard.get("distribution"), "Metric Distribution"),
-        plot_renderer.plot_to_card(cluster_data["cluster_scatter_fig"], "KMeans Cluster Visualization"),
-    ]))
 
     # ================================================================
     # SECTION 3: CLASSIFICATION PIPELINE
     # ================================================================
-    print("[3/5] Classification Pipeline (Turnover Prediction)...")
     class_data = section_classification_pipeline(df)
     cls_util = class_data["cls_util"]
 
@@ -516,7 +470,50 @@ def main():
     class_results_df = class_data["results_df"]
     best_model = class_data["best_model"]
 
+    # Framework classification visualizations
+    viz_classification = VisualizerEngine(cls_util.results, cls_util.get_artifacts_df(),)
+    dashboard_classification = viz_classification.render_all()
+
+    # ================================================================
+    # SECTION 4: RETENTION RISK SCORING (Domain Logic)
+    # ================================================================
+    risk_data = section_risk_scoring(cls_util, best_model, class_data["X_test"], class_data["y_test"])
+
+    metric_rationale = """Recall is prioritized for turnover prediction because false
+    negatives employees likely to leave but predicted as stay) are more costly for
+    retention planning.
+        """
+
+    # ================================================================
+    # Content Builder
+    # ================================================================
+
+    content.append(
+        builder.full_width_card(
+            "Original HR Employee Data",
+            builder.render_dataframe_collapsible(df, initial_rows=15)
+        ))
+
+    content.append(
+        builder.full_width_card(
+            "Selected Columns for Clustering",
+            builder.render_dataframe_collapsible(cluster_data["employee_subset"], initial_rows=15)
+        ))
+
+    content.append(
+        builder.full_width_card(
+            "KMeans Cluster Assignments (Left Employees)",
+            builder.render_dataframe_collapsible(cluster_data["left_cluster_df"], initial_rows=15)
+        ))
+
     content.append(builder.grid([
+        builder.card("Dataframe Info", builder.render_pre(quality_data["df_info"])),
+        builder.card("Dataframe Description", builder.render_dict(df.describe().to_dict())),
+        builder.card("Dataframe Optimization Report", builder.render_pre(report)),
+        builder.card("Data Quality Summary", builder.render_dict(quality_data["quality_summary"])),
+        builder.card("Missing Value Report", builder.render_dataframe(quality_data["missing_report"])),
+        builder.card("Cluster Summary & Behavioral Patterns", builder.render_dataframe(cluster_data["cluster_summary"])),
+        builder.card("Unsupervised Results (Framework StandardizedSchema)", builder.render_dataframe(unsupervised_results_df)),
         builder.card("Preprocessing Summary", builder.render_dict({
             "numeric_columns": class_data["numeric_cols"],
             "categorical_columns": class_data["categorical_cols"],
@@ -524,62 +521,19 @@ def main():
             "train_shape": list(class_data["X_train"].shape),
             "test_shape": list(class_data["X_test"].shape),
         })),
-        builder.card(
-            "Classification Results (Framework Standardized Schema)",
-            builder.render_dataframe(class_results_df.drop(columns=["artifacts"], errors="ignore"))
-        ),
+        builder.card("Classification Results (Framework Standardized Schema)",
+                     builder.render_dataframe(class_results_df.drop(columns=["artifacts"], errors="ignore"))
+                     ),
         builder.card("Best Model Summary", builder.render_dict(best_model or {})),
-    ]))
-
-    # Framework classification visualizations
-    viz_classification = VisualizerEngine(cls_util.results, cls_util.artifacts)
-    dashboard_classification = viz_classification.render_all()
-
-    content.append(builder.chart_grid([
-        plot_renderer.plot_to_card(dashboard_classification.get("comparison"),
-                                   "Classification Model Comparison"),
-        plot_renderer.plot_to_card(dashboard_classification.get("ranking"),
-                                   "Model Ranking (Recall-Weighted)"),
-        plot_renderer.plot_to_card(dashboard_classification.get("best_model"),
-                                   "Best Model Performance"),
-        plot_renderer.plot_to_card(dashboard_classification.get("distribution"),
-                                   "Metric Distribution"),
-        *[
-            plot_renderer.plot_to_card(fig, f"Classification {title.title()}")
-            for title, fig in dashboard_classification.get("task_specific", {}).items()
-        ],
-    ]))
-
-    # ================================================================
-    # SECTION 4: RETENTION RISK SCORING (Domain Logic)
-    # ================================================================
-    print("[4/5] Retention Risk Scoring & Recommendations...")
-    risk_data = section_risk_scoring(
-        cls_util,
-        best_model,
-        class_data["X_test"],
-        class_data["y_test"]
-    )
-
-    metric_rationale = (
-        "Recall is prioritized for turnover prediction because false negatives "
-        "(employees likely to leave but predicted as stay) are more costly for retention planning."
-    )
-
-    content.append(builder.grid([
         builder.card("Metric Selection Rationale", builder.render_pre(metric_rationale)),
-        builder.card("Risk Segment Summary (HR Action Planning)",
-                     builder.render_dataframe(risk_data["risk_segment_summary"])),
-        builder.card(
-            "Turnover Probability Scoring (Sample Predictions)",
-            builder.render_dataframe_collapsible(risk_data["risk_scoring_df"].head(50), initial_rows=15)
-        ),
+        builder.card("Risk Segment Summary (HR Action Planning)", builder.render_dataframe(risk_data["risk_segment_summary"])),
+        builder.card("Turnover Probability Scoring (Sample Predictions)",
+                     builder.render_dataframe_collapsible(risk_data["risk_scoring_df"].head(50), initial_rows=15)),
     ]))
 
     # ================================================================
-    # SECTION 5: EDA VISUALIZATIONS
+    # SECTION 6: Data VISUALIZATIONS
     # ================================================================
-    print("[5/5] EDA Visualizations...")
     eda_figs = section_eda_visualizations(df)
 
     content.append(builder.chart_grid([
@@ -590,6 +544,19 @@ def main():
         plot_renderer.plot_to_card(eda_figs["hist_projects"], "Project Count by Attrition"),
         plot_renderer.plot_to_card(eda_figs["corr_matrix"], "Correlation Matrix"),
         plot_renderer.plot_to_card(eda_figs["pair_plot"], "Pair Plot of Features"),
+        plot_renderer.plot_to_card(cluster_data["cluster_scatter_fig"], "KMeans Cluster Visualization"),
+        # plot_renderer.plot_to_card(dashboard.get("comparison"), "Unsupervised Model Comparison"),
+        # plot_renderer.plot_to_card(dashboard.get("ranking"), "Unsupervised Model Ranking"),
+        # plot_renderer.plot_to_card(dashboard.get("best_model"), "Best Unsupervised Model"),
+        # plot_renderer.plot_to_card(dashboard.get("distribution"), "Metric Distribution"),
+        plot_renderer.plot_to_card(dashboard_classification.get("comparison"), "Classification Model Comparison"),
+        plot_renderer.plot_to_card(dashboard_classification.get("ranking"), "Model Ranking (Recall-Weighted)"),
+        plot_renderer.plot_to_card(dashboard_classification.get("best_model"), "Best Model Performance"),
+        plot_renderer.plot_to_card(dashboard_classification.get("distribution"), "Metric Distribution"),
+        *[
+            plot_renderer.plot_to_card(fig, f"Classification {title.title()}")
+            for title, fig in dashboard_classification.get("task_specific", {}).items()
+        ],
     ]))
 
     # ================================================================
