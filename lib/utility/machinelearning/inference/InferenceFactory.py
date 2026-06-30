@@ -8,7 +8,10 @@ from .RegressionInference import RegressionInference
 from .UnsupervisedInference import UnsupervisedInference
 
 
-class InferenceFactory:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class InferenceFactory(ExceptionLoggingMixin):
 
     @staticmethod
     def load(model_path):
@@ -36,3 +39,4 @@ class InferenceFactory:
 
         else:
             raise ValueError(f"Unsupported task: {task}")
+

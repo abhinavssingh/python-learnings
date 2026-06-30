@@ -4,7 +4,10 @@ from .RegressionModelComparator import RegressionModelComparator
 from .UnsupervisedModelComparator import UnsupervisedModelComparator
 
 
-class ModelComparator:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class ModelComparator(ExceptionLoggingMixin):
 
     @staticmethod
     def get_comparator(results):
@@ -25,3 +28,4 @@ class ModelComparator:
 
         else:
             return BaseComparator(results)
+

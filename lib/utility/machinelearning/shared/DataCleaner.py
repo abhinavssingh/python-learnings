@@ -1,7 +1,10 @@
 import pandas as pd
 
 
-class DataCleaner:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class DataCleaner(ExceptionLoggingMixin):
     """
     Handles data cleaning for visualization.
     Ensures no NaN crashes and consistent data.
@@ -97,3 +100,4 @@ class DataCleaner:
         df["mode"] = mode
 
         return df.to_dict(orient="records")
+

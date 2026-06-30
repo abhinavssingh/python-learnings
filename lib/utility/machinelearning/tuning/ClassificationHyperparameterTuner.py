@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
+from lib.utility.logger import Logger
 from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 from lib.utility.machinelearning.shared.Formatter import Formatter
 
@@ -30,31 +31,34 @@ class ClassificationHyperparameterTuner:
         **kwargs
     ) -> List[Dict]:
 
-        print(f"🔧 Tuning {model_name} using {search_type}")
+        try:
+            print(f"🔧 Tuning {model_name} using {search_type}")
 
-        if param_config is None:
-            if not kwargs:
-                raise ValueError("Provide param_config or tuning kwargs")
+            if param_config is None:
+                if not kwargs:
+                    raise ValueError("Provide param_config or tuning kwargs")
 
-            param_config = {
-                f"model__{k}": v if isinstance(v, list) else [v]
-                for k, v in kwargs.items()
-            }
+                param_config = {
+                    f"model__{k}": v if isinstance(v, list) else [v]
+                    for k, v in kwargs.items()
+                }
 
-        pipeline = wrapper.get_pipeline()
+            pipeline = wrapper.get_pipeline()
 
-        if search_type == "grid":
-            return self._grid_search(wrapper, pipeline, model_name, param_config, **kwargs)
+            if search_type == "grid":
+                return self._grid_search(wrapper, pipeline, model_name, param_config, **kwargs)
 
-        elif search_type == "random":
-            return self._random_search(wrapper, pipeline, model_name, param_config, **kwargs)
+            if search_type == "random":
+                return self._random_search(wrapper, pipeline, model_name, param_config, **kwargs)
 
-        elif search_type == "none":
-            pipeline.fit(self.X_train, self.y_train)
-            return [self._evaluate(wrapper, pipeline, model_name)]
+            if search_type == "none":
+                pipeline.fit(self.X_train, self.y_train)
+                return [self._evaluate(wrapper, pipeline, model_name)]
 
-        else:
             raise ValueError(f"Unsupported search_type: {search_type}")
+        except Exception as e:
+            Logger.error(f"ClassificationHyperparameterTuner.tune failed for {model_name}: {e}")
+            raise
 
     # ---------------------------------------------------
     # GRID SEARCH
@@ -114,47 +118,50 @@ class ClassificationHyperparameterTuner:
     # PROCESS RESULTS
     # ---------------------------------------------------
     def _process_results(self, wrapper, search_obj, model_name, mode, search_type):
+        try:
+            cleaner = DataCleaner(pd.DataFrame())
 
-        cleaner = DataCleaner(pd.DataFrame())
+            rows = cleaner.flatten_cv_results(
+                search_obj.cv_results_,
+                model_name=model_name,
+                mode=mode
+            )
 
-        rows = cleaner.flatten_cv_results(
-            search_obj.cv_results_,
-            model_name=model_name,
-            mode=mode
-        )
+            exp_name = Formatter.build(
+                model_name=model_name,
+                mode=mode,
+                search_type=search_type
+            )
 
-        exp_name = Formatter.build(
-            model_name=model_name,
-            mode=mode,
-            search_type=search_type
-        )
+            # ✅ enrich rows
+            for i, row in enumerate(rows):
+                row.update({
+                    "experiment": exp_name,
+                    "type": "tuned",
+                    "search_type": search_type,
+                    "iteration": i,
+                    "task": getattr(wrapper, "task", "classification"),
+                    "family": getattr(wrapper, "family", "unknown")
+                })
 
-        # ✅ enrich rows
-        for i, row in enumerate(rows):
-            row.update({
-                "experiment": exp_name,
-                "type": "tuned",
-                "search_type": search_type,
-                "iteration": i,
-                "task": getattr(wrapper, "task", "classification"),
-                "family": getattr(wrapper, "family", "unknown")
-            })
+            # ✅ add best result
+            best_result = self._build_best_result(
+                wrapper, search_obj, model_name, mode, search_type
+            )
 
-        # ✅ add best result
-        best_result = self._build_best_result(
-            wrapper, search_obj, model_name, mode, search_type
-        )
+            rows.append(best_result)
 
-        rows.append(best_result)
+            # ✅ sort
+            rows = sorted(
+                rows,
+                key=lambda x: x.get("score", 0),
+                reverse=True
+            )
 
-        # ✅ sort
-        rows = sorted(
-            rows,
-            key=lambda x: x.get("score", 0),
-            reverse=True
-        )
-
-        return rows
+            return rows
+        except Exception as e:
+            Logger.error(f"ClassificationHyperparameterTuner._process_results failed for {model_name}: {e}")
+            raise
 
     # ---------------------------------------------------
     # BEST RESULT
@@ -212,28 +219,31 @@ class ClassificationHyperparameterTuner:
     # NO-TUNING
     # ---------------------------------------------------
     def _evaluate(self, wrapper, pipeline, model_name):
-
-        y_pred = pipeline.predict(self.X_test)
-
         try:
-            y_proba = pipeline.predict_proba(self.X_test)
-        except Exception:
-            y_proba = None
+            y_pred = pipeline.predict(self.X_test)
 
-        metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+            try:
+                y_proba = pipeline.predict_proba(self.X_test)
+            except Exception:
+                y_proba = None
 
-        artifacts, metrics = self._extract_artifacts(metrics)
+            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
 
-        return {
-            "model": model_name,
-            "experiment": f"{model_name} | no-tuning",
-            "mode": "train",
-            "type": "baseline",
-            "task": getattr(wrapper, "task"),
-            "family": getattr(wrapper, "family"),
-            **metrics,
-            "artifacts": artifacts
-        }
+            artifacts, metrics = self._extract_artifacts(metrics)
+
+            return {
+                "model": model_name,
+                "experiment": f"{model_name} | no-tuning",
+                "mode": "train",
+                "type": "baseline",
+                "task": getattr(wrapper, "task"),
+                "family": getattr(wrapper, "family"),
+                **metrics,
+                "artifacts": artifacts
+            }
+        except Exception as e:
+            Logger.error(f"ClassificationHyperparameterTuner._evaluate failed for {model_name}: {e}")
+            raise
 
     # ---------------------------------------------------
     # ARTIFACT SPLITTER

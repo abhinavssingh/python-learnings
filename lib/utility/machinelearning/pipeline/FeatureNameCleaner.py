@@ -4,7 +4,10 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class FeatureNameCleaner(BaseEstimator, TransformerMixin):
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class FeatureNameCleaner(ExceptionLoggingMixin, BaseEstimator, TransformerMixin):
     """
     Cleans feature names to make them XGBoost compatible
     """
@@ -18,3 +21,4 @@ class FeatureNameCleaner(BaseEstimator, TransformerMixin):
                 re.sub(r"[\\[\\]<>]", "", col) for col in X.columns
             ]
         return X
+

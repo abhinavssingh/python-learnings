@@ -1,3 +1,4 @@
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
 from sklearn import set_config
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -7,7 +8,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 set_config(transform_output="pandas")
 
 
-class Preprocessor:
+class Preprocessor(ExceptionLoggingMixin):
     """
     Builds reusable preprocessing pipeline.
     Supports optional imputer + outlier handler.

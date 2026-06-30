@@ -3,7 +3,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 
-class CustomImputer(BaseEstimator, TransformerMixin):
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class CustomImputer(ExceptionLoggingMixin, BaseEstimator, TransformerMixin):
 
     def __init__(self, num_strategy="mean", cat_strategy="mode", groupby_cols=None):
         self.num_strategy = num_strategy
@@ -82,3 +85,4 @@ class CustomImputer(BaseEstimator, TransformerMixin):
             X[col] = X[col].fillna(self.global_cat_values_.get(col, None))
 
         return X
+

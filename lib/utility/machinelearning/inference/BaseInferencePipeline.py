@@ -1,7 +1,10 @@
 import pandas as pd
 
 
-class BaseInferencePipeline:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class BaseInferencePipeline(ExceptionLoggingMixin):
 
     def __init__(self, pipeline, metadata):
         self.pipeline = pipeline
@@ -17,3 +20,4 @@ class BaseInferencePipeline:
             X = X[self.features]
 
         return X
+

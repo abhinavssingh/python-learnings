@@ -3,7 +3,10 @@ import plotly.express as px
 from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
 
-class OptimizationPlots:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class OptimizationPlots(ExceptionLoggingMixin):
     """
     Handles optimization / tuning visualizations.
     Now fully compatible with experiment-based architecture.
@@ -129,3 +132,4 @@ class OptimizationPlots:
         )
 
         return fig
+

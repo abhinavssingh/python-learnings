@@ -1,4 +1,7 @@
-class ResultBuilder:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class ResultBuilder(ExceptionLoggingMixin):
 
     @staticmethod
     def build(

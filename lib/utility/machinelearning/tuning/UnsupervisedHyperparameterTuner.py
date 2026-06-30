@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.model_selection import ParameterGrid, ParameterSampler
 
+from lib.utility.logger import Logger
 from lib.utility.machinelearning.shared.ResultBuilder import ResultBuilder
 
 
@@ -34,105 +35,109 @@ class UnsupervisedHyperparameterTuner:
         - pipeline: fitted pipeline (or None)
         """
 
-        if param_config is None:
-            if not kwargs:
-                raise ValueError("Provide param_config or tuning kwargs")
+        try:
+            if param_config is None:
+                if not kwargs:
+                    raise ValueError("Provide param_config or tuning kwargs")
 
-            param_config = {
-                f"model__{k}": v if isinstance(v, list) else [v]
-                for k, v in kwargs.items()
-                if k not in {"n_iter", "random_state"}
-            }
-
-        if search_type == "grid":
-            param_sets = list(ParameterGrid(param_config))
-        elif search_type == "random":
-            param_sets = list(
-                ParameterSampler(
-                    param_distributions=param_config,
-                    n_iter=kwargs.get("n_iter", 20),
-                    random_state=kwargs.get("random_state", 42),
-                )
-            )
-        else:
-            raise ValueError(f"Unsupported search_type: {search_type}")
-
-        payloads: List[Dict[str, Any]] = []
-
-        for i, params in enumerate(param_sets):
-            exp_id = f"{model_name} | {search_type} | run_{i}"
-
-            try:
-                reducer = self._build_reducer()
-
-                wrapper.build_pipeline(
-                    preprocessor,
-                    extra_steps=[("reducer", reducer)]
-                )
-
-                pipeline = wrapper.get_pipeline()
-                pipeline.set_params(**params)
-
-                if hasattr(pipeline, "fit_predict"):
-                    labels = pipeline.fit_predict(self.X)
-                else:
-                    pipeline.fit(self.X)
-                    labels = pipeline.predict(self.X)
-
-                metrics = self._normalize_metrics(wrapper.evaluate(self.X, labels))
-
-                extra = {
-                    "search_type": search_type,
-                    "n_clusters": len(set(labels)) - (1 if -1 in labels else 0),
-                    "noise_points": int(np.sum(labels == -1)) if -1 in labels else 0,
+                param_config = {
+                    f"model__{k}": v if isinstance(v, list) else [v]
+                    for k, v in kwargs.items()
+                    if k not in {"n_iter", "random_state"}
                 }
 
-                for key, value in params.items():
-                    extra[f"param_{key}"] = value
-
-                result = ResultBuilder.build(
-                    model=model_name,
-                    family=getattr(wrapper, "family", "unknown"),
-                    experiment=exp_id,
-                    task="unsupervised",
-                    mode="fit_predict",
-                    result_type="tuned",
-                    extra=extra,
-                    **metrics,
+            if search_type == "grid":
+                param_sets = list(ParameterGrid(param_config))
+            elif search_type == "random":
+                param_sets = list(
+                    ParameterSampler(
+                        param_distributions=param_config,
+                        n_iter=kwargs.get("n_iter", 20),
+                        random_state=kwargs.get("random_state", 42),
+                    )
                 )
+            else:
+                raise ValueError(f"Unsupported search_type: {search_type}")
 
-                payload = {
-                    "result": result,
-                    "labels": labels,
-                    "reducer": reducer,
-                    "pipeline": pipeline,
-                }
+            payloads: List[Dict[str, Any]] = []
 
-            except Exception as e:
-                result = ResultBuilder.build(
-                    model=model_name,
-                    family=getattr(wrapper, "family", "unknown"),
-                    experiment=exp_id,
-                    task="unsupervised",
-                    mode="fit_predict",
-                    result_type="failed",
-                    extra={
+            for i, params in enumerate(param_sets):
+                exp_id = f"{model_name} | {search_type} | run_{i}"
+
+                try:
+                    reducer = self._build_reducer()
+
+                    wrapper.build_pipeline(
+                        preprocessor,
+                        extra_steps=[("reducer", reducer)]
+                    )
+
+                    pipeline = wrapper.get_pipeline()
+                    pipeline.set_params(**params)
+
+                    if hasattr(pipeline, "fit_predict"):
+                        labels = pipeline.fit_predict(self.X)
+                    else:
+                        pipeline.fit(self.X)
+                        labels = pipeline.predict(self.X)
+
+                    metrics = self._normalize_metrics(wrapper.evaluate(self.X, labels))
+
+                    extra = {
                         "search_type": search_type,
-                        "params": params,
-                        "error": str(e),
-                    },
-                )
+                        "n_clusters": len(set(labels)) - (1 if -1 in labels else 0),
+                        "noise_points": int(np.sum(labels == -1)) if -1 in labels else 0,
+                    }
 
-                payload = {
-                    "result": result,
-                    "labels": None,
-                    "reducer": None,
-                    "pipeline": None,
-                }
+                    for key, value in params.items():
+                        extra[f"param_{key}"] = value
 
-            payloads.append(payload)
+                    result = ResultBuilder.build(
+                        model=model_name,
+                        family=getattr(wrapper, "family", "unknown"),
+                        experiment=exp_id,
+                        task="unsupervised",
+                        mode="fit_predict",
+                        result_type="tuned",
+                        extra=extra,
+                        **metrics,
+                    )
 
-        return payloads
+                    payload = {
+                        "result": result,
+                        "labels": labels,
+                        "reducer": reducer,
+                        "pipeline": pipeline,
+                    }
+
+                except Exception as e:
+                    result = ResultBuilder.build(
+                        model=model_name,
+                        family=getattr(wrapper, "family", "unknown"),
+                        experiment=exp_id,
+                        task="unsupervised",
+                        mode="fit_predict",
+                        result_type="failed",
+                        extra={
+                            "search_type": search_type,
+                            "params": params,
+                            "error": str(e),
+                        },
+                    )
+
+                    payload = {
+                        "result": result,
+                        "labels": None,
+                        "reducer": None,
+                        "pipeline": None,
+                    }
+
+                payloads.append(payload)
+
+            return payloads
+        except Exception as e:
+            Logger.error(f"UnsupervisedHyperparameterTuner.tune failed for {model_name}: {e}")
+            raise
 
     def _normalize_metrics(self, metrics):
         clean_metrics = {}

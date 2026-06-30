@@ -13,7 +13,10 @@ from ..regression.RegressionPlots import plot_all as regression_plots
 from ..unsupervised.ClusteringPlots import plot_all as clustering_plots
 
 
-class VisualizerEngine:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class VisualizerEngine(ExceptionLoggingMixin):
 
     def __init__(self, results, artifacts=None):
 
@@ -126,3 +129,4 @@ class VisualizerEngine:
             # ✅ Always consistent structure
             "task_specific": self.plot_task_specific()
         }
+

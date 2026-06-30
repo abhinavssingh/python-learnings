@@ -4,7 +4,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 
-class OutlierHandler(BaseEstimator, TransformerMixin):
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class OutlierHandler(ExceptionLoggingMixin, BaseEstimator, TransformerMixin):
 
     def __init__(self, method="iqr", factor=1.5, z_thresh=3):
         self.method = method
@@ -124,3 +127,4 @@ class OutlierHandler(BaseEstimator, TransformerMixin):
         }
 
         return X
+

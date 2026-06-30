@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class MLModelBase(ABC):
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class MLModelBase(ExceptionLoggingMixin, ABC):
 
     @abstractmethod
     def build_pipeline(self, preprocessor: Any, extra_steps: Any = None) -> None:
@@ -15,3 +18,4 @@ class MLModelBase(ABC):
     @abstractmethod
     def predict(self, X):
         pass
+

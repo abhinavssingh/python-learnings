@@ -59,47 +59,51 @@ class ClassificationModelUtility:
         - X_test, y_test optional (for evaluation)
         """
 
-        # ✅ ----------------------------------
-        # Validate input
-        # ✅ ----------------------------------
-        if self.X_train is None or self.y_train is None:
-            raise ValueError("X_train and y_train must be provided (external split required)")
+        try:
+            # ✅ ----------------------------------
+            # Validate input
+            # ✅ ----------------------------------
+            if self.X_train is None or self.y_train is None:
+                raise ValueError("X_train and y_train must be provided (external split required)")
 
-        # ✅ ----------------------------------
-        # Label encoding (train → test consistent)
-        # ✅ ----------------------------------
-        y = self.y_train
+            # ✅ ----------------------------------
+            # Label encoding (train → test consistent)
+            # ✅ ----------------------------------
+            y = self.y_train
 
-        if isinstance(y, pd.Series) and not pd.api.types.is_numeric_dtype(y):
-            self.label_encoder = LabelEncoder()
+            if isinstance(y, pd.Series) and not pd.api.types.is_numeric_dtype(y):
+                self.label_encoder = LabelEncoder()
 
-            self.y_train = self.label_encoder.fit_transform(y)
+                self.y_train = self.label_encoder.fit_transform(y)
 
-            if self.y_test is not None:
-                self.y_test = self.label_encoder.transform(self.y_test)
+                if self.y_test is not None:
+                    self.y_test = self.label_encoder.transform(self.y_test)
 
-        # ✅ ----------------------------------
-        # Detect problem type
-        # ✅ ----------------------------------
-        self.problem_type = type_of_target(self.y_train)
+            # ✅ ----------------------------------
+            # Detect problem type
+            # ✅ ----------------------------------
+            self.problem_type = type_of_target(self.y_train)
 
-        Logger.info(f"Detected problem type: {self.problem_type}")
+            Logger.info(f"Detected problem type: {self.problem_type}")
 
-        # ✅ ----------------------------------
-        # Multilabel sanity check
-        # ✅ ----------------------------------
-        if self.problem_type == "multilabel-indicator":
-            if not isinstance(self.y_train, (pd.DataFrame)):
-                raise ValueError("Multilabel task requires y_train as DataFrame")
+            # ✅ ----------------------------------
+            # Multilabel sanity check
+            # ✅ ----------------------------------
+            if self.problem_type == "multilabel-indicator":
+                if not isinstance(self.y_train, (pd.DataFrame)):
+                    raise ValueError("Multilabel task requires y_train as DataFrame")
 
-        # ✅ ----------------------------------
-        # Build preprocessor (ONLY HERE ✅)
-        # ✅ ----------------------------------
-        self.preprocessor = Preprocessor(
-            self.X_train,
-            imputer=self.imputer,
-            outlier_handler=self.outlier_handler
-        ).build()
+            # ✅ ----------------------------------
+            # Build preprocessor (ONLY HERE ✅)
+            # ✅ ----------------------------------
+            self.preprocessor = Preprocessor(
+                self.X_train,
+                imputer=self.imputer,
+                outlier_handler=self.outlier_handler
+            ).build()
+        except Exception as e:
+            Logger.error(f"ClassificationModelUtility.prepare_data failed: {e}")
+            raise
 
     # ----------------------------
     # Imbalance Handling
@@ -221,103 +225,103 @@ class ClassificationModelUtility:
     # ---------------------------------------------------
 
     def tune_model(self, model_name, param_config=None, search_type="grid", cv=5, n_iter=20, **kwargs):
+        try:
+            if self.X_train is None:
+                raise ValueError("Call prepare_data() before tuning")
 
-        if self.X_train is None:
-            raise ValueError("Call prepare_data() before tuning")
+            # ✅ Get model
+            wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
-        # ✅ Get model
-        wrapper = copy.deepcopy(self.registry.get_model(model_name))
+            # ✅ Inject SMOTE
+            smote_handler = self._get_imbalance_handler()
+            if smote_handler:
+                wrapper.set_imbalance_handler(smote_handler)
 
-        # ✅ Inject SMOTE
-        smote_handler = self._get_imbalance_handler()
-        if smote_handler:
-            wrapper.set_imbalance_handler(smote_handler)
+            # ✅ Build pipeline
+            wrapper.build_pipeline(self.preprocessor)
 
-        # ✅ Build pipeline
-        wrapper.build_pipeline(self.preprocessor)
-        pipeline = wrapper.get_pipeline()
+            # ✅ Build param_config if not provided
+            if param_config is None:
+                if not kwargs:
+                    raise ValueError(
+                        "Either param_config or model parameters (**kwargs) must be provided"
+                    )
 
-        # ✅ Build param_config if not provided
-        if param_config is None:
-            if not kwargs:
-                raise ValueError(
-                    "Either param_config or model parameters (**kwargs) must be provided"
-                )
-
-            param_config = {
-                f"model__{k}": v if isinstance(v, list) else [v]
-                for k, v in kwargs.items()
-            }
-
-        # ✅ Initialize tuner
-        tuner = ClassificationHyperparameterTuner(
-            self.X_train,
-            self.y_train,
-            self.X_test,
-            self.y_test
-        )
-
-        # ✅ Run tuning
-        raw_results = tuner.tune(
-            pipeline=pipeline,
-            model_name=model_name,
-            search_type=search_type,
-            param_config=param_config,
-            cv=cv,
-            n_iter=n_iter
-        )
-
-        exp_name = f"{model_name} | {search_type}"
-
-        final_results = []
-
-        # ✅ Extract imbalance summary (same for all runs)
-        imbalance_summary = None
-        if wrapper.imbalance_handler:
-            imbalance_summary = wrapper.imbalance_handler.get_summary()
-
-        # ✅ Normalize using ResultBuilder ✅
-        for i, row in enumerate(raw_results):
-            exp_id = f"{model_name} | {search_type} | run_{i}"
-            artifacts = row.get("artifacts", {})
-
-            # ✅ Remove artifacts from metrics dict (clean separation)
-            metrics = {k: v for k, v in row.items() if k != "artifacts"}
-
-            result = ResultBuilder.build(
-                model=model_name,
-                family=getattr(wrapper, "family", "unknown"),
-                experiment=exp_id,
-                mode="cv",
-                result_type="tuned",
-                imbalance_summary=imbalance_summary,
-                artifacts=artifacts,
-
-                # ✅ Tuning metadata
-                extra={
-                    "search_type": search_type,
-                    "best_params": row.get("best_params"),
-                    "cv": cv,
-                    "n_iter": n_iter
-                },
-
-                **metrics
-            )
-
-            best_pipeline = row.get("best_estimator") or row.get("pipeline")
-
-            if best_pipeline is not None:
-                self.trained_models[exp_id] = {
-                    "pipeline": best_pipeline,
-                    "result": result
+                param_config = {
+                    f"model__{k}": v if isinstance(v, list) else [v]
+                    for k, v in kwargs.items()
                 }
 
-            final_results.append(result)
+            # ✅ Initialize tuner
+            tuner = ClassificationHyperparameterTuner(
+                self.X_train,
+                self.y_train,
+                self.X_test,
+                self.y_test
+            )
 
-        # ✅ Store results
-        self.results.extend(final_results)
+            # ✅ Run tuning
+            raw_results = tuner.tune(
+                wrapper=wrapper,
+                model_name=model_name,
+                search_type=search_type,
+                param_config=param_config,
+                cv=cv,
+                n_iter=n_iter
+            )
 
-        return final_results
+            final_results = []
+
+            # ✅ Extract imbalance summary (same for all runs)
+            imbalance_summary = None
+            if wrapper.imbalance_handler:
+                imbalance_summary = wrapper.imbalance_handler.get_summary()
+
+            # ✅ Normalize using ResultBuilder ✅
+            for i, row in enumerate(raw_results):
+                exp_id = f"{model_name} | {search_type} | run_{i}"
+                artifacts = row.get("artifacts", {})
+
+                # ✅ Remove artifacts from metrics dict (clean separation)
+                metrics = {k: v for k, v in row.items() if k != "artifacts"}
+
+                result = ResultBuilder.build(
+                    model=model_name,
+                    family=getattr(wrapper, "family", "unknown"),
+                    experiment=exp_id,
+                    mode="cv",
+                    result_type="tuned",
+                    imbalance_summary=imbalance_summary,
+                    artifacts=artifacts,
+
+                    # ✅ Tuning metadata
+                    extra={
+                        "search_type": search_type,
+                        "best_params": row.get("best_params"),
+                        "cv": cv,
+                        "n_iter": n_iter
+                    },
+
+                    **metrics
+                )
+
+                best_pipeline = row.get("best_estimator") or row.get("pipeline")
+
+                if best_pipeline is not None:
+                    self.trained_models[exp_id] = {
+                        "pipeline": best_pipeline,
+                        "result": result
+                    }
+
+                final_results.append(result)
+
+            # ✅ Store results
+            self.results.extend(final_results)
+
+            return final_results
+        except Exception as e:
+            Logger.error(f"ClassificationModelUtility.tune_model failed for {model_name}: {e}")
+            raise
 
     # ---------------------------------------------------
     # TUNE ALL MODELS
@@ -488,106 +492,104 @@ class ClassificationModelUtility:
     # ---------------------------------------------------
 
     def run_ensemble(self, config):
+        try:
+            method = config.get("method")
 
-        method = config.get("method")
+            # ✅ Resolve models (parallel only)
+            if config["type"] == "parallel":
+                resolved_models = []
+                for name in config.get("model_names", []):
+                    base_wrapper = self.registry.get_model(name)
+                    resolved_models.append((name, base_wrapper.model))
 
-        resolved_models = []
+                wrapper = ParallelEnsembleWrapper(
+                    models=resolved_models,
+                    method=method,
+                    voting=config.get("voting", "soft")
+                )
 
-        # ✅ Resolve models (parallel only)
-        if config["type"] == "parallel":
+                model_name = f"Ensemble_{method}_Voting"
 
-            for name in config.get("model_names", []):
-                base_wrapper = self.registry.get_model(name)
-                resolved_models.append((name, base_wrapper.model))
+            elif config["type"] == "sequential":
+                wrapper = SequentialEnsembleWrapper(
+                    method=method,
+                    model=config.get("model")
+                )
 
-            wrapper = ParallelEnsembleWrapper(
-                models=resolved_models,
-                method=method,
-                voting=config.get("voting", "soft")
+                model_name = f"Ensemble_{method}"
+
+            elif config["type"] == "stacking":
+                resolved_models = []
+                for name in config.get("model_names", []):
+                    base_wrapper = self.registry.get_model(name)
+                    resolved_models.append((name, base_wrapper.model))
+
+                # ✅ Resolve meta model from registry
+                meta_name = config.get("meta_model")
+
+                meta_wrapper = self.registry.get_model(meta_name)
+                final_estimator = meta_wrapper.model
+
+                wrapper = StackingEnsembleWrapper(
+                    models=resolved_models,
+                    final_estimator=final_estimator
+                )
+
+                model_name = f"Ensemble_Stacking_{meta_name}"
+
+            else:
+                raise ValueError("Invalid ensemble type")
+
+            # ✅ Inject SMOTE
+            handler = self._get_imbalance_handler()
+            if handler:
+                wrapper.set_imbalance_handler(handler)
+
+            # ✅ Build + Train
+            wrapper.build_pipeline(self.preprocessor)
+            wrapper.train(self.X_train, self.y_train)
+
+            # ✅ Prediction
+            y_pred = wrapper.predict(self.X_test)
+            y_proba = wrapper.predict_proba(self.X_test)
+
+            # ✅ Evaluation
+            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+            artifacts, metrics = self._extract_artifacts(metrics)
+
+            imbalance_summary = None
+            if wrapper.imbalance_handler:
+                imbalance_summary = wrapper.imbalance_handler.get_summary()
+
+            result = ResultBuilder.build(
+                model=model_name,
+                family=getattr(wrapper, "family", "ensemble"),
+                result_type="ensemble",
+                mode="train-test",
+                imbalance_summary=imbalance_summary,
+                artifacts=artifacts,
+                # ✅ Ensemble metadata
+                extra={
+                    "ensemble_type": config["type"],
+                    "method": method,
+                    "base_models": config.get("model_names")
+                },
+                **metrics
             )
 
-            model_name = f"Ensemble_{method}_Voting"
+            self.results.append(result)
 
-        elif config["type"] == "sequential":
+            # ✅ STORE
+            exp_id = result["experiment"]
+            self.trained_models[exp_id] = {
+                "wrapper": wrapper,
+                "result": result
+            }
 
-            wrapper = SequentialEnsembleWrapper(
-                method=method,
-                model=config.get("model")
-            )
-
-            model_name = f"Ensemble_{method}"
-
-        elif config["type"] == "stacking":
-
-            resolved_models = []
-
-            for name in config.get("model_names", []):
-                base_wrapper = self.registry.get_model(name)
-                resolved_models.append((name, base_wrapper.model))
-
-            # ✅ Resolve meta model from registry
-            meta_name = config.get("meta_model")
-
-            meta_wrapper = self.registry.get_model(meta_name)
-            final_estimator = meta_wrapper.model
-
-            wrapper = StackingEnsembleWrapper(
-                models=resolved_models,
-                final_estimator=final_estimator
-            )
-
-            model_name = f"Ensemble_Stacking_{meta_name}"
-
-        else:
-            raise ValueError("Invalid ensemble type")
-
-        # ✅ Inject SMOTE
-        handler = self._get_imbalance_handler()
-        if handler:
-            wrapper.set_imbalance_handler(handler)
-
-        # ✅ Build + Train
-        wrapper.build_pipeline(self.preprocessor)
-        wrapper.train(self.X_train, self.y_train)
-
-        # ✅ Prediction
-        y_pred = wrapper.predict(self.X_test)
-        y_proba = wrapper.predict_proba(self.X_test)
-
-        # ✅ Evaluation
-        metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
-        artifacts, metrics = self._extract_artifacts(metrics)
-
-        imbalance_summary = None
-        if wrapper.imbalance_handler:
-            imbalance_summary = wrapper.imbalance_handler.get_summary()
-
-        result = ResultBuilder.build(
-            model=model_name,
-            family=getattr(wrapper, "family", "ensemble"),
-            result_type="ensemble",
-            mode="train-test",
-            imbalance_summary=imbalance_summary,
-            artifacts=artifacts,
-            # ✅ Ensemble metadata
-            extra={
-                "ensemble_type": config["type"],
-                "method": method,
-                "base_models": config.get("model_names")
-            },
-            **metrics
-        )
-
-        self.results.append(result)
-
-        # ✅ STORE
-        exp_id = result["experiment"]
-        self.trained_models[exp_id] = {
-            "wrapper": wrapper,
-            "result": result
-        }
-
-        return result
+            return result
+        except Exception as e:
+            Logger.error(f"ClassificationModelUtility.run_ensemble failed: {e}")
+            raise
 
     # ======================================================
     # Plot Data Extraction for Visualization
@@ -626,43 +628,46 @@ class ClassificationModelUtility:
     # MODEL PERSISTENCE
     # ---------------------------------------------------
     def save_model(self, exp_id, path):
+        try:
+            if exp_id not in self.trained_models:
+                raise ValueError(f"{exp_id} not found")
 
-        if exp_id not in self.trained_models:
-            raise ValueError(f"{exp_id} not found")
+            model_obj = self.trained_models[exp_id]
 
-        model_obj = self.trained_models[exp_id]
+            # ✅ Support both wrapper and pipeline
+            if "pipeline" in model_obj:
+                pipeline = model_obj["pipeline"]
+                result = model_obj["result"]
+            else:
+                wrapper = model_obj["wrapper"]
+                pipeline = wrapper.get_pipeline()
+                result = model_obj["result"]
 
-        # ✅ Support both wrapper and pipeline
-        if "pipeline" in model_obj:
-            pipeline = model_obj["pipeline"]
-            result = model_obj["result"]
-        else:
-            wrapper = model_obj["wrapper"]
-            pipeline = wrapper.get_pipeline()
-            result = model_obj["result"]
+            os.makedirs(path, exist_ok=True)
 
-        os.makedirs(path, exist_ok=True)
+            joblib.dump(pipeline, f"{path}/pipeline.pkl")
 
-        joblib.dump(pipeline, f"{path}/pipeline.pkl")
+            metadata = {
+                "model": result.get("model"),
+                "task": result.get("task"),
+                "family": result.get("family"),
+                "experiment": exp_id,
+                "feature_names": list(self.X_train.columns),
+                "inference_version": "v1",
+                "pipeline_type": "sklearn_pipeline",
+                "validated": False,
+                "extra": result.get("extra", {}),
+                "problem_type": result.get("problem_type"),
+                "threshold": result.get("best_threshold"),
+            }
 
-        metadata = {
-            "model": result.get("model"),
-            "task": result.get("task"),
-            "family": result.get("family"),
-            "experiment": exp_id,
-            "feature_names": list(self.X_train.columns),
-            "inference_version": "v1",
-            "pipeline_type": "sklearn_pipeline",
-            "validated": False,
-            "extra": result.get("extra", {}),
-            "problem_type": result.get("problem_type"),
-            "threshold": result.get("best_threshold"),
-        }
+            with open(f"{path}/metadata.json", "w") as f:
+                json.dump(metadata, f, indent=4)
 
-        with open(f"{path}/metadata.json", "w") as f:
-            json.dump(metadata, f, indent=4)
-
-        Logger.info(f"✅ Model saved: {exp_id}")
+            Logger.info(f"✅ Model saved: {exp_id}")
+        except Exception as e:
+            Logger.error(f"ClassificationModelUtility.save_model failed for {exp_id}: {e}")
+            raise
 
     def validate_inference_pipeline(self, exp_id, model_path,
                                     atol=1e-6, rtol=1e-5, validate_proba=True, validate_threshold=True):
@@ -680,114 +685,107 @@ class ClassificationModelUtility:
         - threshold predictions (optional)
         """
 
-        if exp_id not in self.trained_models:
-            raise ValueError(f"{exp_id} not found in trained models")
+        try:
+            if exp_id not in self.trained_models:
+                raise ValueError(f"{exp_id} not found in trained models")
 
-        model_obj = self.trained_models[exp_id]
+            model_obj = self.trained_models[exp_id]
+            wrapper = None
+            pipeline = None
 
-        # ✅ ----------------------------------
-        # 1. TRAINING predictions
-        # ✅ ----------------------------------
-        if "wrapper" in model_obj:
-            wrapper = model_obj["wrapper"]
-            train_preds = wrapper.predict(self.X_test)
-
+            # ✅ ----------------------------------
+            # 1. TRAINING predictions
+            # ✅ ----------------------------------
             train_proba = None
-            if validate_proba and hasattr(wrapper, "predict_proba"):
+            if "wrapper" in model_obj:
+                wrapper = model_obj["wrapper"]
+                train_preds = wrapper.predict(self.X_test)
+                if validate_proba and hasattr(wrapper, "predict_proba"):
+                    try:
+                        train_proba = wrapper.predict_proba(self.X_test)
+                    except BaseException:
+                        pass
+            else:
+                pipeline = model_obj["pipeline"]
+                train_preds = pipeline.predict(self.X_test)
+                if validate_proba and hasattr(pipeline, "predict_proba"):
+                    try:
+                        train_proba = pipeline.predict_proba(self.X_test)
+                    except BaseException:
+                        pass
+
+            # ✅ ----------------------------------
+            # 2. INFERENCE predictions
+            # ✅ ----------------------------------
+            inf_model = InferenceFactory.load(model_path)
+            inf_preds = inf_model.predict(self.X_test)
+
+            inf_proba = None
+            if validate_proba and hasattr(inf_model, "predict_proba"):
                 try:
-                    train_proba = wrapper.predict_proba(self.X_test)
+                    inf_proba = inf_model.predict_proba(self.X_test)
                 except BaseException:
                     pass
 
-        else:
-            pipeline = model_obj["pipeline"]
-            train_preds = pipeline.predict(self.X_test)
-
-            train_proba = None
-            if validate_proba and hasattr(pipeline, "predict_proba"):
+            inf_threshold_preds = None
+            if validate_threshold and hasattr(inf_model, "predict_with_threshold"):
                 try:
-                    train_proba = pipeline.predict_proba(self.X_test)
+                    inf_threshold_preds = inf_model.predict_with_threshold(self.X_test)
                 except BaseException:
                     pass
 
-        # ✅ ----------------------------------
-        # 2. INFERENCE predictions
-        # ✅ ----------------------------------
-        inf_model = InferenceFactory.load(model_path)
+            # ✅ ----------------------------------
+            # 3. VALIDATION
+            # ✅ ----------------------------------
+            result = {
+                "exp_id": exp_id,
+                "sample_size": len(train_preds)
+            }
 
-        inf_preds = inf_model.predict(self.X_test)
+            preds_match = np.array_equal(train_preds, inf_preds)
+            result["predictions_match"] = preds_match
 
-        inf_proba = None
-        if validate_proba and hasattr(inf_model, "predict_proba"):
-            try:
-                inf_proba = inf_model.predict_proba(self.X_test)
-            except BaseException:
-                pass
+            proba_match = None
+            if train_proba is not None and inf_proba is not None:
+                proba_match = np.allclose(train_proba, inf_proba, atol=atol, rtol=rtol)
+                result["proba_match"] = proba_match
 
-        inf_threshold_preds = None
-        if validate_threshold and hasattr(inf_model, "predict_with_threshold"):
-            try:
-                inf_threshold_preds = inf_model.predict_with_threshold(self.X_test)
-            except BaseException:
-                pass
+            threshold_match = None
+            if inf_threshold_preds is not None:
+                train_threshold_preds = None
+                if wrapper is not None and hasattr(wrapper, "predict_with_threshold"):
+                    try:
+                        train_threshold_preds = wrapper.predict_with_threshold(self.X_test)
+                    except BaseException:
+                        pass
 
-        # ✅ ----------------------------------
-        # 3. VALIDATION
-        # ✅ ----------------------------------
-        result = {
-            "exp_id": exp_id,
-            "sample_size": len(train_preds)
-        }
+                if train_threshold_preds is not None:
+                    threshold_match = np.array_equal(train_threshold_preds, inf_threshold_preds)
+                result["threshold_match"] = threshold_match
 
-        # ✅ Predictions check
-        preds_match = np.array_equal(train_preds, inf_preds)
-        result["predictions_match"] = preds_match
+            is_valid = (
+                preds_match
+                and (proba_match if proba_match is not None else True)
+                and (threshold_match if threshold_match is not None else True)
+            )
+            result["status"] = "PASS" if is_valid else "FAIL"
 
-        # ✅ Probability check
-        proba_match = None
-        if train_proba is not None and inf_proba is not None:
-            proba_match = np.allclose(train_proba, inf_proba, atol=atol, rtol=rtol)
-            result["proba_match"] = proba_match
-
-        # ✅ Threshold check
-        threshold_match = None
-
-        if inf_threshold_preds is not None:
-
-            # ✅ get TRAIN threshold predictions properly
-            train_threshold_preds = None
-
-            if hasattr(wrapper, "predict_with_threshold"):
+            if not is_valid:
+                diff = None
                 try:
-                    train_threshold_preds = wrapper.predict_with_threshold(self.X_test)
+                    diff = np.abs(train_preds - inf_preds)
                 except BaseException:
                     pass
 
-            # ✅ compare threshold outputs ONLY
-            if train_threshold_preds is not None:
-                threshold_match = np.array_equal(train_threshold_preds, inf_threshold_preds)
+                result.update({
+                    "max_diff": float(np.max(diff)) if diff is not None else None,
+                    "mismatch_indices": (
+                        list(np.where(train_preds != inf_preds)[0][:10])
+                        if not preds_match else []
+                    )
+                })
 
-            result["threshold_match"] = threshold_match
-
-        # ✅ Final status
-        is_valid = preds_match and (proba_match if proba_match is not None else True) and (threshold_match if threshold_match is not None else True)
-
-        result["status"] = "PASS" if is_valid else "FAIL"
-
-        # ✅ Diagnostics if fail
-        if not is_valid:
-            diff = None
-            try:
-                diff = np.abs(train_preds - inf_preds)
-            except BaseException:
-                pass
-
-            result.update({
-                "max_diff": float(np.max(diff)) if diff is not None else None,
-                "mismatch_indices": (
-                    list(np.where(train_preds != inf_preds)[0][:10])
-                    if not preds_match else []
-                )
-            })
-
-        return result
+            return result
+        except Exception as e:
+            Logger.error(f"ClassificationModelUtility.validate_inference_pipeline failed for {exp_id}: {e}")
+            raise

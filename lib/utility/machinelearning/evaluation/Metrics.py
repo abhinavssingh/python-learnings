@@ -1,3 +1,4 @@
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
 from typing import Literal
 
 import numpy as np
@@ -26,7 +27,7 @@ from sklearn.utils.multiclass import type_of_target
 AverageType = Literal["micro", "macro", "samples", "weighted", "binary"]
 
 
-class Metrics:
+class Metrics(ExceptionLoggingMixin):
 
     # ======================================================
     # ✅ REGRESSION

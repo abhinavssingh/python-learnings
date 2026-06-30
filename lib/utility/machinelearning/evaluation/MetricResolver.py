@@ -1,4 +1,7 @@
-class MetricResolver:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class MetricResolver(ExceptionLoggingMixin):
 
     DEFAULT_METRICS = {
         "classification": ["f1_weighted", "roc_auc"],

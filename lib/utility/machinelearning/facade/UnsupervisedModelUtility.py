@@ -52,29 +52,33 @@ class UnsupervisedModelUtility:
         - X is already prepared (no raw df handling)
         """
 
-        # ✅ ----------------------------------
-        # Validate input
-        # ✅ ----------------------------------
+        try:
+            # ✅ ----------------------------------
+            # Validate input
+            # ✅ ----------------------------------
 
-        if not isinstance(self.X, pd.DataFrame):
-            raise ValueError("X must be a pandas DataFrame")
+            if not isinstance(self.X, pd.DataFrame):
+                raise ValueError("X must be a pandas DataFrame")
 
-        if self.X.shape[0] == 0:
-            raise ValueError("X is empty")
+            if self.X.shape[0] == 0:
+                raise ValueError("X is empty")
 
-        self.feature_names = list(self.X.columns)
+            self.feature_names = list(self.X.columns)
 
-        self.preprocessor = Preprocessor(
-            self.X,
-            imputer=self.imputer,
-            outlier_handler=self.outlier_handler,
-            mode="unsupervised"
-        ).build()
+            self.preprocessor = Preprocessor(
+                self.X,
+                imputer=self.imputer,
+                outlier_handler=self.outlier_handler,
+                mode="unsupervised"
+            ).build()
 
-        # ✅ ✅ ADD THIS LINE (CRITICAL FIX)
-        self.preprocessor.fit(self.X)
+            # ✅ ✅ ADD THIS LINE (CRITICAL FIX)
+            self.preprocessor.fit(self.X)
 
-        return self
+            return self
+        except Exception as e:
+            Logger.error(f"UnsupervisedModelUtility.prepare_data failed: {e}")
+            raise
 
     # ======================================================
     # ✅ RUN SINGLE MODEL (LIKE run_experiment ✅)
@@ -194,52 +198,56 @@ class UnsupervisedModelUtility:
         random_state=42,
         **kwargs,
     ):
-        if self.preprocessor is None:
-            raise ValueError("Call prepare_data() before tune_model()")
+        try:
+            if self.preprocessor is None:
+                raise ValueError("Call prepare_data() before tune_model()")
 
-        wrapper = copy.deepcopy(self.registry.get_model(model_name))
+            wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
-        param_config = self._resolve_param_config(param_config, kwargs)
+            param_config = self._resolve_param_config(param_config, kwargs)
 
-        tuner = UnsupervisedHyperparameterTuner(self.X)
+            tuner = UnsupervisedHyperparameterTuner(self.X)
 
-        raw_results = tuner.tune(
-            wrapper=wrapper,
-            model_name=model_name,
-            preprocessor=self.preprocessor,
-            search_type=search_type,
-            param_config=param_config,
-            n_iter=n_iter,
-            random_state=random_state,
-        )
+            raw_results = tuner.tune(
+                wrapper=wrapper,
+                model_name=model_name,
+                preprocessor=self.preprocessor,
+                search_type=search_type,
+                param_config=param_config,
+                n_iter=n_iter,
+                random_state=random_state,
+            )
 
-        if not hasattr(self, "reducers"):
-            self.reducers = {}
+            if not hasattr(self, "reducers"):
+                self.reducers = {}
 
-        final_results = []
+            final_results = []
 
-        for payload in raw_results:
-            result = payload["result"]
-            exp_id = result["experiment"]
+            for payload in raw_results:
+                result = payload["result"]
+                exp_id = result["experiment"]
 
-            labels = payload.get("labels")
-            reducer = payload.get("reducer")
-            pipeline = payload.get("pipeline")
+                labels = payload.get("labels")
+                reducer = payload.get("reducer")
+                pipeline = payload.get("pipeline")
 
-            if labels is not None:
-                self.labels_store[exp_id] = labels
-            if reducer is not None:
-                self.reducers[exp_id] = reducer
-            if pipeline is not None:
-                self.trained_models[exp_id] = {
-                    "pipeline": pipeline,
-                    "result": result,
-                }
+                if labels is not None:
+                    self.labels_store[exp_id] = labels
+                if reducer is not None:
+                    self.reducers[exp_id] = reducer
+                if pipeline is not None:
+                    self.trained_models[exp_id] = {
+                        "pipeline": pipeline,
+                        "result": result,
+                    }
 
-            self.results.append(result)
-            final_results.append(result)
+                self.results.append(result)
+                final_results.append(result)
 
-        return final_results
+            return final_results
+        except Exception as e:
+            Logger.error(f"UnsupervisedModelUtility.tune_model failed for {model_name}: {e}")
+            raise
 
     # ======================================================
     # ✅ TUNE ALL MODELS (UNSUPERVISED)
@@ -437,110 +445,116 @@ class UnsupervisedModelUtility:
     # ---------------------------------------------------
 
     def save_model(self, exp_id, path):
+        try:
+            if exp_id not in self.trained_models:
+                raise ValueError(f"{exp_id} not found")
 
-        if exp_id not in self.trained_models:
-            raise ValueError(f"{exp_id} not found")
+            model_obj = self.trained_models[exp_id]
 
-        model_obj = self.trained_models[exp_id]
+            if "pipeline" in model_obj:
+                pipeline = model_obj["pipeline"]
+                result = model_obj["result"]
+            else:
+                wrapper = model_obj["wrapper"]
+                pipeline = wrapper.get_pipeline()
+                result = model_obj["result"]
 
-        if "pipeline" in model_obj:
-            pipeline = model_obj["pipeline"]
-            result = model_obj["result"]
-        else:
-            wrapper = model_obj["wrapper"]
-            pipeline = wrapper.get_pipeline()
-            result = model_obj["result"]
+            # ✅ ensure directory exists ONCE
+            os.makedirs(path, exist_ok=True)
 
-        # ✅ ensure directory exists ONCE
-        os.makedirs(path, exist_ok=True)
+            # ✅ save pipeline
+            joblib.dump(pipeline, os.path.join(path, "pipeline.pkl"))
 
-        # ✅ save pipeline
-        joblib.dump(pipeline, os.path.join(path, "pipeline.pkl"))
+            # ✅ metadata
 
-        # ✅ metadata
-
-        metadata = {
-            "model": result.get("model"),
-            "task": result.get("task"),
-            "family": result.get("family"),
-            "experiment": exp_id,
-            "feature_names": list(self.X.columns),
-            "inference_version": "v1",
-            "pipeline_type": "sklearn_pipeline",
-            "validated": False,
-            "extra": result.get("extra", {}),
-            "n_features": len(self.X.columns)
-        }
-
-        with open(os.path.join(path, "metadata.json"), "w") as f:
-            json.dump(metadata, f, indent=4)
-
-        # ✅ SAVE LABELS (FIXED)
-        labels = self.labels_store.get(exp_id)
-
-        if result.get("family") == "clustering" and labels is not None:
-            np.save(os.path.join(path, "labels.npy"), np.asarray(labels))
-
-        Logger.info(f"✅ Model saved: {exp_id}")
-
-    def validate_inference_pipeline(self, exp_id, model_path):
-
-        # ==========================================================
-        # ✅ VALIDATE INPUTS
-        # ==========================================================
-        if exp_id not in self.trained_models:
-            raise ValueError(f"{exp_id} not found")
-
-        if exp_id not in self.labels_store:
-            raise ValueError(f"No stored labels found for {exp_id}")
-
-        # ==========================================================
-        # ✅ TRAINING LABELS
-        # ==========================================================
-        train_labels = self.labels_store[exp_id]
-
-        # ==========================================================
-        # ✅ LOAD INFERENCE MODEL
-        # ==========================================================
-        inf_model = InferenceFactory.load(model_path)
-
-        # ==========================================================
-        # ✅ INFERENCE PREDICTIONS
-        # ==========================================================
-        inf_labels = inf_model.predict(self.X)
-
-        # ==========================================================
-        # ✅ VALIDATIONS
-        # ==========================================================
-
-        # ✅ Length check
-        if len(train_labels) != len(inf_labels):
-            return {
-                "status": "FAIL",
-                "reason": "Label length mismatch",
-                "train_len": len(train_labels),
-                "inference_len": len(inf_labels),
+            metadata = {
+                "model": result.get("model"),
+                "task": result.get("task"),
+                "family": result.get("family"),
+                "experiment": exp_id,
+                "feature_names": list(self.X.columns),
+                "inference_version": "v1",
+                "pipeline_type": "sklearn_pipeline",
+                "validated": False,
+                "extra": result.get("extra", {}),
+                "n_features": len(self.X.columns)
             }
 
-        # ✅ Cluster counts (ignore noise = -1)
-        train_clusters = len(set(train_labels) - {-1})
-        inf_clusters = len(set(inf_labels) - {-1})
+            with open(os.path.join(path, "metadata.json"), "w") as f:
+                json.dump(metadata, f, indent=4)
 
-        # ==========================================================
-        # ✅ METRIC (Permutation-invariant)
-        # ==========================================================
-        score = adjusted_rand_score(train_labels, inf_labels)
+            # ✅ SAVE LABELS (FIXED)
+            labels = self.labels_store.get(exp_id)
 
-        # ==========================================================
-        # ✅ RESULT
-        # ==========================================================
-        return {
-            "status": "PASS" if score > 0.99 else "FAIL",
-            "adjusted_rand_score": float(score),
-            "train_clusters": int(train_clusters),
-            "inference_clusters": int(inf_clusters),
-            "note": "Permutation-invariant validation (correct for clustering)"
-        }
+            if result.get("family") == "clustering" and labels is not None:
+                np.save(os.path.join(path, "labels.npy"), np.asarray(labels))
+
+            Logger.info(f"✅ Model saved: {exp_id}")
+        except Exception as e:
+            Logger.error(f"UnsupervisedModelUtility.save_model failed for {exp_id}: {e}")
+            raise
+
+    def validate_inference_pipeline(self, exp_id, model_path):
+        try:
+            # ==========================================================
+            # ✅ VALIDATE INPUTS
+            # ==========================================================
+            if exp_id not in self.trained_models:
+                raise ValueError(f"{exp_id} not found")
+
+            if exp_id not in self.labels_store:
+                raise ValueError(f"No stored labels found for {exp_id}")
+
+            # ==========================================================
+            # ✅ TRAINING LABELS
+            # ==========================================================
+            train_labels = self.labels_store[exp_id]
+
+            # ==========================================================
+            # ✅ LOAD INFERENCE MODEL
+            # ==========================================================
+            inf_model = InferenceFactory.load(model_path)
+
+            # ==========================================================
+            # ✅ INFERENCE PREDICTIONS
+            # ==========================================================
+            inf_labels = inf_model.predict(self.X)
+
+            # ==========================================================
+            # ✅ VALIDATIONS
+            # ==========================================================
+
+            # ✅ Length check
+            if len(train_labels) != len(inf_labels):
+                return {
+                    "status": "FAIL",
+                    "reason": "Label length mismatch",
+                    "train_len": len(train_labels),
+                    "inference_len": len(inf_labels),
+                }
+
+            # ✅ Cluster counts (ignore noise = -1)
+            train_clusters = len(set(train_labels) - {-1})
+            inf_clusters = len(set(inf_labels) - {-1})
+
+            # ==========================================================
+            # ✅ METRIC (Permutation-invariant)
+            # ==========================================================
+            score = adjusted_rand_score(train_labels, inf_labels)
+
+            # ==========================================================
+            # ✅ RESULT
+            # ==========================================================
+            return {
+                "status": "PASS" if score > 0.99 else "FAIL",
+                "adjusted_rand_score": float(score),
+                "train_clusters": int(train_clusters),
+                "inference_clusters": int(inf_clusters),
+                "note": "Permutation-invariant validation (correct for clustering)"
+            }
+        except Exception as e:
+            Logger.error(f"UnsupervisedModelUtility.validate_inference_pipeline failed for {exp_id}: {e}")
+            raise
 
     def get_processed_data(self):
 

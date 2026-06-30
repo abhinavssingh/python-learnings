@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 
 
-class ClassificationFormatter:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class ClassificationFormatter(ExceptionLoggingMixin):
 
     @staticmethod
     def confusion_matrix(cm):
@@ -68,3 +71,4 @@ class ClassificationFormatter:
             return None
 
         return pd.DataFrame(report).transpose()
+

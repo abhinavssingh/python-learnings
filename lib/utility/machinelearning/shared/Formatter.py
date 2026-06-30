@@ -1,4 +1,7 @@
-class Formatter:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class Formatter(ExceptionLoggingMixin):
     """
     Utility class for building consistent experiment names
     across the ML framework.

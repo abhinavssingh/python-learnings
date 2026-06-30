@@ -1,7 +1,10 @@
 import pandas as pd
 
 
-class BaseComparator:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class BaseComparator(ExceptionLoggingMixin):
 
     def __init__(self, results):
         self.df = pd.DataFrame(results)
@@ -60,3 +63,4 @@ class BaseComparator:
             idx = self.df.groupby("model")[metric].idxmin()
 
         return self.df.loc[idx]
+

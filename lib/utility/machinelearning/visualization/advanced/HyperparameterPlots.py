@@ -4,7 +4,10 @@ import plotly.graph_objects as go
 from lib.utility.machinelearning.shared.DataCleaner import DataCleaner
 
 
-class HyperparameterPlots:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class HyperparameterPlots(ExceptionLoggingMixin):
 
     def plot_3d_surface(self, df, x_param=None, y_param=None, metric=None):
         """
@@ -106,3 +109,4 @@ class HyperparameterPlots:
         )
 
         return fig
+

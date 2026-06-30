@@ -8,7 +8,10 @@ from lib.utility.logger import Logger
 from lib.utility.machinelearning.base.BaseModelWrapper import BaseModelWrapper
 
 
-class ModelRegistry:
+from lib.utility.machinelearning._logging import ExceptionLoggingMixin
+
+
+class ModelRegistry(ExceptionLoggingMixin):
     """
     Auto-discovery registry for all model wrappers.
     Dynamically loads all wrappers from models folder.
@@ -90,3 +93,4 @@ class ModelRegistry:
             for name, model in self._registry.items()
             if getattr(model, "family", None) == family
         }
+
