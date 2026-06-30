@@ -25,13 +25,17 @@ class ClassificationModelWrapper(BaseModelWrapper):
 
         return steps
 
-    def build_pipeline(self, preprocessor):
+    def build_pipeline(self, preprocessor, extra_steps=None):
 
         steps = []
 
         # ✅ FULL FLATTEN (robust fix)
         if preprocessor:
             steps.extend(self._flatten_steps(preprocessor))
+
+        # ✅ Optional custom steps
+        if extra_steps:
+            steps.extend(extra_steps)
 
         # ✅ SMOTE
         if self.imbalance_handler:

@@ -9,7 +9,7 @@ class UnsupervisedModelWrapper(BaseModelWrapper):
     task = "unsupervised"
     family = "unsupervised"
 
-    def build_pipeline(self, preprocessor):
+    def build_pipeline(self, preprocessor, extra_steps=None):
 
         steps = []
 
@@ -18,6 +18,9 @@ class UnsupervisedModelWrapper(BaseModelWrapper):
             steps.extend(preprocessor.steps)
         else:
             steps.append(("preprocessor", preprocessor))
+
+        if extra_steps:
+            steps.extend(extra_steps)
 
         steps.append(("model", self.model))
 

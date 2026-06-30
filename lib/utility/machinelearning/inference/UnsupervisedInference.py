@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+from sklearn.utils.validation import check_is_fitted
 
 from .BaseInferencePipeline import BaseInferencePipeline
 
@@ -16,17 +17,28 @@ class UnsupervisedInference(BaseInferencePipeline):
         if os.path.exists(labels_path):
             self.labels = np.load(labels_path)
 
+    # ------------------------------------------------------------
+    # ✅ PREDICT (SAFE + CONSISTENT)
+    # ------------------------------------------------------------
     def predict(self, X):
+
+        # ✅ Prepare input (handled in base class)
         X = self._prepare_input(X)
 
+        # ✅ Ensure pipeline is fitted
+        try:
+            check_is_fitted(self.pipeline)
+        except Exception:
+            raise ValueError("Loaded pipeline is not fitted")
+
+        # ✅ Use predict (DO NOT refit)
         if hasattr(self.pipeline, "predict"):
             return self.pipeline.predict(X)
 
-        # fallback
-        if hasattr(self.pipeline, "fit_predict"):
-            return self.pipeline.fit_predict(X)
+        raise ValueError("Pipeline does not support predict()")
 
-        raise ValueError("Model does not support prediction")
-
+    # ------------------------------------------------------------
+    # ✅ STORED TRAIN LABELS ACCESS
+    # ------------------------------------------------------------
     def get_labels(self):
         return self.labels

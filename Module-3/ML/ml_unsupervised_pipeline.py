@@ -1,9 +1,6 @@
 import time
 
 import pandas as pd
-import plotly.express as px
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
 
 from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
@@ -42,22 +39,38 @@ def main():
     imputer = CustomImputer(num_strategy="median")
     outlier = OutlierHandler(method="iqr", factor=1.5)
 
-    # ✅ explicit feature input
-    X = df.copy()   # or df[selected_features] if needed
+    X = df.copy().drop(columns=["income", "native.country"])
 
-    um = UnsupervisedModelUtility(X=X, imputer=imputer, outlier_handler=outlier)
+    um = UnsupervisedModelUtility(
+        X=X,
+        imputer=imputer,
+        outlier_handler=outlier
+    )
 
+    # ========================================================
+    # MODEL EXECUTION
+    # ========================================================
     um.prepare_data()
 
     um.run_experiment("KMeans")
     um.run_experiment("DBSCAN")
+
+    # ✅ Add tuned runs so result_df contains tuning rows for plot consumers
+    # um.tune_model("KMeans", n_clusters=[2, 3, 4, 5])
+    # um.tune_model("DBSCAN", eps=[0.3, 0.5, 0.7], min_samples=[5, 10])
+
     best_model = um.get_best_model(metric="silhouette_score")
+    if best_model is None:
+        raise ValueError("No valid unsupervised model found for saving/validation")
+
     um.save_model(best_model["experiment"], "saved_models/unsupervised/best_model")
 
     results_df = um.get_results_df()
-    plot_data = um.get_plot_data()
 
-    # ✅ VISUAL ENGINE (IMPORTANT)
+    # ========================================================
+    # ✅ VISUAL ENGINE
+    # ========================================================
+    plot_data = um.get_plot_data()
     viz = VisualizerEngine(
         um.results,
         plot_data
@@ -66,98 +79,42 @@ def main():
     dashboard = viz.render_all()
 
     # ========================================================
-    # PROCESSED DATA
+    # VALIDATION
     # ========================================================
-    X_processed = um.preprocessor.transform(um.X)
-
-    # ========================================================
-    # PCA
-    # ========================================================
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X_processed)
-
-    pca_df = pd.DataFrame(X_pca, columns=["PC1", "PC2"])
-
-    pca_fig = px.scatter(
-        pca_df,
-        x="PC1",
-        y="PC2",
-        title="PCA Projection (2D)"
-    )
-
-    # ========================================================
-    # CLUSTER VISUALIZATION
-    # ========================================================
-    kmeans_labels = um.get_labels("KMeans")
-    dbscan_labels = um.get_labels("DBSCAN")
-
-    kmeans_fig = px.scatter(
-        pca_df,
-        x="PC1",
-        y="PC2",
-        color=[str(x) for x in kmeans_labels] if kmeans_labels is not None else None,
-        title="KMeans Clusters"
-    )
-
-    dbscan_fig = px.scatter(
-        pca_df,
-        x="PC1",
-        y="PC2",
-        color=[str(x) for x in dbscan_labels] if dbscan_labels is not None else None,
-        title="DBSCAN Clusters"
-    )
-
-    # ========================================================
-    # ELBOW CURVE
-    # ========================================================
-
-    inertia = []
-    for k in range(2, 10):
-        km = KMeans(n_clusters=k, random_state=42)
-        km.fit(X_processed)
-        inertia.append(km.inertia_)
-
-    elbow_fig = px.line(
-        x=list(range(2, 10)),
-        y=inertia,
-        title="Elbow Method"
-    )
-
     validation_results = um.validate_inference_pipeline(best_model["experiment"], "saved_models/unsupervised/best_model")
+
     # ========================================================
     # REPORT CONTENT
     # ========================================================
     content.append(builder.grid([
         builder.card("Data Info", builder.render_pre(df_info)),
-        builder.card("Processed Data", builder.render_dataframe(pd.DataFrame(X_processed).head())),
+        builder.card("Processed Data", builder.render_dataframe(pd.DataFrame(plot_data["X_processed"]).head())),
         builder.card("Unsupervised Results", builder.render_dataframe(results_df)),
         builder.card("Validation Results", builder.render_dict(validation_results))
     ]))
 
     # ========================================================
-    # ✅ VISUALIZATION (ENHANCED ✅)
+    # ✅ VISUALIZATION (NOW FULLY UNIFIED ✅)
     # ========================================================
     content.append(builder.chart_grid([
 
-        # ✅ Generic evaluation (NEW ✅)
+        # =====================================================
+        # ✅ GENERIC MODEL EVALUATION
+        # =====================================================
         plotRenderer.plot_to_card(dashboard["comparison"], "Model Comparison"),
         plotRenderer.plot_to_card(dashboard["ranking"], "Model Ranking"),
         plotRenderer.plot_to_card(dashboard["best_model"], "Best Model"),
         plotRenderer.plot_to_card(dashboard["distribution"], "Metric Distribution"),
 
-        # ✅ PCA + clustering
-        plotRenderer.plot_to_card(pca_fig, "PCA Projection"),
-        plotRenderer.plot_to_card(kmeans_fig, "KMeans Clusters"),
-        plotRenderer.plot_to_card(dbscan_fig, "DBSCAN Clusters"),
+        # =====================================================
+        # ✅ TASK-SPECIFIC VISUALS (ORDERED + CLEAN ✅)
+        # =====================================================
 
-        # ✅ elbow
-        plotRenderer.plot_to_card(elbow_fig, "Elbow Curve"),
-
-        # ✅ Task-specific (if any)
+        # ✅ Task-specific (Unsupervised plots)
         *[
             plotRenderer.plot_to_card(fig, title)
             for title, fig in dashboard["task_specific"].items()
-        ]
+        ],
 
     ]))
 

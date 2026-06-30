@@ -5,7 +5,7 @@ from typing import Any
 class MLModelBase(ABC):
 
     @abstractmethod
-    def build_pipeline(self, preprocessor: Any) -> None:
+    def build_pipeline(self, preprocessor: Any, extra_steps: Any = None) -> None:
         pass
 
     @abstractmethod

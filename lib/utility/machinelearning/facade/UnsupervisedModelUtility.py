@@ -5,6 +5,7 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score
 
 from lib.utility.logger import Logger
@@ -12,6 +13,7 @@ from lib.utility.machinelearning.inference.InferenceFactory import InferenceFact
 from lib.utility.machinelearning.pipeline.Preprocessor import Preprocessor
 from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.ResultBuilder import ResultBuilder
+from lib.utility.machinelearning.tuning.UnsupervisedHyperparameterTuner import UnsupervisedHyperparameterTuner
 
 
 class UnsupervisedModelUtility:
@@ -53,24 +55,24 @@ class UnsupervisedModelUtility:
         # ✅ ----------------------------------
         # Validate input
         # ✅ ----------------------------------
+
         if not isinstance(self.X, pd.DataFrame):
             raise ValueError("X must be a pandas DataFrame")
 
         if self.X.shape[0] == 0:
             raise ValueError("X is empty")
 
-        # ✅ store feature names (important ✅)
         self.feature_names = list(self.X.columns)
 
-        # ✅ ----------------------------------
-        # Build preprocessor (pipeline ONLY ✅)
-        # ✅ ----------------------------------
         self.preprocessor = Preprocessor(
             self.X,
             imputer=self.imputer,
             outlier_handler=self.outlier_handler,
             mode="unsupervised"
         ).build()
+
+        # ✅ ✅ ADD THIS LINE (CRITICAL FIX)
+        self.preprocessor.fit(self.X)
 
         return self
 
@@ -83,43 +85,38 @@ class UnsupervisedModelUtility:
         wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
         try:
-            wrapper.build_pipeline(self.preprocessor)
+            # ======================================================
+            # ✅ STEP 2: DIMENSIONALITY REDUCTION (CRITICAL ✅)
+            # ======================================================
+            reducer = self._build_reducer()
 
+            # ======================================================
+            # ✅ BUILD FULL TRAINING / INFERENCE PIPELINE
+            # ======================================================
+            wrapper.build_pipeline(
+                self.preprocessor,
+                extra_steps=[("reducer", reducer)]
+            )
             pipeline = wrapper.get_pipeline()
 
+            # ======================================================
+            # ✅ STEP 3: CLUSTERING ON REDUCED SPACE ✅
+            # ======================================================
             if hasattr(pipeline, "fit_predict"):
-                output = pipeline.fit_predict(self.X)
+                labels = pipeline.fit_predict(self.X)
             else:
                 pipeline.fit(self.X)
-                output = pipeline.predict(self.X)
+                labels = pipeline.predict(self.X)
 
-            raw_metrics = {}
-            extra = {}
-            labels = None
+            # ======================================================
+            # ✅ STEP 4: METRICS ON REDUCED SPACE ✅
+            # ======================================================
+            raw_metrics = wrapper.evaluate(self.X, labels)
 
-            if wrapper.family == "clustering":
-
-                labels = output
-
-                # ✅ evaluation using SAME processed pipeline
-                X_processed = pipeline[:-1].transform(self.X) if hasattr(pipeline, "__getitem__") else self.X
-
-                raw_metrics = wrapper.evaluate(X_processed, labels)
-
-                # ✅ lightweight metadata
-                extra = {
-                    "n_clusters": len(set(labels)),
-                    "noise_points": int((labels == -1).sum()) if -1 in labels else 0
-                }
-
-            elif wrapper.family == "dimensionality":
-
-                raw_metrics = {}
-
-                extra = {
-                    "output_shape": output.shape,
-                    "n_components": output.shape[1]
-                }
+            extra = {
+                "n_clusters": len(set(labels)) - (1 if -1 in labels else 0),
+                "noise_points": int(np.sum(labels == -1)) if -1 in labels else 0
+            }
 
             metrics = self._normalize_metrics(raw_metrics)
 
@@ -129,15 +126,22 @@ class UnsupervisedModelUtility:
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
                 experiment=exp_id,
-                result_type="unsupervised",
+                task="unsupervised",
                 mode="fit_predict",
                 extra=extra,
                 **metrics
             )
 
-            # ✅ ✅ STORE LABELS CORRECTLY (FIX ✅)
-            if labels is not None:
-                self.labels_store[exp_id] = labels
+            # ======================================================
+            # ✅ STORE LABELS (ALIGNED WITH REDUCED DATA ✅)
+            # ======================================================
+            self.labels_store[exp_id] = labels
+
+            # ✅ ALSO STORE PCA MODEL (IMPORTANT FOR PLOTS ✅)
+            if not hasattr(self, "reducers"):
+                self.reducers = {}
+
+            self.reducers[exp_id] = reducer
 
         except Exception as e:
 
@@ -147,16 +151,17 @@ class UnsupervisedModelUtility:
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
                 experiment=exp_id,
+                task="unsupervised",
                 result_type="failed",
                 extra={"error": str(e)}
             )
 
-        # ✅ STORE RESULT
+        # ======================================================
+        # ✅ STORE RESULT + MODEL
+        # ======================================================
         self.results.append(result)
 
-        # ✅ STORE MODEL
-        exp_id = result["experiment"]
-        self.trained_models[exp_id] = {
+        self.trained_models[result["experiment"]] = {
             "wrapper": wrapper,
             "result": result
         }
@@ -177,6 +182,106 @@ class UnsupervisedModelUtility:
         return results
 
     # ======================================================
+    # ✅ HYPERPARAMETER TUNING (UNSUPERVISED)
+    # ======================================================
+
+    def tune_model(
+        self,
+        model_name,
+        param_config=None,
+        search_type="grid",
+        n_iter=20,
+        random_state=42,
+        **kwargs,
+    ):
+        if self.preprocessor is None:
+            raise ValueError("Call prepare_data() before tune_model()")
+
+        wrapper = copy.deepcopy(self.registry.get_model(model_name))
+
+        param_config = self._resolve_param_config(param_config, kwargs)
+
+        tuner = UnsupervisedHyperparameterTuner(self.X)
+
+        raw_results = tuner.tune(
+            wrapper=wrapper,
+            model_name=model_name,
+            preprocessor=self.preprocessor,
+            search_type=search_type,
+            param_config=param_config,
+            n_iter=n_iter,
+            random_state=random_state,
+        )
+
+        if not hasattr(self, "reducers"):
+            self.reducers = {}
+
+        final_results = []
+
+        for payload in raw_results:
+            result = payload["result"]
+            exp_id = result["experiment"]
+
+            labels = payload.get("labels")
+            reducer = payload.get("reducer")
+            pipeline = payload.get("pipeline")
+
+            if labels is not None:
+                self.labels_store[exp_id] = labels
+            if reducer is not None:
+                self.reducers[exp_id] = reducer
+            if pipeline is not None:
+                self.trained_models[exp_id] = {
+                    "pipeline": pipeline,
+                    "result": result,
+                }
+
+            self.results.append(result)
+            final_results.append(result)
+
+        return final_results
+
+    # ======================================================
+    # ✅ TUNE ALL MODELS (UNSUPERVISED)
+    # ======================================================
+
+    def tune_all_models(
+        self,
+        param_configs,
+        search_type="grid",
+        n_iter=20,
+        random_state=42,
+        **kwargs,
+    ):
+        """
+        Tune multiple unsupervised models.
+
+        param_configs example:
+        {
+            "KMeans": {"model__n_clusters": [2, 3, 4]},
+            "DBSCAN": {"model__eps": [0.3, 0.5], "model__min_samples": [5, 10]}
+        }
+        """
+
+        all_results = []
+
+        for model_name in param_configs:
+            Logger.info(f"🔧 Tuning {model_name}...")
+
+            res = self.tune_model(
+                model_name=model_name,
+                param_config=param_configs[model_name],
+                search_type=search_type,
+                n_iter=n_iter,
+                random_state=random_state,
+                **kwargs,
+            )
+
+            all_results.extend(res)
+
+        return pd.DataFrame(all_results)
+
+    # ======================================================
     # ✅ GET RESULTS
     # ======================================================
     def get_results_df(self):
@@ -185,8 +290,38 @@ class UnsupervisedModelUtility:
     # ======================================================
     # ✅ GET LABELS (FOR VISUALIZATION ✅)
     # ======================================================
+
     def get_labels(self, model_name):
-        return self.labels_store.get(model_name)
+        exp_id = f"{model_name} | unsupervised"
+        return self.labels_store.get(exp_id)
+
+    def _resolve_param_config(self, param_config, kwargs):
+        """
+        Normalize tuning params into sklearn pipeline format.
+        Example:
+          n_clusters=[2, 3] -> model__n_clusters=[2, 3]
+        """
+        if param_config is not None:
+            return param_config
+
+        if not kwargs:
+            return None
+
+        normalized = {}
+
+        for key, value in kwargs.items():
+            param_key = key if key.startswith("model__") else f"model__{key}"
+            normalized[param_key] = value if isinstance(value, list) else [value]
+
+        return normalized
+
+    def _build_reducer(self):
+        """
+        Keep PCA robust for low-dimensional inputs.
+        """
+        n_features = self.X.shape[1]
+        n_components = max(1, min(10, n_features))
+        return PCA(n_components=n_components, random_state=42)
 
     # ======================================================
     # ✅ INTERNAL: NORMALIZE METRICS (KEEP RESULTS CLEAN ✅)
@@ -209,57 +344,64 @@ class UnsupervisedModelUtility:
 
     def get_best_model(self, metric=None):
 
-        if not self.results:
-            return None
-
         df = pd.DataFrame(self.results)
 
-        # ✅ Only valid models
-        df = df[df["type"] != "failed"]
+        # ✅ Safe filtering (remove failed runs if column exists)
+        if "result_type" in df.columns:
+            df = df[df["result_type"] != "failed"]
 
         if df.empty:
             return None
 
         # ==================================================
-        # ✅ CLUSTERING PRIORITY
+        # ✅ METRIC SELECTION
         # ==================================================
         if metric is None:
 
-            # ✅ Prefer silhouette
             if "silhouette_score" in df.columns:
                 metric = "silhouette_score"
                 ascending = False
 
-            # ✅ fallback: DB index
             elif "davies_bouldin_score" in df.columns:
                 metric = "davies_bouldin_score"
                 ascending = True
 
-            # ✅ fallback: CH index
             elif "calinski_harabasz_score" in df.columns:
                 metric = "calinski_harabasz_score"
                 ascending = False
 
             else:
+                # fallback: return first valid model
                 return df.iloc[0].to_dict()
 
         else:
-            # ✅ user provided metric
+            # ✅ normalize metric input
             if metric.lower() in ["davies_bouldin", "davies_bouldin_score"]:
                 metric = "davies_bouldin_score"
                 ascending = True
             else:
                 ascending = False
 
-        if metric not in df.columns:
-            raise ValueError(f"{metric} not found")
+        # ==================================================
+        # ✅ METRIC VALIDATION
+        # ==================================================
+        if metric not in df.columns or df[metric].isna().all():
+            return None
 
-        # ✅ rank and select best
+        # ✅ remove rows with invalid metric values
+        df = df[df[metric].notna()]
+
+        if df.empty:
+            return None
+
+        # ==================================================
+        # ✅ SELECT BEST MODEL
+        # ==================================================
         df_sorted = df.sort_values(metric, ascending=ascending)
 
         best = df_sorted.iloc[0].to_dict()
 
-        # ✅ remove heavy fields
+        # ✅ remove heavy/unnecessary fields
         best.pop("artifacts", None)
 
         return best
@@ -270,52 +412,25 @@ class UnsupervisedModelUtility:
 
     def get_plot_data(self):
 
-        plot_rows = []
+        plot_data = {}
 
-        for r in self.results:
+        # ✅ processed data
+        X_processed = self.get_processed_data()
+        plot_data["X_processed"] = X_processed
 
-            row = {
-                "model": r.get("model"),
-                "family": r.get("family"),
-                "experiment": r.get("experiment"),
-            }
+        # ✅ clusters
+        clusters = {}
 
-            # ==================================================
-            # ✅ CLUSTERING METRICS
-            # ==================================================
-            if r.get("family") == "clustering":
+        for exp_id, labels in self.labels_store.items():
+            model_name = exp_id.split("|")[0].strip()
+            clusters[model_name] = labels
 
-                row.update({
-                    "silhouette": r.get("silhouette_score"),
-                    "davies_bouldin": r.get("davies_bouldin_score"),
-                    "calinski_harabasz": r.get("calinski_harabasz_score"),
-                    "n_clusters": r.get("n_clusters"),
-                    "noise_points": r.get("noise_points"),
-                })
+        plot_data["clusters"] = clusters
 
-                # ✅ attach labels (IMPORTANT)
-                labels = self.labels_store.get(r.get("experiment"))
-                if labels is not None:
-                    row["labels"] = labels
+        # ✅ reducers (important for consistent plotting)
+        plot_data["reducers"] = getattr(self, "reducers", {})
 
-            # ==================================================
-            # ✅ DIMENSIONALITY METRICS
-            # ==================================================
-            elif r.get("family") == "dimensionality":
-
-                row.update({
-                    "n_components": r.get("n_components"),
-                    "output_shape": r.get("output_shape"),
-                })
-
-                # ✅ embeddings for plotting
-                embeddings = self.labels_store.get(r.get("experiment"))
-                if embeddings is not None:
-                    row["embeddings"] = embeddings
-
-            plot_rows.append(row)
-
-        return plot_rows
+        return plot_data
 
     # ---------------------------------------------------
     # MODEL PERSISTENCE
@@ -346,7 +461,7 @@ class UnsupervisedModelUtility:
 
         metadata = {
             "model": result.get("model"),
-            "task": "unsupervised",
+            "task": result.get("task"),
             "family": result.get("family"),
             "experiment": exp_id,
             "feature_names": list(self.X.columns),
@@ -369,24 +484,71 @@ class UnsupervisedModelUtility:
         Logger.info(f"✅ Model saved: {exp_id}")
 
     def validate_inference_pipeline(self, exp_id, model_path):
+
+        # ==========================================================
+        # ✅ VALIDATE INPUTS
+        # ==========================================================
         if exp_id not in self.trained_models:
             raise ValueError(f"{exp_id} not found")
 
         if exp_id not in self.labels_store:
             raise ValueError(f"No stored labels found for {exp_id}")
 
-        # ✅ TRAINING LABELS (stored, DO NOT recompute)
+        # ==========================================================
+        # ✅ TRAINING LABELS
+        # ==========================================================
         train_labels = self.labels_store[exp_id]
 
-        # ✅ INFERENCE LABELS
+        # ==========================================================
+        # ✅ LOAD INFERENCE MODEL
+        # ==========================================================
         inf_model = InferenceFactory.load(model_path)
+
+        # ==========================================================
+        # ✅ INFERENCE PREDICTIONS
+        # ==========================================================
         inf_labels = inf_model.predict(self.X)
 
-        # ✅ CLUSTER-SAFE COMPARISON
+        # ==========================================================
+        # ✅ VALIDATIONS
+        # ==========================================================
+
+        # ✅ Length check
+        if len(train_labels) != len(inf_labels):
+            return {
+                "status": "FAIL",
+                "reason": "Label length mismatch",
+                "train_len": len(train_labels),
+                "inference_len": len(inf_labels),
+            }
+
+        # ✅ Cluster counts (ignore noise = -1)
+        train_clusters = len(set(train_labels) - {-1})
+        inf_clusters = len(set(inf_labels) - {-1})
+
+        # ==========================================================
+        # ✅ METRIC (Permutation-invariant)
+        # ==========================================================
         score = adjusted_rand_score(train_labels, inf_labels)
 
+        # ==========================================================
+        # ✅ RESULT
+        # ==========================================================
         return {
             "status": "PASS" if score > 0.99 else "FAIL",
             "adjusted_rand_score": float(score),
+            "train_clusters": int(train_clusters),
+            "inference_clusters": int(inf_clusters),
             "note": "Permutation-invariant validation (correct for clustering)"
         }
+
+    def get_processed_data(self):
+
+        if hasattr(self, "_X_processed"):
+            return self._X_processed
+
+        if self.preprocessor is None:
+            raise ValueError("Preprocessor not initialized")
+
+        self._X_processed = self.preprocessor.transform(self.X)
+        return self._X_processed

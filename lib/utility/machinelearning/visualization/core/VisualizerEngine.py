@@ -10,7 +10,7 @@ from ..generic.ComparisonPlots import (
 )
 from ..generic.DistributionPlots import plot_metric_distribution
 from ..regression.RegressionPlots import plot_all as regression_plots
-from ..unsupervised.ClusteringPlots import plot_metrics as clustering_plots
+from ..unsupervised.ClusteringPlots import plot_all as clustering_plots
 
 
 class VisualizerEngine:
@@ -41,7 +41,7 @@ class VisualizerEngine:
         metric = metric or MetricResolver.get_best_metric(self.task)
 
         return plot_all_model_comparison(
-            self.df,   # ✅ instead of self.results
+            self.df,
             metric1=metric,
             task=self.task
         )
@@ -102,9 +102,9 @@ class VisualizerEngine:
             return regression_plots(self.df)
 
         elif self.task == "unsupervised":
-
             return clustering_plots(
-                self.df
+                self.df,
+                self.artifacts
             )
 
         return {}

@@ -12,11 +12,15 @@ class RegressionModelWrapper(BaseModelWrapper):
     task = "linear regression"
     family = "linear"
 
-    def build_pipeline(self, preprocessor):
-        self.pipeline = Pipeline([
-            ("preprocessor", preprocessor),
-            ("model", self.model)
-        ])
+    def build_pipeline(self, preprocessor, extra_steps=None):
+        steps = [("preprocessor", preprocessor)]
+
+        if extra_steps:
+            steps.extend(extra_steps)
+
+        steps.append(("model", self.model))
+
+        self.pipeline = Pipeline(steps)
 
     def evaluate(self, y_true, y_pred):
         """
