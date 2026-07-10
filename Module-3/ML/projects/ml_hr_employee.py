@@ -29,6 +29,7 @@ from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
 from lib.utility.machinelearning.facade.ClassificationModelUtility import ClassificationModelUtility
 from lib.utility.machinelearning.facade.UnsupervisedModelUtility import UnsupervisedModelUtility
+from lib.utility.machinelearning.shared.ExperimentConfig import ExperimentConfig
 from lib.utility.machinelearning.visualization.core.VisualizerEngine import VisualizerEngine
 from lib.utility.reports.report_utils import ReportUtils as ru
 
@@ -309,16 +310,20 @@ def section_classification_pipeline(df):
         X_encoded, y, test_size=0.2, random_state=123, stratify=y
     )
 
-    # Initialize classification utility with SMOTE imbalance handling
+    # Initialize classification utility with experiment config (imbalance strategy + params)
+
+    config = ExperimentConfig(
+        validation_strategy="kfold",
+        n_splits=5,
+        imbalance_strategy="smote"
+    )
+
     cls_util = ClassificationModelUtility(
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
         y_test=y_test,
-        imbalance_config={
-            "type": "smote",
-            "params": {"random_state": 123},
-        },
+        config=config
     )
     cls_util.prepare_data()  # Framework builds reusable preprocessor
 
@@ -337,6 +342,7 @@ def section_classification_pipeline(df):
     # Get standardized results (ResultBuilder schema)
     results_df = cls_util.get_results_df()
     best_model = cls_util.get_best_model(metric="recall_weighted")
+    confusion_matrix = cls_util.get_all_confusion_matrices()
 
     return {
         "cls_util": cls_util,
@@ -348,6 +354,7 @@ def section_classification_pipeline(df):
         "numeric_cols": numeric_cols,
         "categorical_cols": categorical_cols,
         "encoded_feature_count": X_encoded.shape[1],
+        "confusion_matrix": confusion_matrix
     }
 
 
@@ -436,12 +443,7 @@ def main():
     # ================================================================
     # LOAD DATA
     # ================================================================
-    df, report = dl.read_dataset(
-        "HR_comma_sep.csv",
-        optimize=True,
-        handle_unnamed="drop",
-        return_report=True
-    )
+    df, report = dl.read_dataset("HR_comma_sep.csv", optimize=True, handle_unnamed="drop", return_report=True)
 
     # ================================================================
     # SECTION 1: DATA QUALITY
@@ -480,8 +482,8 @@ def main():
     risk_data = section_risk_scoring(cls_util, best_model, class_data["X_test"], class_data["y_test"])
 
     metric_rationale = """Recall is prioritized for turnover prediction because false
-    negatives employees likely to leave but predicted as stay) are more costly for
-    retention planning.
+    negatives employees likely to leave but predicted as stay)
+    are more costly for retention planning.
         """
 
     # ================================================================
@@ -506,6 +508,12 @@ def main():
             builder.render_dataframe_collapsible(cluster_data["left_cluster_df"], initial_rows=15)
         ))
 
+    content.append(
+        builder.full_width_card(
+            "Turnover Probability Scoring (Sample Predictions)",
+            builder.render_dataframe_collapsible(risk_data["risk_scoring_df"].head(50), initial_rows=15)
+        ))
+
     content.append(builder.grid([
         builder.card("Dataframe Info", builder.render_pre(quality_data["df_info"])),
         builder.card("Dataframe Description", builder.render_dict(df.describe().to_dict())),
@@ -527,8 +535,7 @@ def main():
         builder.card("Best Model Summary", builder.render_dict(best_model or {})),
         builder.card("Metric Selection Rationale", builder.render_pre(metric_rationale)),
         builder.card("Risk Segment Summary (HR Action Planning)", builder.render_dataframe(risk_data["risk_segment_summary"])),
-        builder.card("Turnover Probability Scoring (Sample Predictions)",
-                     builder.render_dataframe_collapsible(risk_data["risk_scoring_df"].head(50), initial_rows=15)),
+        builder.card("Confusion Matrix", builder.render_dict(class_data["confusion_matrix"] or {})),
     ]))
 
     # ================================================================

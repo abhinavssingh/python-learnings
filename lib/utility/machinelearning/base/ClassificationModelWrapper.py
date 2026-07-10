@@ -59,3 +59,13 @@ class ClassificationModelWrapper(BaseModelWrapper):
             include_curves=True,
             include_confusion_matrix=True
         )
+
+    def get_scoring_metrics(self):
+        return {
+            "accuracy": "accuracy",
+            "precision_weighted": "precision_weighted",
+            "recall_weighted": "recall_weighted",
+            "f1_weighted": "f1_weighted",
+            "f1_macro": "f1_macro",
+            "f1_micro": "f1_micro"
+        }

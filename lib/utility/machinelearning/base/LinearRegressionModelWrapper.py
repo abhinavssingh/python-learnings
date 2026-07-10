@@ -34,3 +34,10 @@ class RegressionModelWrapper(BaseModelWrapper):
             # include_residuals=True,
             # include_plots=True
         )
+
+    def get_scoring_metrics(self):
+        return {
+            "r2": "r2",
+            "mae": "neg_mean_absolute_error",
+            "rmse": "neg_root_mean_squared_error"
+        }

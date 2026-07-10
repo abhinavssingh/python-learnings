@@ -22,12 +22,13 @@ from lib.utility.machinelearning.registry.ModelRegistry import ModelRegistry
 from lib.utility.machinelearning.shared.ClassificationFormatter import ClassificationFormatter as cf
 from lib.utility.machinelearning.shared.ResultBuilder import ResultBuilder
 from lib.utility.machinelearning.tuning.ClassificationHyperparameterTuner import ClassificationHyperparameterTuner
+from lib.utility.machinelearning.validation.CrossValidator import CrossValidator
 
 
 class ClassificationModelUtility:
 
     def __init__(self, X_train=None, y_train=None, X_test=None,
-                 y_test=None, imputer=None, outlier_handler=None, imbalance_config=None):
+                 y_test=None, imputer=None, outlier_handler=None, config=None):
 
         self.X_train = X_train
         self.X_test = X_test
@@ -36,7 +37,7 @@ class ClassificationModelUtility:
 
         self.imputer = imputer
         self.outlier_handler = outlier_handler
-        self.imbalance_config = imbalance_config
+        self.config = config
 
         self.results = []
         self.registry = ModelRegistry()
@@ -111,13 +112,13 @@ class ClassificationModelUtility:
 
     def _get_imbalance_handler(self):
 
-        if not self.imbalance_config:
+        if not self.config or not self.config.imbalance_strategy:
             return None
 
-        im_type = self.imbalance_config.get("type")
+        im_type = self.config.imbalance_strategy
 
         if im_type == "smote":
-            return SMOTEHandler(**self.imbalance_config.get("params", {}))
+            return SMOTEHandler(**self.config.imbalance_params)
 
         return None
 
@@ -129,48 +130,123 @@ class ClassificationModelUtility:
         wrapper = copy.deepcopy(self.registry.get_model(model_name))
 
         try:
+
             if self.problem_type == "multilabel-indicator":
                 wrapper.model = OneVsRestClassifier(wrapper.model)
 
-            # ✅ Inject SMOTE
+            # --------------------------------------------------
+            # Imbalance Handling
+            # --------------------------------------------------
 
-            smote_handler = self._get_imbalance_handler()
+            imbalance_handler = self._get_imbalance_handler()
 
-            if smote_handler:
-                wrapper.set_imbalance_handler(smote_handler)
+            if imbalance_handler:
+                wrapper.set_imbalance_handler(imbalance_handler)
 
             wrapper.build_pipeline(self.preprocessor)
 
-            # ✅ TRAIN
+            # --------------------------------------------------
+            # Cross Validation
+            # --------------------------------------------------
+
+            cv_results = CrossValidator.run(
+                estimator=wrapper.pipeline,
+                X=self.X_train,
+                y=self.y_train,
+                problem_type=self.problem_type,
+                strategy=self.config.validation_strategy,
+                n_splits=self.config.n_splits,
+                shuffle=self.config.shuffle,
+                random_state=self.config.random_state,
+                scoring=wrapper.get_scoring_metrics()
+            )
+
+            # --------------------------------------------------
+            # Final Training
+            # --------------------------------------------------
+
             wrapper.train(self.X_train, self.y_train)
 
-            # ✅ Capture BEFORE distribution
-            class_dist_before = dict(Counter(self.y_train))
+            # --------------------------------------------------
+            # Class Distribution
+            # --------------------------------------------------
 
-            # ✅ Extract SMOTE summary after training
+            class_dist_before = None
+
+            if self.problem_type != "continuous":
+                class_dist_before = dict(
+                    Counter(self.y_train)
+                )
+
             imbalance_summary = None
 
             if wrapper.imbalance_handler:
-                imbalance_summary = wrapper.imbalance_handler.get_summary()
+                imbalance_summary = (
+                    wrapper.imbalance_handler.get_summary()
+                )
 
-            # ✅ PREDICT (only if train succeeded)
+            # --------------------------------------------------
+            # Predictions
+            # --------------------------------------------------
+
             y_pred = wrapper.predict(self.X_test)
 
-            y_proba = wrapper.predict_proba(self.X_test)
+            try:
+                y_proba = wrapper.predict_proba(self.X_test)
+            except Exception:
+                y_proba = None
 
-            metrics = wrapper.evaluate(self.y_test, y_pred, y_proba)
+            metrics = wrapper.evaluate(
+                self.y_test,
+                y_pred,
+                y_proba
+            )
 
             artifacts, metrics = self._extract_artifacts(metrics)
 
-            # ✅ Add imbalance info to artifacts
+            # --------------------------------------------------
+            # Cross Validation Artifact
+            # --------------------------------------------------
+
+            if cv_results:
+
+                cv_metrics = {}
+
+                for metric, values in cv_results.items():
+
+                    cv_metrics[metric] = values["mean"]
+                    cv_metrics[f"{metric}_std"] = values["std"]
+
+                cv_result = ResultBuilder.build(
+                    model=model_name,
+                    family=getattr(wrapper, "family", "unknown"),
+                    result_type="cross_validation",
+                    cv_strategy=self.config.validation_strategy,
+                    cv_folds=self.config.n_splits,
+                    **cv_metrics
+                )
+
+                self.results.append(cv_result)
+
+            # --------------------------------------------------
+            # Imbalance Artifact
+            # --------------------------------------------------
+
             if imbalance_summary:
+
                 artifacts["imbalance"] = imbalance_summary
-            else:
+
+            elif class_dist_before:
+
                 artifacts["imbalance"] = {
                     "method": None,
                     "before": class_dist_before,
                     "after": None
                 }
+
+            # --------------------------------------------------
+            # Build Result
+            # --------------------------------------------------
 
             result = ResultBuilder.build(
                 model=model_name,
@@ -181,8 +257,8 @@ class ClassificationModelUtility:
                 **metrics
             )
 
-            # STORE WRAPPER + RESULT TOGETHER (CRITICAL CHANGE)
             exp_id = result["experiment"]
+
             self.trained_models[exp_id] = {
                 "wrapper": wrapper,
                 "result": result
@@ -190,17 +266,21 @@ class ClassificationModelUtility:
 
         except Exception as e:
 
-            Logger.error(f"Model {model_name} failed during experiment: {e}")
+            Logger.error(
+                f"Model {model_name} failed during experiment: {e}"
+            )
 
-            # ✅ SAFE FAILURE RECORD
             result = ResultBuilder.build(
                 model=model_name,
                 family=getattr(wrapper, "family", "unknown"),
                 result_type="failed",
-                artifacts={"error": str(e)}
+                artifacts={
+                    "error": str(e)
+                }
             )
 
         self.results.append(result)
+
         return result
 
     # ----------------------------
