@@ -21,3 +21,5 @@ scikit-multilearn>=0.2.0
 xgboost>=1.7.6
 lightgbm>=4.0.0
 imbalanced-learn>=0.14.2
+tensorflow>=2.21.0
+keras>=2.21.0
