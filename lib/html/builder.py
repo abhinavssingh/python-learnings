@@ -129,3 +129,7 @@ class HtmlBuilder:
     def render_latex_formula(self, latex: str, display: bool) -> str:
         """Wrap latex html."""
         return self.renderers.render_latex_formula(latex, display)
+
+    def render_tensor(self, tensor) -> str:
+        """Wrap tensor html."""
+        return self.renderers.render_tensor(tensor)

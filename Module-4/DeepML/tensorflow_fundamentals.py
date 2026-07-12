@@ -49,19 +49,13 @@ def main():
     # ==========================================================
     # SCALAR
     # ==========================================================
-    #
-    # Rank = 0
-    # Shape = ()
-    #
+
     scalar = tf.constant(10)
 
     # ==========================================================
     # VECTOR
     # ==========================================================
-    #
-    # Rank = 1
-    # Shape = (4,)
-    #
+
     vector = tf.constant([
         1, 2, 3, 4
     ])
@@ -69,10 +63,7 @@ def main():
     # ==========================================================
     # MATRIX
     # ==========================================================
-    #
-    # Rank = 2
-    # Shape = (2,2)
-    #
+
     matrix = tf.constant([
         [1, 2],
         [3, 4]
@@ -81,9 +72,7 @@ def main():
     # ==========================================================
     # 3D TENSOR
     # ==========================================================
-    #
-    # Rank = 3
-    #
+
     tensor_3d = tf.constant([
         [
             [1, 2],
@@ -94,21 +83,6 @@ def main():
             [7, 8]
         ]
     ])
-
-    # ==========================================================
-    # TENSOR CREATION UTILITIES
-    # ==========================================================
-
-    zeros_tensor = tf.zeros((3, 3))
-
-    ones_tensor = tf.ones((3, 3))
-
-    fill_tensor = tf.fill(
-        dims=(3, 3),
-        value=9
-    )
-
-    identity_tensor = tf.eye(3)
 
     # ==========================================================
     # RAGGED TENSOR
@@ -126,20 +100,6 @@ def main():
         [1, 2],
         [3, 4, 5],
         [6]
-    ])
-
-    ragged_df = pd.DataFrame([
-        [
-            "Ragged Tensor",
-            ragged_tensor.to_list()
-        ],
-        [
-            "Shape",
-            str(ragged_tensor.shape)
-        ]
-    ], columns=[
-        "Property",
-        "Value"
     ])
 
     # ==========================================================
@@ -170,73 +130,6 @@ def main():
         dtype=tf.float32
     )
 
-    tensor_objects_df = pd.DataFrame([
-        [
-            "Scalar",
-            scalar.numpy(),
-            scalar.shape,
-            tf.rank(scalar).numpy(),
-            scalar.dtype
-        ],
-        [
-            "Vector",
-            vector.numpy().tolist(),
-            vector.shape,
-            tf.rank(vector).numpy(),
-            vector.dtype
-        ],
-        [
-            "Matrix",
-            matrix.numpy().tolist(),
-            matrix.shape,
-            tf.rank(matrix).numpy(),
-            matrix.dtype
-        ],
-        [
-            "3D Tensor",
-            tensor_3d.numpy().tolist(),
-            tensor_3d.shape,
-            tf.rank(tensor_3d).numpy(),
-            tensor_3d.dtype
-        ]
-    ], columns=[
-        "Tensor",
-        "Value",
-        "Shape",
-        "Rank",
-        "Datatype"
-    ])
-    # ==========================================================
-    # SHAPE AND RANK
-    # ==========================================================
-
-    shape_df = pd.DataFrame([
-        [
-            "Scalar",
-            scalar.shape,
-            tf.rank(scalar).numpy()
-        ],
-        [
-            "Vector",
-            vector.shape,
-            tf.rank(vector).numpy()
-        ],
-        [
-            "Matrix",
-            matrix.shape,
-            tf.rank(matrix).numpy()
-        ],
-        [
-            "3D Tensor",
-            tensor_3d.shape,
-            tf.rank(tensor_3d).numpy()
-        ]
-    ], columns=[
-        "Tensor",
-        "Shape",
-        "Rank"
-    ])
-
     # ==========================================================
     # DATA TYPES
     # ==========================================================
@@ -244,65 +137,12 @@ def main():
     int_tensor = tf.constant([1, 2, 3], dtype=tf.int32)
     float_tensor = tf.constant([1.0, 2.0, 3.0], dtype=tf.float32)
 
-    datatype_df = pd.DataFrame([
-        ["Integer Tensor", int_tensor.dtype],
-        ["Float Tensor", float_tensor.dtype]
-    ], columns=["Tensor", "Datatype"])
-
-    # ==========================================================
-    # VARIABLES
-    # ==========================================================
-    #
-    # Neural network weights use tf.Variable
-    #
-    weight = tf.Variable(
-        initial_value=5.0,
-        trainable=True
-    )
-
-    initial_weight = weight.numpy()
-
-    weight.assign(10.0)
-
-    updated_weight = weight.numpy()
-
-    variable_df = pd.DataFrame([
-        ["Initial Weight", initial_weight],
-        ["Updated Weight", updated_weight]
-    ], columns=["Property", "Value"])
-
     # ==========================================================
     # MATHEMATICAL OPERATIONS
     # ==========================================================
 
     a = tf.constant([1, 2, 3])
     b = tf.constant([4, 5, 6])
-
-    math_df = pd.DataFrame([
-        ["Addition", tf.add(a, b).numpy()],
-        ["Subtraction", tf.subtract(b, a).numpy()],
-        ["Multiplication", tf.multiply(a, b).numpy()],
-        ["Division", tf.divide(b, a).numpy()],
-        ["Power", tf.pow(a, 2).numpy()],
-        ["Square Root", tf.sqrt(tf.cast(b, tf.float32)).numpy()]
-    ], columns=["Operation", "Result"])
-
-    abs_tensor = tf.abs(
-        tf.constant([-5, -2, 10])
-    )
-
-    exp_tensor = tf.exp(
-        tf.constant([1.0, 2.0])
-    )
-
-    log_tensor = tf.math.log(
-        tf.constant([1.0, 2.0, 3.0])
-    )
-
-    power_tensor = tf.pow(
-        tf.constant([2, 3, 4]),
-        2
-    )
 
     # ==========================================================
     # MATRIX MULTIPLICATION
@@ -318,53 +158,179 @@ def main():
         [7, 8]
     ])
 
-    matrix_result = tf.matmul(
-        matrix_a,
-        matrix_b
-    ).numpy()
-
     # ==========================================================
     # INDEXING
     # ==========================================================
-
+    #
+    # Tensor used throughout this section.
+    #
+    # Shape: (3, 3)
+    #
     sample_tensor = tf.constant([
         [10, 20, 30],
         [40, 50, 60],
         [70, 80, 90]
     ])
 
-    indexing_df = pd.DataFrame([
-        ["First Element", sample_tensor[0, 0].numpy()],
-        ["Last Element", sample_tensor[-1, -1].numpy()],
-        ["First Row", sample_tensor[0].numpy()],
-        ["Second Row", sample_tensor[1].numpy()],
-        ["Third Column", sample_tensor[:, 2].numpy()]
-    ], columns=[
-        "Operation",
-        "Result"
-    ])
+    # First element
+    first_element = sample_tensor[0, 0]
+
+    # Last element
+    last_element = sample_tensor[-1, -1]
+
+    # First row
+    first_row = sample_tensor[0]
+
+    # Second row
+    second_row = sample_tensor[1]
+
+    # Third column
+    third_column = sample_tensor[:, 2]
 
     # ==========================================================
     # SLICING
     # ==========================================================
+    #
+    # Extract a subset of rows/columns.
+    #
 
-    slicing_df = pd.DataFrame([
-        [
-            "Rows 0:2",
-            sample_tensor[0:2].numpy().tolist()
-        ],
-        [
-            "Columns 0:2",
-            sample_tensor[:, 0:2].numpy().tolist()
-        ],
-        [
-            "Center Block",
-            sample_tensor[0:2, 0:2].numpy().tolist()
-        ]
-    ], columns=[
-        "Operation",
-        "Result"
+    # First two rows
+    rows_0_2 = sample_tensor[0:2]
+
+    # First two columns
+    columns_0_2 = sample_tensor[:, 0:2]
+
+    # Top-left block
+    center_block = sample_tensor[0:2, 0:2]
+
+    # Bottom-right block
+    bottom_right = sample_tensor[1:, 1:]
+
+    # ==========================================================
+    # REDUCTION OPERATIONS
+    # ==========================================================
+    #
+    # Reduce dimensions by applying an operation.
+    #
+
+    values = tf.constant([
+        10,
+        20,
+        30,
+        40,
+        50
     ])
+
+    # Sum of all values
+    sum_tensor = tf.reduce_sum(values)
+
+    # Mean value
+    mean_tensor = tf.reduce_mean(values)
+
+    # Maximum value
+    max_tensor = tf.reduce_max(values)
+
+    # Minimum value
+    min_tensor = tf.reduce_min(values)
+
+    # Product of all values
+    product_tensor = tf.reduce_prod(values)
+
+    # Variance
+    variance_tensor = tf.math.reduce_variance(
+        tf.cast(values, tf.float32)
+    )
+
+    # Standard Deviation
+    std_tensor = tf.math.reduce_std(
+        tf.cast(values, tf.float32)
+    )
+
+    # ==========================================================
+    # ARGMAX / ARGMIN
+    # ==========================================================
+    #
+    # Frequently used in classification models.
+    #
+
+    argmax_tensor = tf.argmax(values)
+
+    argmin_tensor = tf.argmin(values)
+
+    # ==========================================================
+    # TOP-K
+    # ==========================================================
+    #
+    # Return largest K values and their indices.
+    #
+
+    scores = tf.constant([
+        0.15,
+        0.80,
+        0.40,
+        0.95,
+        0.60
+    ])
+
+    top_values, top_indices = tf.math.top_k(
+        scores,
+        k=3
+    )
+
+    # ==========================================================
+    # COMPARISON OPERATIONS
+    # ==========================================================
+    #
+    # Returns boolean tensors.
+    #
+
+    greater_than_tensor = tf.math.greater(
+        values,
+        25
+    )
+
+    less_than_tensor = tf.math.less(
+        values,
+        25
+    )
+
+    equal_tensor = tf.math.equal(
+        values,
+        30
+    )
+
+    # ==========================================================
+    # LOGICAL OPERATIONS
+    # ==========================================================
+    #
+    # Operate on boolean tensors.
+    #
+
+    logical_a = tf.constant([
+        True,
+        False,
+        True
+    ])
+
+    logical_b = tf.constant([
+        True,
+        True,
+        False
+    ])
+
+    logical_and_tensor = tf.logical_and(
+        logical_a,
+        logical_b
+    )
+
+    logical_or_tensor = tf.logical_or(
+        logical_a,
+        logical_b
+    )
+
+    logical_not_tensor = tf.logical_not(
+        logical_a
+    )
 
     # ==========================================================
     # RESHAPE
@@ -418,102 +384,6 @@ def main():
     squeezed = tf.squeeze(expanded)
 
     # ==========================================================
-    # REDUCTION OPERATIONS
-    # ==========================================================
-
-    values = tf.constant([
-        10, 20, 30, 40, 50
-    ])
-
-    reduction_df = pd.DataFrame([
-        ["Sum", tf.reduce_sum(values).numpy()],
-        ["Mean", tf.reduce_mean(values).numpy()],
-        ["Maximum", tf.reduce_max(values).numpy()],
-        ["Minimum", tf.reduce_min(values).numpy()],
-        ["Product", tf.reduce_prod(values).numpy()]
-    ], columns=["Metric", "Value"])
-
-    # ==========================================================
-    # ARGMAX / ARGMIN
-    # ==========================================================
-    #
-    # Very common in classification models.
-    #
-    arg_df = pd.DataFrame([
-        [
-            "Arg Max",
-            tf.argmax(values).numpy()
-        ],
-        [
-            "Arg Min",
-            tf.argmin(values).numpy()
-        ]
-    ], columns=[
-        "Operation",
-        "Index"
-    ])
-
-    # ==========================================================
-    # COMPARISON OPERATIONS
-    # ==========================================================
-
-    comparison_df = pd.DataFrame([
-        [
-            "Greater Than",
-            tf.math.greater(
-                values,
-                25
-            ).numpy().tolist()
-        ],
-        [
-            "Less Than",
-            tf.math.less(
-                values,
-                25
-            ).numpy().tolist()
-        ]
-    ], columns=[
-        "Comparison",
-        "Result"
-    ])
-
-    # ==========================================================
-    # LOGICAL OPERATIONS
-    # ==========================================================
-
-    logical_a = tf.constant([
-        True,
-        False,
-        True
-    ])
-
-    logical_b = tf.constant([
-        True,
-        True,
-        False
-    ])
-
-    logical_df = pd.DataFrame([
-        [
-            "Logical AND",
-            tf.logical_and(
-                logical_a,
-                logical_b
-            ).numpy().tolist()
-        ],
-        [
-            "Logical OR",
-            tf.logical_or(
-                logical_a,
-                logical_b
-            ).numpy().tolist()
-        ]
-    ], columns=[
-        "Operation",
-        "Result"
-    ])
-
-    # ==========================================================
     # RANDOM TENSORS
     # ==========================================================
     #
@@ -532,95 +402,112 @@ def main():
     )
 
     # ==========================================================
-    # STATISTICS
-    # ==========================================================
-
-    statistics_df = pd.DataFrame([
-        [
-            "Mean",
-            tf.reduce_mean(
-                values
-            ).numpy()
-        ],
-        [
-            "Standard Deviation",
-            tf.math.reduce_std(
-                tf.cast(
-                    values,
-                    tf.float32
-                )
-            ).numpy()
-        ]
-    ], columns=[
-        "Metric",
-        "Value"
-    ])
-
-    # ==========================================================
-    # NUMPY CONVERSION
-    # ==========================================================
-
-    numpy_array = vector.numpy()
-
-    numpy_conversion_df = pd.DataFrame([
-        [
-            "TensorFlow Tensor",
-            vector.numpy().tolist()
-        ],
-        [
-            "NumPy Array",
-            numpy_array.tolist()
-        ]
-    ], columns=[
-        "Object",
-        "Value"
-    ])
-
-    # ==========================================================
-    # GPU DETECTION
-    # ==========================================================
-
-    gpus = tf.config.list_physical_devices(
-        "GPU"
-    )
-
-    gpu_df = pd.DataFrame([
-        ["GPU Count", len(gpus)]
-    ], columns=[
-        "Property",
-        "Value"
-    ])
-
-    # ==========================================================
     # REPORT
     # ==========================================================
 
     html_doc = builder.build_page(
         "TensorFlow Fundamentals Report",
         builder.grid([
-            builder.card("Tensor Objects", builder.render_dataframe(tensor_objects_df)),
-            builder.card("Ragged Tensor", builder.render_dataframe(ragged_df)),
-            builder.card("Tensor Shape & Rank", builder.render_dataframe(shape_df)),
-            builder.card("Tensor Datatypes", builder.render_dataframe(datatype_df)),
-            builder.card("Tensor Variables", builder.render_dataframe(variable_df)),
-            builder.card("Mathematical Operations", builder.render_dataframe(math_df)),
-            builder.card("Absolute Value", builder.render_dataframe(pd.DataFrame(abs_tensor.numpy()))),
-            builder.card("Exponential", builder.render_dataframe(pd.DataFrame(exp_tensor.numpy()))),
-            builder.card("Logarithm", builder.render_dataframe(pd.DataFrame(log_tensor.numpy()))),
-            builder.card("Power", builder.render_dataframe(pd.DataFrame(power_tensor.numpy()))),
-            builder.card("Indexing Operations", builder.render_dataframe(indexing_df)),
-            builder.card("Slicing Operations", builder.render_dataframe(slicing_df)),
-            builder.card("Reduction Operations", builder.render_dataframe(reduction_df)),
-            builder.card("ArgMax / ArgMin", builder.render_dataframe(arg_df)),
-            builder.card("Comparison Operations", builder.render_dataframe(comparison_df)),
-            builder.card("Logical Operations", builder.render_dataframe(logical_df)),
-            builder.card("Statistics", builder.render_dataframe(statistics_df)),
-            builder.card("NumPy Conversion", builder.render_dataframe(numpy_conversion_df)),
-            builder.card("GPU Information", builder.render_dataframe(gpu_df)),
-            builder.card("Matrix Multiplication", builder.render_dataframe(pd.DataFrame(matrix_result))),
-            builder.card("Reshaped Tensor", builder.render_dataframe(pd.DataFrame(reshaped.numpy()))),
-            builder.card("Random Uniform Tensor", builder.render_dataframe(pd.DataFrame(random_uniform.numpy()))),
-            builder.card("Random Normal Tensor", builder.render_dataframe(pd.DataFrame(random_normal.numpy())))
+
+            # ==================================================
+            # TENSOR OBJECTS
+            # ==================================================
+
+            builder.card("Scalar Tensor", builder.render_tensor(scalar)),
+            builder.card("Vector Tensor", builder.render_tensor(vector)),
+            builder.card("Matrix Tensor", builder.render_tensor(matrix)),
+            builder.card("3D Tensor", builder.render_tensor(tensor_3d)),
+            builder.card("Ragged Tensor", builder.render_tensor(ragged_tensor)),
+            builder.card("Integer Tensor", builder.render_tensor(int_tensor)),
+            builder.card("Float Tensor", builder.render_tensor(float_tensor)),
+
+            # ==================================================
+            # TENSOR CONVERSION
+            # ==================================================
+
+            builder.card("NumPy → Tensor", builder.render_tensor(numpy_tensor)),
+            builder.card("DataFrame → Tensor", builder.render_tensor(dataframe_tensor)),
+
+            # ==================================================
+            # TENSOR MANIPULATION
+            # ==================================================
+
+            builder.card("Reshape", builder.render_tensor(reshaped)),
+            builder.card("Concatenation", builder.render_tensor(concat_tensor)),
+            builder.card("Stack", builder.render_tensor(stacked_tensor)),
+            builder.card("Expand Dims", builder.render_tensor(expanded)),
+            builder.card("Squeeze", builder.render_tensor(squeezed)),
+
+            # ==================================================
+            # TENSOR OPERATIONS
+            # ==================================================
+
+            builder.card("Tensor A", builder.render_tensor(a)),
+            builder.card("Tensor B", builder.render_tensor(b)),
+            builder.card("Addition", builder.render_tensor(tf.add(a, b))),
+            builder.card("Subtraction", builder.render_tensor(tf.subtract(b, a))),
+            builder.card("Multiplication", builder.render_tensor(tf.multiply(a, b))),
+            builder.card("Division", builder.render_tensor(tf.divide(b, a))),
+            builder.card("Matrix Multiplication", builder.render_tensor(tf.matmul(matrix_a, matrix_b))),
+
+            # ==================================================
+            # INDEXING
+            # ==================================================
+            builder.card("Index Tensor", builder.render_tensor(sample_tensor)),
+            builder.card("First Element", builder.render_tensor(first_element)),
+            builder.card("Last Element", builder.render_tensor(last_element)),
+            builder.card("First Row", builder.render_tensor(first_row)),
+            builder.card("Second Row", builder.render_tensor(second_row)),
+            builder.card("Third Column", builder.render_tensor(third_column)),
+
+            # ==================================================
+            # SLICING
+            # ==================================================
+            builder.card("Rows 0-2", builder.render_tensor(rows_0_2)),
+            builder.card("Columns 0-2", builder.render_tensor(columns_0_2)),
+            builder.card("Center Block", builder.render_tensor(center_block)),
+            builder.card("Bottom Right Block", builder.render_tensor(bottom_right)),
+
+            # ==================================================
+            # REDUCTION
+            # ==================================================
+            builder.card("Values Tensor", builder.render_tensor(values)),
+            builder.card("Sum", builder.render_tensor(sum_tensor)),
+            builder.card("Mean", builder.render_tensor(mean_tensor)),
+            builder.card("Max", builder.render_tensor(max_tensor)),
+            builder.card("Min", builder.render_tensor(min_tensor)),
+            builder.card("Product", builder.render_tensor(product_tensor)),
+            builder.card("Standard Deviation", builder.render_tensor(std_tensor)),
+            builder.card("Variance", builder.render_tensor(variance_tensor)),
+            # ==================================================
+            # ARGMAX / ARGMIN
+            # ==================================================
+            builder.card("ArgMax", builder.render_tensor(argmax_tensor)),
+            builder.card("ArgMin", builder.render_tensor(argmin_tensor)),
+            # ==================================================
+            # TOP-K
+            # ==================================================
+            builder.card("Top Values", builder.render_tensor(top_values)),
+            builder.card("Top Indices", builder.render_tensor(top_indices)),
+            # ==================================================
+            # COMPARISON
+            # ==================================================
+            builder.card("Greater Than 25", builder.render_tensor(greater_than_tensor)),
+            builder.card("Less Than 25", builder.render_tensor(less_than_tensor)),
+            builder.card("Equal to 30", builder.render_tensor(equal_tensor)),
+            # ==================================================
+            # LOGICAL
+            # ==================================================
+            builder.card("Logical A", builder.render_tensor(logical_a)),
+            builder.card("Logical B", builder.render_tensor(logical_b)),
+            builder.card("Logical OR", builder.render_tensor(logical_or_tensor)),
+            builder.card("Logical NOT", builder.render_tensor(logical_not_tensor)),
+            builder.card("Logical AND", builder.render_tensor(logical_and_tensor)),
+            # ==================================================
+            # RANDOM TENSORS
+            # ==================================================
+            builder.card("Random Uniform", builder.render_tensor(random_uniform)),
+            builder.card("Random Normal", builder.render_tensor(random_normal)),
         ]))
 
     ru.save_html_report(

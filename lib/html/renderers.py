@@ -686,3 +686,209 @@ border border-slate-300 dark:border-slate-700
         <div class='my-4'>[{latex}]</div>
         """
         return f"<span>\\({latex}\\)</span>"
+
+    # --------------------------------------------------
+    # Deep Learning / Tensor Rendering
+    # --------------------------------------------------
+
+    def render_tensor(self, tensor, title: str = "Tensor") -> str:
+        """
+        Render TensorFlow/PyTorch/NumPy tensors in a
+        Deep Learning friendly format.
+
+        Displays:
+            - Tensor Type
+            - Shape
+            - Rank
+            - Dimensions
+            - DType
+            - Total Elements
+            - Memory Usage
+            - Tensor Values
+
+        Supports:
+            - TensorFlow Tensor
+            - TensorFlow Variable
+            - TensorFlow RaggedTensor
+            - PyTorch Tensor
+            - NumPy Array
+            - Python List
+        """
+
+        uid = f"tensor_{uuid.uuid4().hex[:8]}"
+
+        tensor_type = type(tensor).__name__
+
+        # --------------------------------------------------
+        # Extract tensor values
+        # --------------------------------------------------
+        try:
+            if hasattr(tensor, "to_list"):  # RaggedTensor
+                values = tensor.to_list()
+
+            elif hasattr(tensor, "numpy"):
+                values = tensor.numpy().tolist()
+
+            else:
+                values = tensor
+
+        except Exception:
+            values = str(tensor)
+
+        # --------------------------------------------------
+        # Shape
+        # --------------------------------------------------
+        try:
+            shape = tuple(tensor.shape)
+        except Exception:
+            try:
+                shape = np.array(values).shape
+            except Exception:
+                shape = "N/A"
+
+        # --------------------------------------------------
+        # Rank
+        # --------------------------------------------------
+        try:
+            rank = len(shape)
+        except Exception:
+            rank = "N/A"
+
+        # --------------------------------------------------
+        # Data Type
+        # --------------------------------------------------
+        try:
+            dtype = str(tensor.dtype)
+        except Exception:
+            dtype = type(values).__name__
+
+        # --------------------------------------------------
+        # Total Elements
+        # --------------------------------------------------
+        try:
+            size = int(np.prod(shape))
+        except Exception:
+            size = "N/A"
+
+        # --------------------------------------------------
+        # Memory Estimate
+        # --------------------------------------------------
+        try:
+            memory_bytes = np.array(values).nbytes
+
+            if memory_bytes < 1024:
+                memory = f"{memory_bytes} Bytes"
+
+            elif memory_bytes < 1024 ** 2:
+                memory = f"{memory_bytes / 1024:.2f} KB"
+
+            else:
+                memory = f"{memory_bytes / (1024 ** 2):.2f} MB"
+
+        except Exception:
+            memory = "N/A"
+
+        # --------------------------------------------------
+        # Pretty Tensor Display
+        # --------------------------------------------------
+        tensor_text = html.escape(str(values))
+
+        return f"""
+        <div class="space-y-4">
+
+            <!-- Header -->
+            <div class="
+                    p-3
+                    rounded
+                    bg-slate-100
+                    dark:bg-slate-800
+            ">
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm text-slate-900 dark:text-slate-100">
+
+                    <div>
+                        <span class="font-semibold">Type:</span>
+                        {html.escape(tensor_type)}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">Shape:</span>
+                        {html.escape(str(shape))}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">Rank:</span>
+                        {rank}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">Dimensions:</span>
+                        {rank}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">DType:</span>
+                        {html.escape(dtype)}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">Elements:</span>
+                        {size}
+                    </div>
+
+                    <div>
+                        <span class="font-semibold">Memory:</span>
+                        {memory}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Tensor Values -->
+            <div class="
+                border border-slate-300 dark:border-slate-700
+                rounded-lg
+            ">
+
+                <div class="
+                    px-4 py-2
+                    bg-slate-100 dark:bg-slate-800
+                    border-b border-slate-300 dark:border-slate-700
+                    text-slate-900 dark:text-slate-100
+                ">
+                    Tensor Values
+                </div>
+
+                <pre class="
+                    p-4
+                    overflow-auto
+                    text-sm
+                    bg-white
+                    max-h-96
+                ">{tensor_text}</pre>
+
+            </div>
+
+            <!-- Fullscreen Template -->
+            <button
+                onclick="openModalFromTemplate('{uid}')"
+                class="
+                    text-sm
+                    px-3 py-2
+                    rounded
+                    bg-slate-600
+                    text-white
+                    hover:bg-slate-700
+                "
+            >
+                View Full Tensor
+            </button>
+
+            <template id="{uid}">
+                <pre class="p-4 text-sm whitespace-pre-wrap">
+    {tensor_text}
+                </pre>
+            </template>
+
+        </div>
+        """
