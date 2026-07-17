@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 
 import joblib
@@ -135,6 +135,8 @@ class BaseExperimentUtility(ABC):
     # Plotting Interface
     # --------------------------------------------------
 
-    @abstractmethod
     def plot_results(self):
-        pass
+        raise NotImplementedError(
+            f"{self.__class__.__name__} "
+            "does not implement plot_results()"
+        )

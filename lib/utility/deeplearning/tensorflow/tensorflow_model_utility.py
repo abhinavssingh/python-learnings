@@ -1,8 +1,8 @@
 from lib.utility.common.base_experiment_utility import BaseExperimentUtility
-from lib.utility.deeplearning.training.trainer import Trainer
+from lib.utility.deeplearning.tensorflow.training.trainer import Trainer
 
 
-class DeepLearningModelUtility(BaseExperimentUtility):
+class TensorFlowModelUtility(BaseExperimentUtility):
 
     def __init__(self, model_wrapper, config):
         super().__init__()
