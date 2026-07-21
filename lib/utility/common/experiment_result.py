@@ -1,21 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
 class ExperimentResult:
+
     model_name: str
 
-    train_score: float = None
-    test_score: float = None
+    model_type: str = ""
 
-    accuracy: float = None
-    precision: float = None
-    recall: float = None
-    f1_score: float = None
+    training_time: float = 0.0
 
-    mae: float = None
-    mse: float = None
-    rmse: float = None
-    r2_score: float = None
+    metrics: dict = field(default_factory=dict)
 
-    training_time: float = None
+    parameters: dict = field(default_factory=dict)
+
+    history: Any = None
+
+    artifacts: dict = field(default_factory=dict)

@@ -1,17 +1,10 @@
 from abc import ABC
 from datetime import datetime
 
-import joblib
 import pandas as pd
 
 
 class BaseExperimentUtility(ABC):
-    """
-    Common functionality shared by
-    Classification,
-    Regression,
-    Deep Learning utilities.
-    """
 
     def __init__(self):
 
@@ -29,14 +22,11 @@ class BaseExperimentUtility(ABC):
 
         self.end_time = None
 
-    # --------------------------------------------------
+    # =================================================
     # Experiment Tracking
-    # --------------------------------------------------
+    # =================================================
 
-    def start_experiment(
-        self,
-        experiment_name: str
-    ):
+    def start_experiment(self, experiment_name: str):
 
         self.experiment_name = experiment_name
 
@@ -48,24 +38,18 @@ class BaseExperimentUtility(ABC):
 
     def get_experiment_duration(self):
 
-        if (
-            self.start_time is None
-            or self.end_time is None
-        ):
+        if not self.start_time or not self.end_time:
             return None
 
         return (
             self.end_time - self.start_time
         ).total_seconds()
 
-    # --------------------------------------------------
+    # =================================================
     # Metrics
-    # --------------------------------------------------
+    # =================================================
 
-    def add_metrics(
-        self,
-        metrics: dict
-    ):
+    def add_metrics(self, metrics: dict):
 
         self.metrics.update(metrics)
 
@@ -73,70 +57,42 @@ class BaseExperimentUtility(ABC):
 
         return self.metrics
 
-    # --------------------------------------------------
-    # Results Tracking
-    # --------------------------------------------------
+    # =================================================
+    # Results
+    # =================================================
 
-    def add_result(
-        self,
-        result: dict
-    ):
+    def add_result(self, result: dict):
+
         self.results.append(result)
 
     def get_results_df(self):
 
         return pd.DataFrame(self.results)
 
-    # --------------------------------------------------
-    # Model Persistence
-    # --------------------------------------------------
+    def clear_results(self):
+        self.results = []
 
-    def save_model(
-        self,
-        filepath: str
-    ):
-
-        joblib.dump(
-            self.model,
-            filepath
-        )
-
-    def load_model(
-        self,
-        filepath: str
-    ):
-
-        self.model = joblib.load(
-            filepath
-        )
-
-        return self.model
-
-    # --------------------------------------------------
+    def reset_metrics(self):
+        self.metrics = {}
+    # =================================================
     # Reporting
-    # --------------------------------------------------
+    # =================================================
 
     def generate_report(self):
 
-        report = {
-            "experiment_name":
-                self.experiment_name,
-
-            "duration_seconds":
-                self.get_experiment_duration(),
-
-            "metrics":
-                self.metrics
+        return {
+            "experiment_name": self.experiment_name,
+            "duration_seconds": self.get_experiment_duration(),
+            "metrics": self.metrics
         }
 
-        return report
-
-    # --------------------------------------------------
-    # Plotting Interface
-    # --------------------------------------------------
+    # =================================================
+    # Plotting Hook
+    # =================================================
 
     def plot_results(self):
-        raise NotImplementedError(
-            f"{self.__class__.__name__} "
-            "does not implement plot_results()"
-        )
+        """
+        Override only if plotting
+        is supported.
+        """
+        pass

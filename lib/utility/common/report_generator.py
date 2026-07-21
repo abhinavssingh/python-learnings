@@ -1,25 +1,10 @@
-import pandas as pd
-
-
 class ReportGenerator:
 
     @staticmethod
-    def generate_summary(
-        experiment_name,
-        metrics,
-        duration
-    ):
+    def generate(result):
 
         return {
-            "Experiment Name": experiment_name,
-            "Duration (sec)": duration,
-            **metrics
+            "model_name": result.model_name,
+            "training_time": result.training_time,
+            **result.metrics
         }
-
-    @staticmethod
-    def generate_results_df(results):
-
-        if not results:
-            return pd.DataFrame()
-
-        return pd.DataFrame(results)
