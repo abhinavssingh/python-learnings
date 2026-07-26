@@ -20,6 +20,10 @@ def main():
 
     builder = HtmlBuilder()
 
+    # ==========================================================
+    # DATA
+    # ==========================================================
+
     X, y = make_classification(
         n_samples=1000,
         n_features=20,
@@ -33,6 +37,10 @@ def main():
         random_state=42,
     )
 
+    # ==========================================================
+    # CONFIG
+    # ==========================================================
+
     config = DeepLearningConfig(
         epochs=20,
         batch_size=32,
@@ -40,6 +48,10 @@ def main():
         learning_rate=0.001,
         loss="binary_crossentropy",
     )
+
+    # ==========================================================
+    # PIPELINE
+    # ==========================================================
 
     pipeline = TensorFlowDropoutPipeline(
         model_wrapper_class=MLPWrapper,
@@ -54,6 +66,7 @@ def main():
         model_kwargs={
             "input_dim": 20,
             "output_dim": 1,
+            "hidden_layers": [64, 32],
             "output_activation": "sigmoid",
         },
     )
@@ -65,17 +78,31 @@ def main():
         y_test,
     )
 
+    print(results_df)
+
+    # ==========================================================
+    # REPORT
+    # ==========================================================
+
+    best_dropout = (
+        results_df.iloc[0].to_dict()
+        if not results_df.empty
+        else {}
+    )
+
     html_doc = builder.build_page(
         "TensorFlow Dropout Comparison Report",
         builder.grid([
             builder.card(
                 "Dropout Results",
-                builder.render_dataframe(results_df),
+                builder.render_dataframe(
+                    results_df
+                ),
             ),
             builder.card(
                 "Best Dropout Rate",
                 builder.render_dict(
-                    results_df.iloc[0].to_dict()
+                    best_dropout
                 ),
             ),
         ])

@@ -67,6 +67,7 @@ def main():
             "input_dim": 20,
             "output_dim": 1,
             "hidden_layers": [64, 32],
+            "output_activation": "sigmoid",
         },
     )
 
@@ -93,7 +94,7 @@ def main():
         "TensorFlow Batch Size Comparison Report",
         builder.grid([
             builder.card(
-                "Batch Size Comparison Results",
+                "Batch Size Results",
                 builder.render_dataframe(
                     results_df
                 ),

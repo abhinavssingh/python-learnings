@@ -11,12 +11,19 @@ from lib.utility.deeplearning.frameworks.tensorflow.models.dense.mlp_wrapper imp
 from lib.utility.deeplearning.frameworks.tensorflow.pipelines.tf_model_pipeline import (
     TensorFlowModelPipeline,
 )
-from lib.utility.reports.report_utils import ReportUtils as ru
+from lib.utility.reports.report_utils import (
+    ReportUtils as ru,
+)
 
 
 def main():
 
     builder = HtmlBuilder()
+
+    # ==========================================================
+    # DATA
+    # ==========================================================
+
     X, y = make_classification(
         n_samples=1000,
         n_features=20,
@@ -30,6 +37,10 @@ def main():
         random_state=42,
     )
 
+    # ==========================================================
+    # CONFIG
+    # ==========================================================
+
     config = DeepLearningConfig(
         epochs=20,
         batch_size=32,
@@ -38,11 +49,20 @@ def main():
         loss="binary_crossentropy",
     )
 
+    # ==========================================================
+    # MODEL
+    # ==========================================================
+
     model = MLPWrapper(
         input_dim=20,
         output_dim=1,
         hidden_layers=[64, 32],
+        output_activation="sigmoid",
     )
+
+    # ==========================================================
+    # PIPELINE
+    # ==========================================================
 
     pipeline = TensorFlowModelPipeline(
         model_wrapper=model,
@@ -65,18 +85,44 @@ def main():
     html_doc = builder.build_page(
         "TensorFlow Model Experiment Report",
         builder.grid([
-            builder.card("Model Name", builder.render_pre(result.model_name)),
-            builder.card("Predictions", builder.render_dict(result.artifacts)),
-            builder.card("Training Metrics", builder.render_dict(result.metrics)),
-            builder.card("Training History", builder.render_dict(result.history.to_dict())),
-        ]))
+            builder.card(
+                "Model Name",
+                builder.render_pre(
+                    result.model_name
+                ),
+            ),
+            builder.card(
+                "Training Metrics",
+                builder.render_dict(
+                    result.metrics
+                ),
+            ),
+            builder.card(
+                "Training History",
+                builder.render_dataframe(
+                    result.history.to_dataframe()
+                ),
+            ),
+            builder.card(
+                "Predictions",
+                builder.render_pre(
+                    str(
+                        result.artifacts.get(
+                            "predictions",
+                            []
+                        )[:20]
+                    )
+                ),
+            ),
+        ])
+    )
 
     ru.save_html_report(
         __file__,
         "tensorflow_model_experiment_report.html",
         html_doc,
         subfolder="reports",
-        open_in_browser=True
+        open_in_browser=True,
     )
 
 

@@ -64,14 +64,17 @@ def main():
             input_dim=20,
             output_dim=1,
             hidden_layers=[64, 32],
+            output_activation="sigmoid",
         ),
         ParallelMLPWrapper(
             input_dim=20,
             output_units=1,
+            output_activation="sigmoid",
         ),
         MixedMLPWrapper(
             input_dim=20,
             output_units=1,
+            output_activation="sigmoid",
         ),
     ]
 
@@ -105,20 +108,22 @@ def main():
 
     html_doc = builder.build_page(
         "TensorFlow Architecture Comparison Report",
-        builder.grid([
-            builder.card(
-                "Architecture Comparison Results",
-                builder.render_dataframe(
-                    results_df
+        builder.grid(
+            [
+                builder.card(
+                    "Architecture Comparison Results",
+                    builder.render_dataframe(
+                        results_df
+                    ),
                 ),
-            ),
-            builder.card(
-                "Best Architecture",
-                builder.render_dict(
-                    best_architecture
+                builder.card(
+                    "Best Architecture",
+                    builder.render_dict(
+                        best_architecture
+                    ),
                 ),
-            ),
-        ])
+            ]
+        ),
     )
 
     ru.save_html_report(

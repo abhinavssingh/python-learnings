@@ -67,6 +67,7 @@ def main():
         model_kwargs={
             "input_dim": 20,
             "output_dim": 1,
+            "hidden_layers": [64, 32],
             "output_activation": "sigmoid",
         },
     )
