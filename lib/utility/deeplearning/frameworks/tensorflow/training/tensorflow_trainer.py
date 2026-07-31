@@ -61,17 +61,12 @@ class TensorFlowTrainer(BaseTrainer):
             framework="tensorflow",
             loss_name=self.config.loss,
         )
-        print("CONFIG LOSS:", self.config.loss)
-        print("LOSS OBJECT:", loss)
-        print("OPTIMIZER:", optimizer)
 
         self.model.compile(
             optimizer=optimizer,
             loss=loss,
             metrics=metrics or ["accuracy"],
         )
-
-        print("MODEL LOSS:", self.model.loss)
     # =====================================================
     # Train
     # =====================================================

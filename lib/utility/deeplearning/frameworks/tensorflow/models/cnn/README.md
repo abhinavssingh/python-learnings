@@ -6,11 +6,13 @@ Convolutional neural network architectures.
 
 cnn_wrapper.py
 resnet_wrapper.py
+efficientnet_wrapper.py
 
 ## Supported Architectures
 
 CNN
 ResNet
+EfficientNetB0
 
 ## Use Cases
 

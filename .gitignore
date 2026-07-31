@@ -24,3 +24,8 @@ venv/
 *.tmp
 /settings.json
 !*.json.example
+
+# image files
+*.png
+*.jpg
+**/*.jpg

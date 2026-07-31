@@ -22,6 +22,12 @@ class CallbacksFactory:
         # Early Stopping
         if getattr(config, "early_stopping", False):
 
+            patience = getattr(
+                config,
+                "early_stopping_patience",
+                getattr(config, "patience", 5),
+            )
+
             callbacks.append(
                 tf.keras.callbacks.EarlyStopping(
                     monitor=getattr(
@@ -29,17 +35,13 @@ class CallbacksFactory:
                         "early_stopping_monitor",
                         "val_loss",
                     ),
-                    patience=getattr(
-                        config,
-                        "early_stopping_patience",
-                        5,
-                    ),
+                    patience=patience,
                     restore_best_weights=True,
                 )
             )
 
         # Reduce LR on Plateau
-        if getattr(config, "reduce_lr_on_plateau", False):
+        if getattr(config, "reduce_lr_on_plateau", getattr(config, "reduce_lr", False)):
 
             callbacks.append(
                 tf.keras.callbacks.ReduceLROnPlateau(

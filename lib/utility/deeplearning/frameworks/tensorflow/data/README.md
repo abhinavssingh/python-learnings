@@ -6,6 +6,7 @@ Responsible for building TensorFlow datasets.
 
 tf_data_loader.py
 tf_dataset_builder.py
+tf_image_classification_data_loader.py
 
 ## Responsibilities
 
@@ -13,6 +14,7 @@ tf_dataset_builder.py
 - batching
 - shuffling
 - prefetching
+- image-folder train/validation/test generators
 
 Outputs
 

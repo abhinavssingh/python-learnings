@@ -3,13 +3,13 @@ import tensorflow as tf
 from ..functional_wrapper import FunctionalWrapper
 
 
-class ResNetWrapper(FunctionalWrapper):
+class EfficientNetB0Wrapper(FunctionalWrapper):
     def __init__(
         self,
         input_shape: tuple,
         num_classes: int,
         trainable: bool = False,
-        dropout_rate: float = 0.0,
+        dropout_rate: float = 0.2,
         output_activation: str = "softmax",
     ):
         self.input_shape = input_shape
@@ -27,7 +27,7 @@ class ResNetWrapper(FunctionalWrapper):
             name="input_layer",
         )
 
-        backbone = tf.keras.applications.ResNet50(
+        backbone = tf.keras.applications.EfficientNetB0(
             include_top=False,
             weights="imagenet",
             input_tensor=inputs,
@@ -48,5 +48,5 @@ class ResNetWrapper(FunctionalWrapper):
         return tf.keras.Model(
             inputs=inputs,
             outputs=outputs,
-            name="ResNet50",
+            name="EfficientNetB0",
         )
