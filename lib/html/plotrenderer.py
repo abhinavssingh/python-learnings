@@ -208,10 +208,9 @@ class PlotRenderer:
             str: HTML string with plot wrapped in a full-width chart card
         """
 
-        plot_html, plotly_var = self.plot_to_full_width_card(plot_obj)
+        plot_html, _ = self.plot_to_html_full_width(plot_obj)
 
         return self.components.chart_full_width(
             title=title,
             content=plot_html,
-            plotly_var=plotly_var,
         )

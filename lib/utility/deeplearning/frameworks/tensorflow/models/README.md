@@ -1,27 +1,19 @@
 # TensorFlow Models
 
-TensorFlow model wrappers.
+Model wrappers that expose a consistent interface for TensorFlow experiments.
 
-## Base Classes
+## Base Wrappers
 
-tensorflow_model_wrapper.py
+- tensorflow_model_wrapper.py
+- functional_wrapper.py
+- sequential_wrapper.py
 
-functional_wrapper.py
+## Model Families
 
-sequential_wrapper.py
+- dense/: MLP variants for tabular inputs
+- cnn/: Convolutional and transfer-learning wrappers
+- sequence/: LSTM/Transformer/CNN-LSTM wrappers
 
-## Model Categories
+## Wrapper Pattern
 
-dense/
-cnn/
-sequence/
-
-## Design
-
-BaseModelWrapper
-↓
-TensorFlowModelWrapper
-↓
-FunctionalWrapper / SequentialWrapper
-↓
-Concrete Model
+BaseModelWrapper -> TensorFlowModelWrapper -> Functional/Sequential wrapper -> Concrete architecture

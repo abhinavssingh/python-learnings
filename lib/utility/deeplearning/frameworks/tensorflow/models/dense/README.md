@@ -13,3 +13,11 @@ parallel_mlp_wrapper.py
 MLP
 Residual MLP
 Parallel Branch MLP
+
+## Typical Inputs
+
+- Tabular and engineered numeric features
+
+## Notes
+
+- Wrappers expose configurable activations, regularization, initialization, and dropout.

@@ -159,7 +159,6 @@ class DataLoader:
 
     @overload
     @classmethod
-    @_log_exceptions.__func__("read_dataset")
     def read_dataset(
         cls,
         filename: str,

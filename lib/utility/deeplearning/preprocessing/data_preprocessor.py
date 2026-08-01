@@ -12,6 +12,8 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
+from .resampling import SMOTEResampler
+
 
 @dataclass
 class PreprocessingResult:
@@ -24,6 +26,8 @@ class PreprocessingResult:
     preprocessor: ColumnTransformer
 
     label_encoders: dict
+
+    imbalance_summary: dict | None = None
 
 
 class DataPreprocessor:
@@ -38,6 +42,9 @@ class DataPreprocessor:
         scale_numeric: bool = True,
         test_size: float = 0.2,
         random_state: int = 42,
+        oversample: bool = False,
+        oversample_method: str | None = "smote",
+        oversample_params: dict | None = None,
     ) -> PreprocessingResult:
 
         df = df.copy()
@@ -167,6 +174,19 @@ class DataPreprocessor:
             X_test
         )
 
+        imbalance_summary = None
+        if oversample:
+            if oversample_method == "smote":
+                X_train, y_train, imbalance_summary = SMOTEResampler.resample(
+                    X_train,
+                    y_train,
+                    **(oversample_params or {}),
+                )
+            else:
+                raise ValueError(
+                    f"Unsupported oversample_method: {oversample_method}"
+                )
+
         return PreprocessingResult(
             X_train=X_train,
             X_test=X_test,
@@ -174,6 +194,7 @@ class DataPreprocessor:
             y_test=y_test,
             preprocessor=preprocessor,
             label_encoders=label_encoders,
+            imbalance_summary=imbalance_summary,
         )
 
     @staticmethod
