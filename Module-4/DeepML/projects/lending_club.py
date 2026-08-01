@@ -5,10 +5,18 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 from sklearn.metrics import confusion_matrix
 
-from lib.html import HtmlBuilder
-from lib.html.plotrenderer import PlotRenderer
+from lib.html import HtmlBuilder, PlotRenderer
 from lib.utility.dataframe.data_loader import DataLoader as dl
 from lib.utility.dataframe.df_helper import DataFrameHelper as dfh
+from lib.utility.deeplearning import (
+    BarChartPlot,
+    ClassDistributionPlot,
+    ConfusionMatrixPlot,
+    HeatmapPlot,
+    HistogramPlot,
+    ROCurvePlot,
+    TrainingHistoryPlot,
+)
 from lib.utility.deeplearning.config.deep_learning_config import DeepLearningConfig
 from lib.utility.deeplearning.evaluation.classification_evaluator import (
     ClassificationEvaluator,
@@ -22,13 +30,6 @@ from lib.utility.deeplearning.frameworks.tensorflow.tensorflow_model_utility imp
 from lib.utility.deeplearning.preprocessing.data_preprocessor import (
     DataPreprocessor,
 )
-from lib.utility.deeplearning.visualization.bar_chart_plot import BarChartPlot
-from lib.utility.deeplearning.visualization.class_distribution_plot import ClassDistributionPlot
-from lib.utility.deeplearning.visualization.confusion_matrix_plot import ConfusionMatrixPlot
-from lib.utility.deeplearning.visualization.heatmap_plot import HeatmapPlot
-from lib.utility.deeplearning.visualization.histogram_plot import HistogramPlot
-from lib.utility.deeplearning.visualization.roc_curve_plot import ROCurvePlot
-from lib.utility.deeplearning.visualization.training_history_plot import TrainingHistoryPlot
 from lib.utility.reports.report_utils import ReportUtils as ru
 
 TARGET_COLUMN = "not.fully.paid"

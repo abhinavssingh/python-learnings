@@ -53,6 +53,10 @@ class PlotRenderer:
                 (html, None) for other libraries
         """
 
+        # If caller passed a pre-rendered HTML string, return it unchanged
+        if isinstance(plot_obj, str):
+            return plot_obj, None
+
         # ✅ Plotly (special handling)
         if hasattr(plot_obj, "to_html") and hasattr(plot_obj, "to_plotly_json"):
             plotly_var = f"fig_{uuid.uuid4().hex[:8]}"
@@ -160,6 +164,10 @@ class PlotRenderer:
                 (html, plotly_var) for Plotly
                 (html, None) for other libraries
         """
+
+        # If caller passed a pre-rendered HTML string, return it unchanged
+        if isinstance(plot_obj, str):
+            return plot_obj, None
 
         # ✅ Plotly
         if hasattr(plot_obj, "to_html") and hasattr(plot_obj, "to_plotly_json"):
