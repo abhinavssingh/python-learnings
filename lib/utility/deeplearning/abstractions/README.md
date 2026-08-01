@@ -1,27 +1,21 @@
 # Abstractions
 
-Framework-independent interfaces.
-
-These contracts are implemented by TensorFlow and PyTorch modules.
+Framework-independent contracts used across deep learning implementations.
 
 ## Files
 
-base_model_wrapper.py
-Model abstraction.
+- base_model_wrapper.py: Standard model wrapper interface
+- base_trainer.py: Training/evaluation/prediction interface
+- base_data_loader.py: Dataset loader/preparation interface
+- base_evaluator.py: Metric evaluation interface
+- base_persistence.py: Model artifact persistence interface
 
-base_trainer.py
-Training abstraction.
+## Why It Exists
 
-base_data_loader.py
-Data loading abstraction.
+- Keeps framework code modular and replaceable
+- Enables common orchestration across model types
+- Makes adding new frameworks or trainers predictable
 
-base_evaluator.py
-Evaluation abstraction.
+## Extension Pattern
 
-## Purpose
-
-Enable:
-
-BaseModelWrapper
-├── TensorFlowModelWrapper
-└── PyTorchModelWrapper
+Concrete framework classes should inherit these base contracts and provide framework-specific behavior while preserving method signatures.

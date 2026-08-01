@@ -1,27 +1,28 @@
-# 🚀 Python Learnings + Modular ML Framework
+# Python Learnings + Modular ML/DL Framework
 
-This repository contains a **structured collection of Python learning modules** along with a **scalable, production-ready Machine Learning framework**.
+This repository combines Python learning modules with reusable, utility-driven ML and deep learning frameworks.
 
-It combines:
+It includes:
 
-- ✅ Python fundamentals (NumPy, Pandas, core concepts)
-- ✅ Utility-driven execution system
-- ✅ Configuration-based path management
-- ✅ Full ML pipeline (training → evaluation → visualization → reporting)
+- Python fundamentals (NumPy, Pandas, core concepts)
+- Utility-driven execution system
+- Config-driven path management
+- Classical ML pipeline (training -> evaluation -> visualization -> reporting)
+- Deep Learning framework (TensorFlow model wrappers, data loaders, training utilities, and project pipelines)
 
 ---
 
-## 📌 Overview
+## Overview
 
-The project is divided into two major areas:
+The project is divided into three areas:
 
-### 🔹 1. Learning Modules
+### 1. Learning Modules
 
 - Python basics (Module-1)
 - NumPy / Pandas exercises (Module-2)
 - Script-based reports and experiments
 
-### 🔹 2. Machine Learning Framework ✅
+### 2. Machine Learning Framework
 
 Located under `machinelearning/`, this includes:
 
@@ -30,12 +31,23 @@ Located under `machinelearning/`, this includes:
 - Imbalance handling (SMOTE, SMOTEENN)
 - Evaluation (metrics + artifacts)
 - Comparator (ranking, best model selection)
-- Visualization (VisualizerEngine ✅)
+- Visualization (VisualizerEngine)
 - HTML report generation
+
+### 3. Deep Learning Framework
+
+Located under `lib/utility/deeplearning/` and `lib/utility/deeplearning/frameworks/tensorflow/`, this includes:
+
+- Framework abstractions and configuration
+- TensorFlow model wrappers (Dense, CNN, Sequence, Autoencoder)
+- Data loaders for tabular, image, text, and autoencoder NPZ flows
+- Training utilities and callback integration
+- Visualization helpers (ROC, confusion matrix, reconstruction grids, training history)
+- Hybrid ensemble support (LogisticRegression + RandomForest + SVC + Keras classifier via soft voting)
 
 ---
 
-## 📂 Folder Structure
+## Folder Structure
 
 ```text
 .
@@ -49,7 +61,7 @@ Located under `machinelearning/`, this includes:
 ├── assets/
 │   └── input.css        # Tailwind input CSS for reports
 │
-├── logs/                # Runtime logs
+├── log/                 # Runtime logs
 │
 ├── lib/
 │   ├── init.py          # Dynamic path resolver (core execution enabler)
@@ -65,7 +77,10 @@ Located under `machinelearning/`, this includes:
 │   ├── NumPy/           # NumPy learning scripts
 │   └── Pandas/          # Pandas scripts and reports
 ├── Module-3/
-│   ├── ML/           # machine learning scripts
+│   └── ML/              # machine learning scripts
+│
+├── Module-4/
+│   └── DeepML/          # deep learning projects and requirements
 │
 ├── machinelearning/     # Core ML framework
 │   ├── base/            # Wrappers + execution layer
@@ -77,6 +92,24 @@ Located under `machinelearning/`, this includes:
 │   ├── tuning/          # Hyperparameter tuning
 │   ├── visualization/   # VisualizerEngine + plots
 │   └── reports/         # HTML reporting
+│
+└── lib/
+   └── utility/
+      ├── dataframe/   # dataframe loaders and helpers
+      └── deeplearning/
+         ├── abstractions/
+         ├── config/
+         ├── evaluation/
+         ├── frameworks/
+         │   └── tensorflow/
+         │       ├── data/
+         │       ├── models/
+         │       ├── training/
+         │       ├── pipelines/
+         │       └── ensemble/
+         ├── optimization/
+         ├── preprocessing/
+         └── visualization/
 
 
 ```
@@ -94,26 +127,36 @@ Located under `machinelearning/`, this includes:
    cd python-learnings
    ```
 3. Set up a virtual environment (optional but recommended):
+
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # Linux/macOS
+   source venv/bin/activate
+
+   # Windows (PowerShell)
+   venv\Scripts\Activate.ps1
    ```
-4. (Optional) Exclude Jupyter notebook output from version control by adding the following to your `.gitignore` file:
-   `     # Ignore Jupyter notebook checkpoints and output
- **/.ipynb_checkpoints/
- *.ipynb
- `
-   Or, use the [`nbstripout`](https://github.com/kynan/nbstripout) tool to automatically strip output cells before committing:
-   `bash
- pip install nbstripout
- nbstripout --install
- `
+
+4. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. Optional: exclude notebook outputs from version control:
+   ```gitignore
+   **/.ipynb_checkpoints/
+   *.ipynb
+   ```
+   Optional tool:
+   ```bash
+   pip install nbstripout
+   nbstripout --install
+   ```
 
 ---
 
 ## Script Execution
 
-All scripts support **three execution modes**, enabled through `init.py`.
+All scripts support three execution modes, enabled through `init.py`.
 
 ### 1. Direct Script Execution
 
@@ -189,23 +232,23 @@ Defines importable directories:
 }
 ```
 
+## Code Formatting
+
+Format all Python files recursively:
+
+```bash
+autopep8 --in-place --recursive .
+```
+
 ---
 
-### Format Using Autopep8
+## Machine Learning Framework
 
-Format an Entire Directory: To recursively format all .py files in a folder:
-`autopep8 --in-place --recursive .`
-
----
-
-## 🤖 Machine Learning Framework
-
-Located in:
-`machinelearning/`
+Located in `machinelearning/`.
 
 ### Key Features
 
-- Wrapper-based execution (Classification, Regression, Unsupervised)
+- Wrapper-based execution (classification, regression, unsupervised)
 - Pipeline-first architecture
 - Imbalance handling (SMOTE, SMOTEENN)
 - Ensemble support (Parallel, Sequential, Stacking)
@@ -214,7 +257,7 @@ Located in:
 - Visualization via VisualizerEngine
 - HTML report generation
 
-### 🔁 ML Execution Flow
+### ML Execution Flow
 
 ```
 prepare_data()
@@ -233,12 +276,12 @@ ResultBuilder
 ↓
 Comparator (ranking)
 ↓
-VisualizerEngine ✅
+VisualizerEngine
 ↓
 HTML Report
 ```
 
-### 📊 Visualization Architecture
+### Visualization Architecture
 
 ```
 Results + Artifacts
@@ -251,7 +294,36 @@ VisualizerEngine ✅
 └── Dimensionality (PCA / t-SNE)
 ```
 
-## 🧪 Tests
+## Deep Learning Framework
+
+Located in `lib/utility/deeplearning/`.
+
+### Key Features
+
+- TensorFlow wrappers for dense, CNN, sequence, and autoencoder models
+- Reusable data loaders:
+  - Image classification (`tf_image_classification_data_loader.py`)
+  - Text classification (`tf_text_classification_data_loader.py`)
+  - Denoising autoencoder NPZ loader (`tf_autoencoder_data_loader.py`)
+- Reusable visualizations:
+  - `training_history_plot.py`
+  - `roc_curve_plot.py`
+  - `confusion_matrix_plot.py`
+  - `reconstruction_plot.py`
+- Hybrid soft-voting ensemble utilities:
+  - `tf_keras_classifier.py`
+  - `tf_voting_classifier_factory.py`
+
+### DeepML Project Examples
+
+- Face mask transfer learning
+- Home loan default prediction
+- Lending club default prediction
+- Product review classification (CNN-LSTM)
+- Dental x-ray denoising autoencoder
+- Voting classifier demo (LR + RF + SVC + Keras)
+
+## Tests
 
 ```Shell
 python test.py
@@ -259,19 +331,20 @@ python test.py
 
 Validates:
 
-- ✅ direct execution
-- ✅ module execution
-- ✅ runner discovery
-- ✅ pattern matching
-- ✅ config-based execution
+- direct execution
+- module execution
+- runner discovery
+- pattern matching
+- config-based execution
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 - Python 3.x
 - NumPy / Pandas
 - Scikit-learn
+- TensorFlow / Keras
 - Plotly
 - Tailwind CSS
 - VS Code
@@ -281,17 +354,17 @@ Validates:
 
 ## Design Principles
 
-- ✅ Modular architecture
-- ✅ Loose coupling (wrapper + registry pattern)
-- ✅ Pipeline-first design
-- ✅ Experiment-driven workflows
-- ✅ Artifact-aware evaluation
-- ✅ Config-driven extensibility
-- ✅ Production-ready design
+- Modular architecture
+- Loose coupling (wrapper + registry pattern)
+- Pipeline-first design
+- Experiment-driven workflows
+- Artifact-aware evaluation
+- Config-driven extensibility
+- Production-ready design
 
 ---
 
-## 🚀 Future Scope
+## Future Scope
 
 - AutoML orchestration
 - Multi-metric optimization

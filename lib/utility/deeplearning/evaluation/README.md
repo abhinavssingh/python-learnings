@@ -1,34 +1,19 @@
 # Evaluation
 
-Model evaluation utilities.
+Task-level evaluation helpers for deep learning experiments.
 
 ## Files
 
-classification_evaluator.py
-regression_evaluator.py
+- classification_evaluator.py
+- regression_evaluator.py
 
-## Purpose
+## Responsibilities
 
-Compute model performance metrics.
+- Provide consistent metric calculation wrappers
+- Keep project scripts concise
+- Standardize evaluation outputs for reporting
 
-Evaluators use:
+## Metric Coverage
 
-common/metrics
-
-for metric calculation.
-
-## Supported Tasks
-
-Classification
-
-- Accuracy
-- Precision
-- Recall
-- F1
-
-Regression
-
-- MAE
-- MSE
-- RMSE
-- R²
+- Classification: accuracy, precision, recall, F1
+- Regression: MAE, MSE, RMSE, R2

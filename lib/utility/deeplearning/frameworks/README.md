@@ -1,19 +1,19 @@
 # Framework Implementations
 
-Contains framework-specific implementations.
+Framework-specific deep learning implementations.
 
-## Supported Frameworks
+## Current Framework
 
-TensorFlow
+- TensorFlow
 
-Future
+## Planned Frameworks
 
-PyTorch
+- PyTorch (future)
 
-Each framework implements:
+## Expected Components Per Framework
 
-- data loading
-- model wrappers
-- training
-- persistence
-- utilities
+- Data loaders
+- Model wrappers
+- Training/evaluation utilities
+- Pipelines and orchestration helpers
+- Framework-specific adapters and integrations
