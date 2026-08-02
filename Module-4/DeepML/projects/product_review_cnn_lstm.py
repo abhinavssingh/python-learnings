@@ -237,10 +237,10 @@ def main():
 
     content.append(
         builder.chart_grid([
-            plot_renderer.plot_to_card(subset_result["roc_html"], "Task A - ROC Curve",),
-            plot_renderer.plot_to_card(full_result["roc_html"], "Task B - ROC Curve"),
-            plot_renderer.plot_to_card(subset_result["confusion_html"], "Task A - Confusion Matrix"),
-            plot_renderer.plot_to_card(full_result["confusion_html"], "Task B - Confusion Matrix")
+            plot_renderer.plot_to_card(subset_result["roc_fig"], "Task A - ROC Curve",),
+            plot_renderer.plot_to_card(full_result["roc_fig"], "Task B - ROC Curve"),
+            plot_renderer.plot_to_card(subset_result["confusion_fig"], "Task A - Confusion Matrix"),
+            plot_renderer.plot_to_card(full_result["confusion_fig"], "Task B - Confusion Matrix")
         ])
     )
 

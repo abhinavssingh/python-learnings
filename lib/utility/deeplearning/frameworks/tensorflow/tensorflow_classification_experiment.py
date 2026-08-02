@@ -65,19 +65,17 @@ class ClassificationExperimentRunner:
         if class_labels is None:
             class_labels = ["Class 0", "Class 1"]
 
-        confusion_html = ConfusionMatrixPlot.to_html(
+        confusion_fig = ConfusionMatrixPlot.create_plot(
             y_true=raw_y_test,
             y_pred=y_pred,
             class_labels=class_labels,
             title=f"{experiment_name} - Confusion Matrix",
-            include_plotlyjs=False,
         )
 
-        roc_html, auc_score = ROCurvePlot.to_html(
+        roc_fig, auc_score = ROCurvePlot.create_plot(
             y_true=raw_y_test,
             y_prob=prob_scores,
             title=f"{experiment_name} - ROC Curve",
-            include_plotlyjs=False,
         )
 
         history_df = history.to_dataframe()
@@ -108,6 +106,6 @@ class ClassificationExperimentRunner:
             "final_train_accuracy": final_train_accuracy,
             "final_val_accuracy": final_val_accuracy,
             "auc_score": float(auc_score),
-            "confusion_html": confusion_html,
-            "roc_html": roc_html,
+            "confusion_fig": confusion_fig,
+            "roc_fig": roc_fig,
         }

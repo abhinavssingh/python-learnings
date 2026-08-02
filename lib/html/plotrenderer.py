@@ -180,6 +180,11 @@ class PlotRenderer:
                 div_id=div_id,
                 config={"responsive": True}
             )
+            plot_html = (
+                '<div style="width:100%;overflow-x:hidden;">'
+                + plot_html +
+                '</div>'
+            )
 
             return plot_html, plotly_var
 

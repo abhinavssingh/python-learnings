@@ -1,9 +1,7 @@
 @import "tailwindcss";
 
-/* Force Tailwind to include all utilities we use */
-@source "../../";
+@source "../lib";
 
-/* Default: Light Mode */
 :root {
-  color-scheme: light;
+    color-scheme: light;
 }
