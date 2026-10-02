@@ -1,16 +1,17 @@
 # Autonomous Driving Capstone
 
-One reproducible project script for Tesla incident/fatality exploratory
-analysis and vehicle-object detection inference.
+This project now lives under the capstone area. It provides a reproducible
+workflow for Tesla incident/fatality exploratory analysis and vehicle-object
+detection inference.
 
 ## Install and run
 
 Install the CPU-compatible object-detection packages, then run either task:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r Module-5\GENAI\projects\requirements-autonomous.txt
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\autonomous_driving.py --task safety
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\autonomous_driving.py --task detect
+.\.venv\Scripts\python.exe -m pip install -r Module-5\GENAI\capstone\requirements-autonomous.txt
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\autonomous_driving.py --task safety
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\autonomous_driving.py --task detect
 ```
 
 `safety` is the default and uses
@@ -27,8 +28,8 @@ pretrained detector weights from PyTorch. Select an image, archive, or dataset
 root with:
 
 ```powershell
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\autonomous_driving.py --task detect --image C:\path\to\traffic.jpg
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\autonomous_driving.py --task detect --sample-count 8 --confidence 0.65
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\autonomous_driving.py --task detect --image C:\path\to\traffic.jpg
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\autonomous_driving.py --task detect --sample-count 8 --confidence 0.65
 $env:GENAI_AUTONOMOUS_DATA_DIR = "D:\datasets\GEN AI"
 ```
 
@@ -51,7 +52,7 @@ All machine-readable artifacts are under
 - `object_detection/inference/` (annotated sample images)
 - `object_detection/detections.csv`
 
-HTML reports are saved alongside the script in `projects/reports/`:
+HTML reports are saved alongside the script in `capstone/reports/`:
 `tesla_safety_report.html` and `vehicle_detection_report.html`.
 Set `GENAI_OPEN_REPORTS=0` to avoid opening the reports automatically.
 

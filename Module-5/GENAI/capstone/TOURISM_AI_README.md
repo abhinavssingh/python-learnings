@@ -7,10 +7,10 @@ structure transfer-learning workflow from the tagged capstone requirements.
 
 ## Tourism analytics and recommendations
 
-Run from the repository root:
+This project now lives in the capstone folder. Run it from the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\tourism_ai.py
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\tourism_ai.py
 ```
 
 The default task reads `user.csv`, `tourism_with_id.xlsx`, and
@@ -23,8 +23,8 @@ model bundle.
 Request recommendations for a specific user or destination:
 
 ```powershell
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\tourism_ai.py --user-id 1
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\tourism_ai.py --place-id 1 --top-n 5
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\tourism_ai.py --user-id 1
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\tourism_ai.py --place-id 1 --top-n 5
 ```
 
 Configure the source dataset root with `GENAI_TOURISM_DATA_DIR`. The script
@@ -40,7 +40,7 @@ safely extracts the labeled training and test folders into
 learning classifiers with and without training-time augmentation.
 
 ```powershell
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\tourism_ai.py --task images
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\tourism_ai.py --task images
 ```
 
 This task requires TensorFlow compatible with the current Python/OS and an
@@ -53,8 +53,8 @@ the image report calls out.
 
 ## Outputs
 
-- `Module-5/GENAI/projects/reports/tourism_ai_report.html`
-- `Module-5/GENAI/projects/reports/historical_structures_report.html` (image task)
+- `Module-5/GENAI/capstone/reports/tourism_ai_report.html`
+- `Module-5/GENAI/capstone/reports/historical_structures_report.html` (image task)
 - `saved_models/genai/tourism_ai/` (recommender, metrics, recommendation CSVs,
   and optional image models)
 

@@ -7,10 +7,10 @@ revenue by restaurant.
 
 ## Run
 
-From the repository root, run:
+This project now lives in the capstone folder. From the repository root, run:
 
 ```powershell
-.\.venv\Scripts\python.exe Module-5\GENAI\projects\sales_forecasting.py
+.\.venv\Scripts\python.exe Module-5\GENAI\capstone\sales_forecasting.py
 ```
 
 The default inputs are in `datasets/GEN AI/Capstone 3/`:
@@ -35,7 +35,7 @@ configuration, data loading, and HTML reporting; it does not call Ollama.
 
 ## Outputs
 
-- `Module-5/GENAI/projects/reports/sales_forecasting_report.html`
+- `Module-5/GENAI/capstone/reports/sales_forecasting_report.html`
 - `saved_models/genai/sales_forecasting/model_metrics.csv`
 - `saved_models/genai/sales_forecasting/daily_sales.csv`
 - `saved_models/genai/sales_forecasting/future_sales_forecast.csv`

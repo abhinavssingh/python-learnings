@@ -4,16 +4,7 @@ This folder contains runnable applications and analysis demos that apply ideas f
 
 ## Projects
 
-### Autonomous driving analysis and object detection
-
-`autonomous_driving.py` provides two independent tasks. `--task safety` cleans and analyzes Tesla incident/fatality records; `--task detect` runs pretrained Torchvision Faster R-CNN inference on selected traffic images and creates image manifests and annotated outputs.
-
-```powershell
-python Module-5/GENAI/projects/autonomous_driving.py --task safety
-python Module-5/GENAI/projects/autonomous_driving.py --task detect
-```
-
-Install the additional packages with `requirements-autonomous.txt`. The provided image archive has no bounding-box labels, so detection here is pretrained inference and visualization, not supervised training or ground-truth accuracy evaluation. Incident counts are not exposure-normalized crash rates; see [AUTONOMOUS_DRIVING_README.md](AUTONOMOUS_DRIVING_README.md) for interpretation caveats.
+> The autonomous-driving project files were moved to the capstone section. Use the guides in [../capstone/README.md](../capstone/README.md) and [../capstone/AUTONOMOUS_DRIVING_README.md](../capstone/AUTONOMOUS_DRIVING_README.md) instead of the older project paths.
 
 ### HR policy assistant
 

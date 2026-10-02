@@ -1,8 +1,25 @@
 # Capstone Work
 
-This folder contains project requirements and two applied data-science solutions. They are useful for learners who want to connect data preparation, analysis, modeling, evaluation, and reporting into a complete workflow. Despite the parent folder name, these two scripts are primarily classical analytics and machine learning; they do not require a generative model for their main tasks.
+This folder contains the capstone projects and applied data-science solutions used for the GenAI track. It includes the autonomous-driving work that was moved here from the older `projects/` area, alongside the restaurant forecasting and tourism analysis projects.
 
-## Projects
+## Capstone projects
+
+### Autonomous driving analysis and object detection
+
+- `Autonomous_Driving_Capstone_Requirements.md` describes the Tesla incident analysis and object-detection work.
+- `autonomous_driving.py` loads the safety dataset and runs pretrained object detection inference for selected images.
+- `AUTONOMOUS_DRIVING_README.md` documents setup, command-line options, and output files.
+- `requirements-autonomous.txt` holds the extra dependencies for the detection workflow.
+- `tesla_safety_analysis.ipynb` and `vehicle_detection.ipynb` are notebook companions for exploration and diagnostics.
+
+Example runs:
+
+```powershell
+python Module-5/GENAI/capstone/autonomous_driving.py --task safety
+python Module-5/GENAI/capstone/autonomous_driving.py --task detect
+```
+
+The work is stored in the capstone area instead of `projects/`.
 
 ### Restaurant sales forecasting
 
