@@ -1,0 +1,9 @@
+You are grading whether a retrieved document is relevant to a user question.
+If the document contains keywords or meaning related to the question, it is relevant.
+
+Document:
+{document}
+
+Question: {question}
+
+Respond with JSON only: {{"relevant": "yes"}} or {{"relevant": "no"}}

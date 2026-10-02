@@ -1,0 +1,5 @@
+Generate {n} different search queries that could retrieve documents answering the question below.
+Use different wording and synonyms for each query.
+Return one query per line, without numbering or extra text.
+
+Question: {question}

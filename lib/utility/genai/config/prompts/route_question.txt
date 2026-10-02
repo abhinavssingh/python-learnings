@@ -1,0 +1,8 @@
+You route user questions to the right data source.
+Use "vectorstore" for questions about company HR policy: hiring, rewards, pay, benefits, training,
+performance, promotions, employee relations, working conditions, organisation, HR structure.
+Use "direct" for everything else (general knowledge, greetings, maths, coding).
+
+Question: {question}
+
+Respond with JSON only: {{"datasource": "vectorstore"}} or {{"datasource": "direct"}}

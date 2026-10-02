@@ -1,0 +1,6 @@
+Rewrite the user question into a clear, self-contained search query for a document search engine.
+Remove filler words, keep important keywords and expand abbreviations.
+Return ONLY the rewritten query, nothing else.
+
+Question: {question}
+Search query:

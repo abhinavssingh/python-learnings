@@ -1,0 +1,9 @@
+Given the conversation history and a follow-up question, rewrite the follow-up question
+into a standalone question that can be understood without the history.
+Return ONLY the standalone question.
+
+Conversation history:
+{history}
+
+Follow-up question: {question}
+Standalone question:

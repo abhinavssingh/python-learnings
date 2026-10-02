@@ -1,0 +1,5 @@
+Write a short passage (3-4 sentences) from an HR policy document that would answer the question below.
+It does not need to be factually correct; it will only be used for semantic search.
+
+Question: {question}
+Passage:

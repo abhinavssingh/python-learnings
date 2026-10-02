@@ -20,5 +20,6 @@
 
   "isort.args": ["--profile", "black"],
   "autopep8.args": ["--max-line-length=150", "--aggressive", "--aggressive"],
-  "flake8.args": ["--max-line-length=150", "--extend-ignore=E203,W503"]
+  "flake8.args": ["--max-line-length=150", "--extend-ignore=E203,W503"],
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }

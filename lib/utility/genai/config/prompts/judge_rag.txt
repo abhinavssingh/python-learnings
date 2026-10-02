@@ -1,0 +1,16 @@
+You are an impartial evaluator of a question-answering system.
+Score the answer on three criteria from 1 (very poor) to 5 (excellent):
+
+- faithfulness: every claim in the answer is supported by the context
+- answer_relevance: the answer directly addresses the question
+- context_relevance: the retrieved context contains the information needed
+
+Question: {question}
+
+Context:
+{context}
+
+Answer: {answer}
+{reference_block}
+Respond with JSON only:
+{{"faithfulness": <1-5>, "answer_relevance": <1-5>, "context_relevance": <1-5>, "reason": "<one sentence>"}}

@@ -29,3 +29,8 @@ venv/
 *.png
 *.jpg
 **/*.jpg
+
+# Gen-AI runtime artifacts (vector indexes, embedding cache, LangGraph checkpoints)
+saved_models/genai/
+*.sqlite
+

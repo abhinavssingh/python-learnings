@@ -9,12 +9,13 @@ It includes:
 - Config-driven path management
 - Classical ML pipeline (training -> evaluation -> visualization -> reporting)
 - Deep Learning framework (TensorFlow model wrappers, data loaders, training utilities, and project pipelines)
+- Generative AI framework (NLP foundations, embeddings, chunking, retrieval, RAG, LangChain, and LangGraph on a local Ollama LLM)
 
 ---
 
 ## Overview
 
-The project is divided into three areas:
+The project is divided into four areas:
 
 ### 1. Learning Modules
 
@@ -44,6 +45,19 @@ Located under `lib/utility/deeplearning/` and `lib/utility/deeplearning/framewor
 - Training utilities and callback integration
 - Visualization helpers (ROC, confusion matrix, reconstruction grids, training history)
 - Hybrid ensemble support (LogisticRegression + RandomForest + SVC + Keras classifier via soft voting)
+
+### 4. Generative AI Framework
+
+Located under `lib/utility/genai/`, with learning scripts in `Module-5/GENAI/`, this includes:
+
+- NLP foundations from scratch (cleaning, tokenization and BPE, n-gram language models, TF-IDF, BM25, attention)
+- Embeddings (Word2Vec from scratch, Ollama `nomic-embed-text`, disk cache, similarity analysis)
+- Chunking strategies (fixed, recursive, sentence, paragraph, semantic, Markdown, and Python code)
+- Vector stores (NumPy and FAISS, metadata filters, persistence, index manager)
+- Retrieval (dense, BM25, hybrid RRF, MMR, multi-query, HyDE, LLM re-ranking, compression)
+- RAG pipelines (naive, advanced, conversational), memory, tools, and agents
+- LangChain (LCEL) and LangGraph integrations (agentic RAG, tool agent, supervisor, human-in-the-loop)
+- Evaluation (retrieval metrics, generation metrics, LLM-as-judge) against a golden QA set
 
 ---
 
@@ -82,6 +96,15 @@ Located under `lib/utility/deeplearning/` and `lib/utility/deeplearning/framewor
 ├── Module-4/
 │   └── DeepML/          # deep learning projects and requirements
 │
+├── Module-5/
+│   └── GENAI/           # Gen-AI learning scripts (01_foundations … 12_transformers)
+│
+├── datasets/
+│   └── GEN AI/          # HR policy PDF, capstone data, eval/hr_policy_qa.json
+│
+├── saved_models/
+│   └── genai/           # vector indexes, embedding cache, LangGraph checkpoints (git-ignored)
+│
 ├── machinelearning/     # Core ML framework
 │   ├── base/            # Wrappers + execution layer
 │   ├── pipeline/        # Preprocessing + imbalance handling
@@ -96,6 +119,18 @@ Located under `lib/utility/deeplearning/` and `lib/utility/deeplearning/framewor
 └── lib/
    └── utility/
       ├── dataframe/   # dataframe loaders and helpers
+      ├── genai/
+      │   ├── abstractions/   # BaseLLM, BaseEmbedder, BaseChunker, BaseVectorStore, BaseRetriever
+      │   ├── config/         # GenAIConfig + versioned prompts/*.txt
+      │   ├── foundations/    # tokenization, n-grams, TF-IDF, BM25, attention
+      │   ├── providers/      # Ollama chat + embeddings
+      │   ├── embeddings/  loaders/  chunking/  vectorstores/  retrieval/
+      │   ├── prompting/  memory/  rag/  tools/  evaluation/  observability/
+      │   ├── frameworks/
+      │   │   ├── langchain/  # LCEL chains, adapters, ChatOllama helpers
+      │   │   └── langgraph/  # state, nodes, edges, checkpointing, graphs/
+      │   ├── visualization/  reports/
+      │   └── factory.py  datasets.py
       └── deeplearning/
          ├── abstractions/
          ├── config/
@@ -323,6 +358,35 @@ Located in `lib/utility/deeplearning/`.
 - Dental x-ray denoising autoencoder
 - Voting classifier demo (LR + RF + SVC + Keras)
 
+## Generative AI Framework
+
+Located in `lib/utility/genai/`. The learning path is in `Module-5/GENAI/` (see [Module-5/GENAI/README.md](Module-5/GENAI/README.md)).
+
+### Setup (local, no API keys)
+
+```bash
+# 1. Install Ollama (https://ollama.com) and pull the models
+ollama pull qwen3:8b
+ollama pull nomic-embed-text
+
+# 2. Install the Gen-AI packages into the virtual environment
+pip install -r Module-5/GENAI/requirements-genai.txt
+
+# 3. Run a single script, or a whole folder through the runner
+python Module-5/GENAI/01_foundations/03_ngrams_language_model.py
+python run.py --only "Module-5.GENAI.01_foundations.*"
+```
+
+Environment overrides: `GENAI_CHAT_MODEL`, `GENAI_EMBEDDING_MODEL`, `OLLAMA_HOST`, `GENAI_OPEN_REPORTS=0` (don't open reports), `GENAI_EVAL_LIMIT`, `GENAI_INTERACTIVE=1` (human-in-the-loop prompts).
+
+### Design
+
+- **Framework-agnostic core**: every concept (chunker, retriever, RAG pipeline, agent loop) is implemented in plain Python on top of small abstractions.
+- **Framework layer**: `frameworks/langchain` and `frameworks/langgraph` wrap the same core through adapters, so LangChain and LangGraph projects can reuse it.
+- **Reproducible and fast**: indexes and embeddings are cached in `saved_models/genai/`, and LLM calls use temperature 0 with capped `max_tokens`.
+
+Not used because of Python 3.14 / CPU-only compatibility: `sentence-transformers` / HF cross-encoders (need PyTorch), `gensim`, `ragas`, Chroma/Qdrant, and `langchain-community`. NumPy and FAISS equivalents are provided instead.
+
 ## Tests
 
 ```Shell
@@ -345,6 +409,7 @@ Validates:
 - NumPy / Pandas
 - Scikit-learn
 - TensorFlow / Keras
+- Ollama (qwen3:8b, nomic-embed-text), LangChain, LangGraph, FAISS
 - Plotly
 - Tailwind CSS
 - VS Code

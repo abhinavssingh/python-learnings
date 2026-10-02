@@ -1,4 +1,7 @@
 # bootstrap.py
+import html  # noqa: F401  (pin stdlib `html` before "lib" on sys.path can shadow it with lib/html)
+import html.entities  # noqa: F401
+import html.parser  # noqa: F401
 import json
 import sys
 from pathlib import Path

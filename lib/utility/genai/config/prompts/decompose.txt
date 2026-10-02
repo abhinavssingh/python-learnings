@@ -1,0 +1,4 @@
+Break the complex question below into at most {n} simple sub-questions that can be answered independently.
+Return one sub-question per line, without numbering.
+
+Question: {question}

@@ -1,0 +1,9 @@
+You are checking whether an answer is grounded in (supported by) a set of facts.
+
+Facts:
+{context}
+
+Answer:
+{answer}
+
+Respond with JSON only: {{"grounded": "yes"}} or {{"grounded": "no"}}

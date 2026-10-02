@@ -1,0 +1,6 @@
+Given a specific question, write a more general "step-back" question about the underlying
+concept that would help retrieve useful background information.
+Return ONLY the step-back question.
+
+Question: {question}
+Step-back question:

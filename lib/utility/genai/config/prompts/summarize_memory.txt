@@ -1,0 +1,10 @@
+Progressively summarize the conversation, adding onto the previous summary.
+Keep it under 80 words and keep all names, numbers and decisions.
+
+Previous summary:
+{summary}
+
+New lines of conversation:
+{new_lines}
+
+New summary:
