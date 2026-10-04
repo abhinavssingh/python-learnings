@@ -124,7 +124,7 @@ class PlotRenderer:
         # Encode as base64
         encoded = base64.b64encode(buffer.getvalue()).decode()
 
-        return f'<img src="data:image/png;base64,{encoded}" style="width:100%; height:auto;"/>'
+        return f'<img src="data:image/png;base64,{encoded}" style="display:block; width:100%; max-width:100%; height:auto;"/>'
 
     def plot_to_card(self, plot_obj, title: str = "") -> str:
         """
@@ -173,15 +173,19 @@ class PlotRenderer:
         if hasattr(plot_obj, "to_html") and hasattr(plot_obj, "to_plotly_json"):
             plotly_var = f"fig_{uuid.uuid4().hex[:8]}"
             div_id = plotly_var
+            layout_height = plot_obj.layout.height
+            plot_height = int(layout_height) if layout_height else 450
 
             plot_html = plot_obj.to_html(
                 full_html=False,
                 include_plotlyjs=False,  # ✅ JS loaded globally in base template
                 div_id=div_id,
-                config={"responsive": True}
+                config={"responsive": True},
+                default_width="100%",
+                default_height=f"{plot_height}px",
             )
             plot_html = (
-                '<div style="width:100%;overflow-x:hidden;">'
+                '<div style="width:100%; max-width:100%;">'
                 + plot_html +
                 '</div>'
             )
@@ -222,8 +226,13 @@ class PlotRenderer:
         """
 
         plot_html, _ = self.plot_to_html_full_width(plot_obj)
+        plot_height = None
+        if hasattr(plot_obj, "to_plotly_json"):
+            layout_height = plot_obj.layout.height
+            plot_height = int(layout_height) if layout_height else 450
 
         return self.components.chart_full_width(
             title=title,
             content=plot_html,
+            height=plot_height,
         )

@@ -73,7 +73,7 @@ class ComponentsBuilder:
         return f"""
 <!-- ================ Full Width Card: {title} ================ -->
 <section class="w-full rounded-xl border border-slate-300 dark:border-slate-700
-            bg-white dark:bg-slate-800 shadow-md p-6 mb-6">
+            bg-white dark:bg-slate-800 shadow-md p-6 mb-6 overflow-hidden">
 
     <!-- Full-width card header -->
     <h2 class="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
@@ -81,7 +81,7 @@ class ComponentsBuilder:
     </h2>
 
     <!-- Full-width card content -->
-    <div class="w-full overflow-x-auto">
+    <div class="w-full max-w-full overflow-hidden">
         {content}
     </div>
 
@@ -181,10 +181,11 @@ class ComponentsBuilder:
 <!-- ===================== End Chart Grid ===================== -->
 """
 
-    def chart_full_width(self, title: str, content: str, height: int = 320) -> str:
+    def chart_full_width(self, title: str, content: str, height: int | None = None) -> str:
         """
-        Render a full-width chart container with title and fixed height.
+        Render a full-width chart container.
         """
+        height_style = f"height: {height}px;" if height is not None else ""
         return f"""
 <!-- =================== Full Width Chart: {title} =================== -->
 <section class="w-full rounded-xl border border-slate-300 dark:border-slate-700
@@ -196,8 +197,8 @@ class ComponentsBuilder:
         {title}
     </h2>
 
-    <!-- Fixed height chart container -->
-    <div class="w-full" style="height: {height}px;">
+    <!-- Keep the plot inside the card without clipping its vertical content -->
+    <div class="w-full max-w-full overflow-x-auto" style="{height_style}">
         {content}
     </div>
 
